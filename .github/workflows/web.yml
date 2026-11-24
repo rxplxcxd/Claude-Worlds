@@ -80,11 +80,15 @@ jobs:
             echo "::warning::Secret MEGA_ASSETS_URL is not set - building with placeholder graphics."
             exit 0
           fi
-          python3 -m pip install --quiet pillow requests cryptography
-          python3 -I tools/assets/fetch_mega_folder.py "${MEGA_ASSETS_URL}" /tmp/penzilla_src \
+          # Own venv: "python3 -I" (isolated, no user site-packages) would not
+          # see packages installed with "pip install --user" on the runner.
+          python3 -m venv /tmp/assetenv
+          PY=/tmp/assetenv/bin/python
+          "$PY" -m pip install --quiet pillow requests cryptography
+          "$PY" -I tools/assets/fetch_mega_folder.py "${MEGA_ASSETS_URL}" /tmp/penzilla_src \
             --only GiantCityBuilder.zip,Ultimate_Protagonist.zip,Basic_GUI_Bundle.zip,Isometric_RPG_Buildings.zip,Top-Down_Retro_Interior.zip,Stylized_GrassAndDirt.zip
-          python3 -I tools/assets/import_penzilla.py /tmp/penzilla_src .
-          python3 -I tools/assets/import_character.py /tmp/penzilla_src .
+          "$PY" -I tools/assets/import_penzilla.py /tmp/penzilla_src .
+          "$PY" -I tools/assets/import_character.py /tmp/penzilla_src .
           rm -rf /tmp/penzilla_src
 
       - name: Asset status

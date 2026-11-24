@@ -6,7 +6,8 @@
     "up": "Ultimate_Protagonist.zip",
     "gui": "Basic_GUI_Bundle.zip",
     "rpg": "Isometric_RPG_Buildings.zip",
-    "interior": "Top-Down_Retro_Interior.zip"
+    "interior": "Top-Down_Retro_Interior.zip",
+    "grass": "Stylized_GrassAndDirt.zip"
   },
   "files": {
     "tiles/grass.png": [
@@ -347,6 +348,26 @@
       "gui",
       "Icons/Icon_Small_WhiteOutline_Pause.png",
       0.25
+    ],
+    "gui/icon_arrow.png": [
+      "gui",
+      "Icons/Icon_Small_WhiteOutline_Arrow.png",
+      0.25
+    ],
+    "gui/icon_check.png": [
+      "gui",
+      "Icons/Icon_Small_WhiteOutline_Check.png",
+      0.25
+    ],
+    "gui/icon_undo.png": [
+      "gui",
+      "Icons/Icon_Small_WhiteOutline_Return.png",
+      0.25
+    ],
+    "ui/editor_backdrop.jpg": [
+      "grass",
+      "JPEG/Stylized_HandpaintedGrass_01/Stylized_HandpaintedGrass_01_basecolor.jpg",
+      0.125
     ]
   }
 }

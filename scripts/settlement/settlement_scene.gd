@@ -77,6 +77,14 @@ func _ready() -> void:
 	EventBus.settlement_ready.emit.call_deferred(summary)
 
 
+## Blocks/unblocks direct control (e.g. while the character editor is open).
+func set_input_enabled(on: bool) -> void:
+	if player:
+		player.input_enabled = on
+		if not on:
+			player.cancel_move_target()
+
+
 ## Converts a screen position into a world position and handles a tap:
 ## tap an object -> walk there and use it, tap ground -> walk there.
 func handle_tap(screen_pos: Vector2) -> void:

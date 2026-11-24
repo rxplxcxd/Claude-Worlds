@@ -68,7 +68,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: assets/penzilla
-          key: penzilla-${{ hashFiles('tools/assets/**') }}
+          key: penzilla-${{ hashFiles('tools/assets/**', 'data/character_catalog.json') }}
 
       - name: Fetch and import Penzilla assets
         if: steps.penzilla-cache.outputs.cache-hit != 'true'
@@ -82,8 +82,9 @@ jobs:
           fi
           python3 -m pip install --quiet pillow requests cryptography
           python3 -I tools/assets/fetch_mega_folder.py "${MEGA_ASSETS_URL}" /tmp/penzilla_src \
-            --only GiantCityBuilder.zip,Ultimate_Protagonist.zip,Basic_GUI_Bundle.zip,Isometric_RPG_Buildings.zip,Top-Down_Retro_Interior.zip
+            --only GiantCityBuilder.zip,Ultimate_Protagonist.zip,Basic_GUI_Bundle.zip,Isometric_RPG_Buildings.zip,Top-Down_Retro_Interior.zip,Stylized_GrassAndDirt.zip
           python3 -I tools/assets/import_penzilla.py /tmp/penzilla_src .
+          python3 -I tools/assets/import_character.py /tmp/penzilla_src .
           rm -rf /tmp/penzilla_src
 
       - name: Asset status

@@ -83,6 +83,10 @@ func _run() -> void:
 	clock.set_total_minutes(clock.START_MINUTES)
 
 	print("[scene]")
+	# Tests use a ready-made character so the game starts in the world.
+	profile.character = {}
+	if root_has_character_assets():
+		profile.set_character(get_tree().root.get_node("CharacterCatalog").default_appearance(), "Test")
 	_main = load("res://scenes/main/main.tscn").instantiate()
 	get_tree().root.add_child(_main)
 	await frames(5)
@@ -267,6 +271,10 @@ func _run() -> void:
 	for f in _failed:
 		print("  - ", f)
 	get_tree().quit(1 if _failed.size() > 0 else 0)
+
+
+func root_has_character_assets() -> bool:
+	return get_tree().root.get_node("CharacterCatalog").is_available()
 
 
 func _world_to_screen(cam: CameraRig, world: Vector2) -> Vector2:

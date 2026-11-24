@@ -2,10 +2,10 @@ class_name PlayerVisual
 extends Node2D
 ## Player appearance.
 ##
-## With the Penzilla Ultimate Protagonist sheets imported ("character.player",
-## kind "sheet8"), an AnimatedSprite2D is built at runtime: each sheet has 5
-## rows (s, sw, w, nw, n); east-facing directions are mirrored, giving 8
-## directions. Otherwise a PLACEHOLDER figure is drawn.
+## Preferred: the player's own modular character (CharacterRig with the
+## appearance from the character editor, Penzilla Ultimate Protagonist layers).
+## Fallback 1: the premade Penzilla Character1 sheets ("character.player").
+## Fallback 2: a procedurally drawn PLACEHOLDER figure.
 
 const BODY := Color("2f7f8f")
 const PANTS := Color("3b3f4a")
@@ -19,12 +19,21 @@ var _sprite: AnimatedSprite2D
 
 
 ## facing index (Iso.facing_index) -> [sheet row, mirrored]
-const FACING_ROWS := [[2, true], [3, true], [4, false], [3, false], [2, false], [1, false], [0, false], [1, true]]
+const FACING_ROWS := [[2, false], [3, false], [4, false], [3, true], [2, true], [1, true], [0, false], [1, false]]
 
 var _interacting := false
 
 
+var rig: CharacterRig
+
+
 func _ready() -> void:
+	if CharacterCatalog.is_available():
+		rig = CharacterRig.new()
+		rig.name = "Rig"
+		rig.appearance = CharacterCatalog.normalize(LocalProfile.character) if LocalProfile.has_character() else CharacterCatalog.default_appearance()
+		add_child(rig)
+		return
 	var frames := _build_sheet_frames()
 	if frames:
 		_sprite = AnimatedSprite2D.new()
@@ -73,6 +82,9 @@ func _build_sheet_frames() -> SpriteFrames:
 
 ## Plays the one-shot interact animation (if available).
 func play_interact() -> void:
+	if rig:
+		rig.play("interact", true)
+		return
 	if _sprite and _sprite.sprite_frames.has_animation("interact_s"):
 		_interacting = true
 		_play_dir("interact", _facing)
@@ -88,12 +100,21 @@ func _play_dir(anim: String, facing: int) -> void:
 
 
 func is_placeholder() -> bool:
-	return _sprite == null
+	return _sprite == null and rig == null
+
+
+## Re-reads the saved character (after the editor was closed).
+func refresh_appearance() -> void:
+	if rig:
+		rig.set_appearance(LocalProfile.character)
 
 
 func set_motion(speed01: float, facing: int) -> void:
 	_speed01 = speed01
 	_facing = facing
+	if rig:
+		rig.set_motion(speed01, facing)
+		return
 	if _sprite:
 		if _interacting and speed01 < 0.05:
 			return
@@ -104,7 +125,7 @@ func set_motion(speed01: float, facing: int) -> void:
 
 
 func _process(delta: float) -> void:
-	if _sprite:
+	if _sprite or rig:
 		return
 	if _speed01 > 0.05:
 		_phase += delta * 11.0 * _speed01
@@ -115,7 +136,7 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	if _sprite:
+	if _sprite or rig:
 		return
 	var bob := absf(sin(_phase)) * 3.0
 	var dir := Vector2.from_angle(-_facing * PI / 4.0) # screen-space facing

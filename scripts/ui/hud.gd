@@ -11,6 +11,8 @@ signal world_panned(delta: Vector2)
 signal world_pinched(factor: float, center: Vector2)
 ## Emitted when a modal panel opens/closes (main pauses direct control).
 signal modal_changed(open: bool)
+## The player wants to change their character (menu).
+signal edit_character_requested
 
 const SPEEDS := [1.0, 4.0, 0.0]
 const SPEED_LABELS := ["1×", "4×", "II"]
@@ -286,6 +288,15 @@ func _build_menu() -> void:
 	debug_toggle.button_pressed = bool(LocalProfile.get_setting("show_debug", false))
 	debug_toggle.toggled.connect(_set_debug_visible)
 	box.add_child(debug_toggle)
+	if CharacterCatalog.is_available():
+		var edit_char := Button.new()
+		edit_char.text = "Figur bearbeiten"
+		edit_char.focus_mode = Control.FOCUS_NONE
+		edit_char.custom_minimum_size = Vector2(0, 48)
+		edit_char.pressed.connect(func() -> void:
+			_toggle_menu()
+			edit_character_requested.emit())
+		box.add_child(edit_char)
 	var joy_toggle := CheckButton.new()
 	joy_toggle.text = "Virtueller Joystick"
 	joy_toggle.button_pressed = DisplayServer.is_touchscreen_available()

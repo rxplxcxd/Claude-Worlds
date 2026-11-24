@@ -18,6 +18,8 @@ const ARRIVE_DISTANCE := 6.0
 const DETECT_RADIUS := 64.0
 
 var player_id: String = ""
+## False while a full-screen UI (character editor) owns the input.
+var input_enabled := true
 var facing: int = 6
 
 var _joystick := Vector2.ZERO
@@ -68,6 +70,8 @@ func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if _joystick.length_squared() > input.length_squared():
 		input = _joystick
+	if not input_enabled:
+		input = Vector2.ZERO
 	var dir := Vector2.ZERO
 	if input.length_squared() > 0.01:
 		if _target != null:

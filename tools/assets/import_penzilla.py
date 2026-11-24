@@ -79,7 +79,10 @@ def main():
         if not dest.startswith(out_root + os.sep):
             raise SystemExit(f"unsafe output path: {rel}")
         os.makedirs(os.path.dirname(dest), exist_ok=True)
-        out.save(dest, optimize=True)
+        if dest.lower().endswith(".jpg"):
+            out.convert("RGB").save(dest, quality=82, optimize=True)
+        else:
+            out.save(dest, optimize=True)
         meta["files"]["res://assets/penzilla/" + rel] = {
             "source_pack": sel["packs"][pack],
             "source_file": inner,

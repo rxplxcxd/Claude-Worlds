@@ -42,6 +42,12 @@
       "archive": "Top-Down_Retro_Interior.zip",
       "store_page": "https://penzilla.itch.io/top-down-retro-interior",
       "license": "Penzilla Standard License (royalty free, commercial use once purchased)"
+    },
+    "stylized_grass_and_dirt": {
+      "vendor": "unknown",
+      "package": "Stylized Grass and Dirt",
+      "archive": "Stylized_GrassAndDirt.zip",
+      "license": "unknown - not redistributed; only used as a dimmed UI backdrop, never in the game world (exterior = Penzilla only)"
     }
   },
   "entries": {
@@ -63,9 +69,9 @@
       "world_scale": 0.62,
       "rows": [
         "s",
-        "sw",
-        "w",
-        "nw",
+        "se",
+        "e",
+        "ne",
         "n"
       ],
       "fps": {
@@ -74,7 +80,7 @@
         "run": 12,
         "interact": 9
       },
-      "notes": "Penzilla Character1 (premade). Right-facing directions are mirrored."
+      "notes": "Penzilla Character1 (premade fallback). Rows face s, se, e, ne, n; west-facing directions are mirrored."
     },
     "exterior.tile.grass": {
       "source": "penzilla_giant_city_builder",
@@ -321,6 +327,22 @@
       "path": "",
       "kind": "Texture2D",
       "notes": "Interiors are not part of Phase 1 gameplay"
+    },
+    "ui.icon.arrow": {
+      "source": "penzilla_basic_gui",
+      "path": "res://assets/penzilla/gui/icon_arrow.png"
+    },
+    "ui.icon.check": {
+      "source": "penzilla_basic_gui",
+      "path": "res://assets/penzilla/gui/icon_check.png"
+    },
+    "ui.icon.undo": {
+      "source": "penzilla_basic_gui",
+      "path": "res://assets/penzilla/gui/icon_undo.png"
+    },
+    "ui.editor_backdrop": {
+      "source": "stylized_grass_and_dirt",
+      "path": "res://assets/penzilla/ui/editor_backdrop.jpg"
     }
   }
 }

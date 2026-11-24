@@ -57,20 +57,40 @@ func setup(entry: Dictionary) -> void:
 	it.approach_offset = (_corners[3] + _corners[2]) * 0.5 + Iso.grid_to_world(Vector2(0, 0.6))
 	add_child(it)
 
-	var tex := AssetRegistry.get_texture("exterior.building." + building_type)
-	if tex:
-		var e := AssetRegistry.get_entry("exterior.building." + building_type)
+	# Penzilla sprite: its anchor (footprint bottom vertex) sits on the
+	# bottom corner of the footprint diamond.
+	var variant := int(entry.get("variant", absi(hash(building_id))))
+	var info := AssetRegistry.get_sprite("exterior.building." + building_type, variant)
+	if not info.is_empty():
 		_sprite = Sprite2D.new()
-		_sprite.texture = tex
-		var anchor: Array = e.get("anchor", [0, 0])
-		_sprite.offset = Vector2(float(anchor[0]), float(anchor[1]))
-		_sprite.scale = Vector2.ONE * float(e.get("scale", 1.0))
+		_sprite.name = "Sprite"
+		_sprite.texture = info["texture"]
+		_sprite.centered = false
+		_sprite.scale = Vector2.ONE * float(info["scale"])
+		_sprite.position = _corners[2] + info["offset"]
 		add_child(_sprite)
 	queue_redraw()
 
 
 func is_placeholder() -> bool:
 	return _sprite == null
+
+
+## Canvas item that fades when the player is behind this building.
+func occluder_item() -> CanvasItem:
+	return _sprite if _sprite else self
+
+
+## Screen-space (canvas) rectangle covered by the building's visual.
+func occluder_rect() -> Rect2:
+	if _sprite:
+		var size := _sprite.texture.get_size() * _sprite.scale
+		return Rect2(_sprite.global_position, size)
+	var r := Rect2(global_position + _corners[0], Vector2.ZERO)
+	for c in _corners:
+		r = r.expand(global_position + c)
+	r = r.expand(global_position + _corners[0] + Vector2(0, -height - 40.0))
+	return r
 
 
 func _draw() -> void:

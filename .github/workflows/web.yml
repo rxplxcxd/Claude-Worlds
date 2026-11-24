@@ -58,6 +58,47 @@ jobs:
             -d "$TPL"
           rm /tmp/godot.zip /tmp/templates.tpz
 
+      # Purchased Penzilla assets are not stored in the public repository.
+      # They are fetched from the owner's private MEGA folder (repository
+      # secret MEGA_ASSETS_URL) and processed; the result is cached and only
+      # rebuilt when the selection or the import tools change. Without the
+      # secret the game builds with its marked placeholder graphics.
+      - name: Restore processed Penzilla assets
+        id: penzilla-cache
+        uses: actions/cache@v4
+        with:
+          path: assets/penzilla
+          key: penzilla-${{ hashFiles('tools/assets/**', 'data/character_catalog.json') }}
+
+      - name: Fetch and import Penzilla assets
+        if: steps.penzilla-cache.outputs.cache-hit != 'true'
+        env:
+          MEGA_ASSETS_URL: ${{ secrets.MEGA_ASSETS_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MEGA_ASSETS_URL}" ]; then
+            echo "::warning::Secret MEGA_ASSETS_URL is not set - building with placeholder graphics."
+            exit 0
+          fi
+          # Own venv: "python3 -I" (isolated, no user site-packages) would not
+          # see packages installed with "pip install --user" on the runner.
+          python3 -m venv /tmp/assetenv
+          PY=/tmp/assetenv/bin/python
+          "$PY" -m pip install --quiet pillow requests cryptography
+          "$PY" -I tools/assets/fetch_mega_folder.py "${MEGA_ASSETS_URL}" /tmp/penzilla_src \
+            --only GiantCityBuilder.zip,Ultimate_Protagonist.zip,Basic_GUI_Bundle.zip,Isometric_RPG_Buildings.zip,Top-Down_Retro_Interior.zip,Stylized_GrassAndDirt.zip
+          "$PY" -I tools/assets/import_penzilla.py /tmp/penzilla_src .
+          "$PY" -I tools/assets/import_character.py /tmp/penzilla_src .
+          rm -rf /tmp/penzilla_src
+
+      - name: Asset status
+        run: |
+          if [ -f assets/penzilla/import_meta.json ]; then
+            echo "Penzilla assets: $(find assets/penzilla -name '*.png' | wc -l) files" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Penzilla assets: not available (placeholder build)" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Import project
         run: ~/godot/godot --headless --path . --import
 

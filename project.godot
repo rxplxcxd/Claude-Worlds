@@ -7,7 +7,7 @@ config_version=5
 
 config/name="WORLDS"
 config/description="Lebendige, persistente Gesellschafts-, Wirtschafts- und Zivilisationssimulation (Phase 1: World Foundation)"
-config/version="0.1.1"
+config/version="0.3.0"
 run/main_scene="res://scenes/main/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
@@ -20,7 +20,10 @@ EventBus="*res://scripts/core/event_bus.gd"
 GameClock="*res://scripts/core/game_clock.gd"
 AssetRegistry="*res://scripts/core/asset_registry.gd"
 LocalProfile="*res://scripts/persistence/local_profile.gd"
+Geography="*res://scripts/geography/geography.gd"
 WorldState="*res://scripts/world/world_state.gd"
+CharacterCatalog="*res://scripts/character/character_catalog.gd"
+CharacterComposer="*res://scripts/character/character_composer.gd"
 
 [display]
 
@@ -33,6 +36,12 @@ window/handheld/orientation=6
 [input_devices]
 
 pointing/emulate_mouse_from_touch=true
+
+[importer_defaults]
+
+texture={
+"mipmaps/generate": true
+}
 
 [layer_names]
 
@@ -50,4 +59,5 @@ renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.0705882, 0.0901961, 0.12549, 1)
 anti_aliasing/quality/msaa_2d=0
+textures/canvas_textures/default_texture_filter=3
 textures/vram_compression/import_etc2_astc=true

@@ -1,6 +1,6 @@
 {
   "_comment": "Initial state of the planet. BINDING RULE: the planet starts completely empty - no settlements, no cities, no NPC-only places. Every settlement is founded by a human player. See docs/WORLD_DESIGN.md section 1.",
-  "schema_version": 1,
+  "schema_version": 2,
   "world_id": "wld_prime",
   "planet_id": "pln_aurel",
   "planet_name": "Aurel",
@@ -9,5 +9,12 @@
     "settlement_requires_human_founder": true,
     "npc_only_settlements_allowed": false
   },
-  "settlements": []
+  "settlements": [],
+  "planet": {
+    "seed": 777,
+    "radius_km": 4000,
+    "generator_version": 2,
+    "baked_data": "res://data/world/planet/",
+    "_comment": "Nature only. The planet is generated ONCE from this seed (scripts/geography/planet_generator.gd) and baked into data/world/planet/. Changing seed or generator requires re-baking and migrating stored settlement positions."
+  }
 }

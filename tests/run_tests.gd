@@ -63,6 +63,85 @@ func _run() -> void:
 	check(world.found_settlement(tpl, "npc_abc123").is_empty(), "an NPC cannot found a settlement")
 	check(world.is_planet_empty(), "rejected foundings leave the planet empty")
 
+	print("[geography]")
+	var geo: Node = get_tree().root.get_node("Geography")
+	var planet: PlanetData = geo.planet()
+	check(planet != null, "baked planet loads (data/world/planet)")
+	check(planet.continents.size() >= 4 and planet.continents.size() <= 7, "planet has 4-7 continents (%d)" % planet.continents.size())
+	check(planet.regions.size() >= 100, "planet has many regions (%d)" % planet.regions.size())
+	var land_without_region := 0
+	var land_cells := 0
+	for i in planet.biome.size():
+		if planet.is_land(i):
+			land_cells += 1
+			if planet.region_of[i] == 0 or planet.continent_of[i] == 0:
+				land_without_region += 1
+	var land_share := float(land_cells) / planet.biome.size()
+	check(land_without_region == 0, "every land cell belongs to a region and a continent")
+	check(land_share > 0.2 and land_share < 0.5, "sensible land/sea ratio (%.0f%% of cells)" % (land_share * 100.0))
+	var region_ids := {}
+	var in_continents := 0
+	var all_wild := true
+	for r in planet.regions:
+		region_ids[r["region_id"]] = true
+		all_wild = all_wild and r["development"] == "wild" and r["territory_id"] == ""
+	check(all_wild, "genesis: every region is wild and unclaimed (nature only)")
+	for c in planet.continents:
+		in_continents += (c["region_ids"] as Array).size()
+	check(region_ids.size() == planet.regions.size() and in_continents == planet.regions.size(), "region IDs unique, every region on a continent")
+	var terrain_kinds := {}
+	for r in planet.regions:
+		terrain_kinds[r["terrain"]] = true
+	check(terrain_kinds.size() >= 6, "varied terrain (%s)" % ", ".join(terrain_kinds.keys()))
+	# Determinism: regenerating from genesis gives byte-identical baked files.
+	var spec: Dictionary = genesis["planet"].duplicate()
+	spec["planet_id"] = genesis["planet_id"]
+	spec["planet_name"] = genesis["planet_name"]
+	var regen := PlanetGenerator.new().generate(spec)
+	regen.save_to(ProjectSettings.globalize_path("user://planet_check"))
+	var bake_same := FileAccess.get_file_as_bytes("user://planet_check/planet_cells.bin") == FileAccess.get_file_as_bytes("res://data/world/planet/planet_cells.bin") \
+			and FileAccess.get_file_as_string("user://planet_check/planet.json") == FileAccess.get_file_as_string("res://data/world/planet/planet.json")
+	check(bake_same, "baked planet matches the generator (seed %d, v%d)" % [planet.seed, planet.generator_version])
+	# Coordinates.
+	var ll := Geo.from_vec3(Geo.to_vec3(48.5, -120.25))
+	check(absf(ll.x - 48.5) < 0.001 and absf(ll.y + 120.25) < 0.001, "lat/lon <-> 3D round trip")
+	check(absf(Geo.distance_km(0, 0, 0, 90, 4000.0) - PI * 2000.0) < 0.5, "great-circle distance")
+	check(planet.cell_of(89.9, 179.9) < planet.biome.size() and planet.cell_of(-89.9, -179.9) >= 0, "cell lookup clamps at the poles and date line")
+	# Site rating.
+	var ocean_cell := -1
+	var ice_cell := -1
+	for i in planet.biome.size():
+		if ocean_cell < 0 and planet.biome[i] == PlanetData.Biome.OCEAN:
+			ocean_cell = i
+		if ice_cell < 0 and planet.biome[i] == PlanetData.Biome.ICE and absf(planet.cell_lat_lon(i).x) < 60.0:
+			ice_cell = i
+	var o_ll := planet.cell_lat_lon(ocean_cell)
+	check(not geo.rate_site(o_ll.x, o_ll.y, [], [])["valid"], "founding on water is rejected")
+	if ice_cell >= 0:
+		var i_ll := planet.cell_lat_lon(ice_cell)
+		check(not geo.rate_site(i_ll.x, i_ll.y, [], [])["valid"], "founding on ice is rejected")
+	var best: Dictionary = geo.best_site([], [])
+	check(best.get("valid", false) and int(best["score"]) >= 50, "best free site is valid and well rated (%d)" % best.get("score", 0))
+	var bs: Dictionary = best["sample"]
+	var near: Dictionary = geo.rate_site(bs["lat"] + 0.5, bs["lon"], [{"settlement_id": "stl_x", "position": {"lat": bs["lat"], "lon": bs["lon"]}}], [])
+	check(not near["valid"], "founding too close to another settlement is rejected")
+	var claimed: Dictionary = geo.rate_site(bs["lat"], bs["lon"], [], [{"territory_id": "ter_x", "owner_settlement_id": "stl_x", "region_ids": [bs["region_id"]]}])
+	check(not claimed["valid"], "founding inside foreign territory is rejected")
+	check(world.found_settlement(tpl, "plr_test", "", {"lat": o_ll.x, "lon": o_ll.y}).is_empty() and world.is_planet_empty(), "invalid site: no settlement is founded")
+	# Migration of a Phase-1 save (no position) to the planet.
+	var old_save := {"world_id": "wld_prime", "settlements": [{"settlement_id": "stl_old", "name": "Altdorf", "founder_player_id": "plr_old", "resident_player_ids": ["plr_old"], "template_path": tpl}]}
+	var mf := FileAccess.open("user://test_world_migrate.json", FileAccess.WRITE)
+	mf.store_string(JSON.stringify(old_save))
+	mf.close()
+	world.use_storage("user://test_world_migrate.json", false)
+	var migrated: Dictionary = world.get_settlement("stl_old")
+	check(migrated.has("position") and migrated.get("region_id", "") != "" and migrated.get("territory_id", "") != "", "Phase-1 save gets a position, region and territory")
+	check(world.migrated_settlement_ids.has("stl_old") and world.validate_territories().is_empty(), "migration is recorded, territories valid")
+	world.use_storage("user://test_world_migrate.json", false)
+	var again_pos: Dictionary = world.get_settlement("stl_old")["position"]
+	check(world.migrated_settlement_ids.is_empty() and absf(again_pos["lat"] - migrated["position"]["lat"]) < 0.0002 and absf(again_pos["lon"] - migrated["position"]["lon"]) < 0.0002, "migration happens only once, position is stable")
+	world.use_storage("user://test_world_state.json", true)
+
 	print("[data]")
 	var data := SettlementData.load_from_file(tpl)
 	check(data != null, "founding template loads")
@@ -75,17 +154,67 @@ func _run() -> void:
 	check(Iso.facing_index(Vector2(1, 0)) == 0 and Iso.facing_index(Vector2(0, -1)) == 2 and Iso.facing_index(Vector2(-1, 1)) == 5, "8-way facing")
 
 	print("[clock]")
-	clock.set_total_minutes(clock.START_MINUTES)
-	check(clock.get_day() == 1 and clock.get_hour() == 8, "clock starts day 1 08:00")
-	clock.skip_to_hour(7)
-	check(clock.get_day() == 2 and clock.get_hour() == 7, "skip_to_hour wraps to next day")
-	check(clock.get_night_factor() < 1.0, "night factor at 07:00 below full night")
-	clock.set_total_minutes(clock.START_MINUTES)
+	# 2026-06-21 12:00 UTC, offset +120 min (Berlin summer time).
+	clock.fixed_utc_unix = float(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 6, "day": 21, "hour": 12, "minute": 0, "second": 0}))
+	clock.utc_offset_minutes = 120
+	clock.is_dst = true
+	check(clock.format_time() == "14:00", "local time = UTC + zone offset (14:00 CEST)")
+	check(clock.get_night_factor() < 0.05, "midsummer afternoon is daylight")
+	var times: Vector2 = clock.get_sun_times()
+	check(times.x > 4.5 and times.x < 5.6 and times.y > 21.0 and times.y < 22.0, "midsummer sunrise/sunset plausible (%.2f / %.2f)" % [times.x, times.y])
+	clock.fixed_utc_unix = float(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 12, "day": 21, "hour": 22, "minute": 0, "second": 0}))
+	clock.utc_offset_minutes = 60
+	clock.is_dst = false
+	check(clock.format_time() == "23:00" and clock.get_night_factor() > 0.95, "winter night 23:00 CET is dark")
+	var wt: Vector2 = clock.get_sun_times()
+	check(wt.x > 7.8 and wt.x < 8.9, "winter sunrise around 08:20 (%.2f)" % wt.x)
+	clock.utc_offset_minutes = -300
+	check(clock.format_time() == "17:00", "other time zone (UTC-5) shows its own local time")
+	clock.preview_minute_of_day = 2 * 60.0
+	check(clock.get_hour() == 2 and clock.get_night_factor() > 0.9, "time-of-day preview overrides visuals")
+	clock.preview_minute_of_day = -1.0
+	clock.fixed_utc_unix = -1.0
+	clock.detect_timezone()
+	check(absf(clock.get_utc_unix() - Time.get_unix_time_from_system()) < 2.0, "real clock follows system UTC")
 
 	print("[scene]")
+	# Tests use a ready-made character so the game starts in the world.
+	profile.character = {}
+	if root_has_character_assets():
+		profile.set_character(get_tree().root.get_node("CharacterCatalog").default_appearance(), "Test")
+	# Midday: NPCs stand at their workplaces, so the movement tests below also
+	# prove that they do not block the town's paths.
+	clock.preview_minute_of_day = 12 * 60.0
 	_main = load("res://scenes/main/main.tscn").instantiate()
 	get_tree().root.add_child(_main)
 	await frames(5)
+	print("[globe & founding]")
+	check(_main.globe != null and _main.globe.mode == "found" and not _main.has_node("Settlement"), "without a settlement the game opens the globe to found one")
+	for k in 200:
+		if _main.globe.view != null and _main.globe.labels != null:
+			break
+		await get_tree().process_frame
+	var gview: GlobeView = _main.globe.view
+	check(gview != null and gview.camera.is_current(), "globe view is built and its camera is current")
+	gview.focus(20.0, 30.0, 3.0, true)
+	await frames(1)
+	var center_pick := gview.pick(Vector2(480, 270) + gview.screen_shift)
+	check(absf(center_pick.x - 20.0) < 1.5 and absf(angle_difference(deg_to_rad(center_pick.y), deg_to_rad(30.0))) < deg_to_rad(1.5), "tap in the centre picks the point under the camera (%.1f, %.1f)" % [center_pick.x, center_pick.y])
+	check(is_nan(gview.pick(Vector2(5, 5)).x), "tap into space picks nothing")
+	var gprobe: Dictionary = gview.project(25.0, 40.0)
+	var back := gview.pick(gprobe["pos"])
+	check(absf(back.x - 25.0) < 0.6 and absf(back.y - 40.0) < 0.6, "label position and picking agree (%.1f, %.1f)" % [back.x, back.y])
+	check(gview.level == "planetar", "far view = planetary zoom level")
+	gview.focus(20.0, 30.0, 2.0, true)
+	check(gview.level == "kontinental", "closer = continental zoom level")
+	gview.focus(20.0, 30.0, 1.3, true)
+	check(gview.level == "regional", "closest = regional zoom level")
+	var site: Dictionary = geo.best_site(world.get_settlements(), world.get_territories())
+	_main.globe.select_point(site["sample"]["lat"], site["sample"]["lon"])
+	check(_main.globe.candidate.get("valid", false) and _main.globe.selected_region == site["region"]["region_id"], "selecting a point rates it as founding site")
+	_main.found_from_globe(_main.globe.candidate, "")
+	await frames(5)
+	check(_main.globe == null and _main.has_node("Settlement"), "founding on the globe enters the new settlement")
 	var settlement: SettlementScene = _main.get_node("Settlement")
 	var hud: Hud = _main.get_node("HUD")
 	var player: Player = settlement.player
@@ -104,6 +233,91 @@ func _run() -> void:
 	check(Ids.has_prefix(settlement.data.ids.get("settlement_id", ""), "stl") and settlement.data.is_founded(), "founded settlement has generated ID")
 	check(not settlement.data.notice_board.get("text", "").contains("{settlement}"), "template tokens are filled in")
 	check(world.validate().is_empty(), "no NPC-only settlements exist")
+	var rec: Dictionary = founded[0]
+	check(rec.has("position") and rec["region_id"] == site["region"]["region_id"] and rec["continent_id"] != "", "settlement stores lat/lon, region and continent")
+	var terr: Dictionary = world.territory_of_region(rec["region_id"])
+	check(not terr.is_empty() and terr["owner_settlement_id"] == rec["settlement_id"] and rec["territory_id"] == terr["territory_id"], "founding claims the region as territory")
+	check(world.validate_territories().is_empty(), "territory invariants hold")
+	check(settlement.data.region_name == rec["region_name"], "HUD region comes from the planet")
+	check(absf(clock.latitude - clampf(rec["position"]["lat"], -60.0, 60.0)) < 0.01, "sun latitude follows the settlement position")
+
+	print("[street planning]")
+	var planner := StreetPlanner.new(settlement.data)
+	var items: Array = settlement.street_items
+	var kinds := {}
+	for it in items:
+		kinds[it["kind"]] = int(kinds.get(it["kind"], 0)) + 1
+	print("       ", kinds)
+	var plan_problems := planner.validate(items)
+	for p in plan_problems:
+		print("       ", p)
+	check(plan_problems.is_empty(), "street furniture follows placement rules")
+	check(int(kinds.get("street_lamp", 0)) >= 8 and int(kinds.get("hydrant", 0)) >= 3, "town has lamps and hydrants")
+	check(kinds.has("bus_stop") and kinds.has("street_sign"), "bus stop and street sign placed")
+	var bad := [{"kind": "hydrant", "grid_v": Vector2(12.5, 5.5)}, {"kind": "street_lamp", "grid_v": Vector2(11.8, 5.5), "road_dir": Vector2i(-1, 0)}]
+	check(planner.validate(bad).size() >= 2, "validator rejects a hydrant on the road and a lamp facing away")
+
+	print("[npcs]")
+	if root_has_character_assets():
+		var roster: Array = founded[0].get("npcs", [])
+		check(roster.size() == 12, "founding community of 12 NPCs stored in the settlement record (%d)" % roster.size())
+		var roles := {}
+		var names := {}
+		var looks := {}
+		var catalog: Node = get_tree().root.get_node("CharacterCatalog")
+		for r in roster:
+			roles[r["role"]] = true
+			names[str(r["name"]).get_slice(" ", 0)] = true
+			looks[catalog.appearance_key(r["appearance"], "idle")] = true
+		check(roles.size() == 8, "all 8 roles are represented")
+		check(names.size() == roster.size() and looks.size() == roster.size(), "first names and appearances are unique")
+		var role_ok := true
+		for r in roster:
+			var a: Dictionary = r["appearance"]
+			match r["role"]:
+				"builder":
+					role_ok = role_ok and a["head"]["option"] == "beanie" and a["suit"]["option"] == "suit" and a["tool"]["option"] == "hammer"
+				"farmer":
+					role_ok = role_ok and a["head"]["option"] == "straw_hat" and a["tool"]["option"] in ["shovel", "watercan"]
+				"medic":
+					role_ok = role_ok and a["top"].get("color", "") == "sky"
+				"admin":
+					role_ok = role_ok and a["bowtie"]["option"] == "bowtie"
+				"merchant":
+					role_ok = role_ok and a["bag"]["option"] == "bag"
+			if not r["role"] in ["farmer", "builder"] and a["head"]["option"] in ["straw_hat", "beanie"]:
+				role_ok = false # role signifiers are reserved
+			if r["role"] != "resident" and r["workplace_id"] == "":
+				role_ok = false
+		check(role_ok, "every NPC wears its role's clothing and has a workplace")
+		check(settlement.npcs.size() == roster.size(), "NPCs are instantiated in the world")
+		var present := settlement.npcs.filter(func(n): return n.is_present()).size()
+		check(present == roster.size(), "at noon all NPCs are out (%d)" % present)
+		var spot_ok := true
+		var used := {}
+		for n in settlement.npcs:
+			var g := Iso.world_to_grid(n.position)
+			var c := Vector2i(int(floor(g.x)), int(floor(g.y)))
+			var t := settlement.data.get_tile(c.x, c.y)
+			if t in ["road", "water", ""] or used.has(c):
+				spot_ok = false
+				print("       bad NPC spot ", n.npc_id, " ", c, " ", t)
+			used[c] = true
+			for b in settlement.data.buildings:
+				if c in settlement.data.get_building_cells(b) or c in StreetPlanner.entrance_cells(b):
+					spot_ok = false
+					print("       NPC on building/entrance ", n.npc_id, " ", c)
+		check(spot_ok, "NPCs stand on free cells, never on roads or in doorways")
+		check(Npc.place_for_hour(20.0) == "home" and Npc.place_for_hour(2.0) == "", "evening at home, night indoors")
+		clock.preview_minute_of_day = 2 * 60.0
+		for n in settlement.npcs:
+			n.update_presence()
+		check(settlement.npcs.all(func(n): return not n.visible), "at 02:00 nobody is outside")
+		clock.preview_minute_of_day = 12 * 60.0
+		for n in settlement.npcs:
+			n.update_presence()
+	else:
+		check(settlement.npcs.is_empty(), "no NPCs without character art")
 
 	print("[movement]")
 	var start := player.global_position
@@ -122,11 +336,11 @@ func _run() -> void:
 	check(player.global_position.distance_to(start) < 0.5, "player stops without input")
 
 	print("[tap to move]")
-	player.global_position = Iso.grid_to_world(Vector2(12.5, 13.5))
+	player.global_position = Iso.grid_to_world(Vector2(12.5, 19.5))
 	await frames(2)
 	settlement.camera.snap_to_target()
 	await frames(1)
-	var goal := Iso.grid_to_world(Vector2(12.5, 16.2))
+	var goal := Iso.grid_to_world(Vector2(12.5, 22.5))
 	var screen := _world_to_screen(settlement.camera, goal)
 	settlement.handle_tap(screen)
 	var d0 := player.global_position.distance_to(goal)
@@ -135,18 +349,27 @@ func _run() -> void:
 
 	print("[collision]")
 	# Walk into the town hall from the south; must not end inside it.
-	player.global_position = Iso.grid_to_world(Vector2(10.5, 11.6))
+	player.global_position = Iso.grid_to_world(Vector2(10.5, 8.8))
 	await frames(2)
 	Input.action_press("move_up")
 	await frames(60)
 	Input.action_release("move_up")
 	var g := Iso.world_to_grid(player.global_position)
-	check(not (g.x > 9.1 and g.x < 11.9 and g.y > 8.1 and g.y < 10.9), "building blocks the player")
+	check(not (g.x > 9.1 and g.x < 10.9 and g.y > 6.1 and g.y < 7.9), "building blocks the player")
+
+	print("[occlusion]")
+	var town_hall: Node2D = settlement.objects.get_node("bld_town_hall")
+	player.global_position = Iso.grid_to_world(Vector2(9.6, 5.5))
+	await frames(40)
+	check(settlement.is_occluding(town_hall) and settlement.occlusion_strength(town_hall) > 0.95, "building in front of the player fades (x-ray hole)")
+	player.global_position = Iso.grid_to_world(Vector2(10.5, 8.7))
+	await frames(40)
+	check(not settlement.is_occluding(town_hall) and settlement.occlusion_strength(town_hall) < 0.05, "building behind the player stays opaque")
 
 	print("[interaction]")
 	var opened: Array = []
 	bus.interaction_opened.connect(func(info: Dictionary) -> void: opened.append(info))
-	player.global_position = Iso.grid_to_world(Vector2(12.2, 12.4))
+	player.global_position = Iso.grid_to_world(Vector2(10.95, 11.05))
 	await frames(4)
 	var focused := player.get_focused_interactable()
 	check(focused != null and focused.kind == "notice_board", "notice board gets focus when near")
@@ -155,23 +378,57 @@ func _run() -> void:
 	await frames(3)
 	check(opened.size() == 1 and opened[0].get("title", "") == "Lichtfeld" and String(opened[0].get("text", "")).contains("von dir gegründet"), "notice board names you as founder")
 	check(hud.is_panel_open(), "HUD panel is open")
-	player.global_position = Iso.grid_to_world(Vector2(20.0, 13.5))
+	player.global_position = Iso.grid_to_world(Vector2(18.5, 14.5))
 	await frames(4)
 	check(not hud.is_panel_open(), "panel closes when walking away")
 
 	# Tap on a building -> walk there and open it.
 	opened.clear()
-	player.global_position = Iso.grid_to_world(Vector2(7.5, 19.2))
+	player.global_position = Iso.grid_to_world(Vector2(9.5, 17.5))
 	await frames(2)
 	settlement.camera.snap_to_target()
 	await frames(1)
-	var home_pos := Iso.grid_to_world(Vector2(6.0, 17.0)) + Vector2(0, -30)
+	var home_pos := Iso.grid_to_world(Vector2(10.5, 15.5)) + Vector2(0, -20)
 	settlement.handle_tap(_world_to_screen(settlement.camera, home_pos))
 	await frames(150)
 	check(opened.size() == 1 and opened[0].get("id", "") == "bld_player_home", "tapping a building walks there and opens it")
+	var toasts: Array = []
+	bus.toast_requested.connect(func(t: String) -> void: toasts.append(t))
 	bus.interaction_action.emit("bld_player_home", "rest")
-	check(clock.get_hour() == 7, "rest action skips to 07:00")
+	check(toasts.size() > 0, "rest action responds without skipping real time")
 	hud.close_panel()
+
+	if not settlement.npcs.is_empty():
+		# Tap on an NPC -> walk over, it turns to the player, its card opens.
+		opened.clear()
+		var npc: Npc = settlement.npcs[0]
+		player.global_position = npc.position + Vector2(0, 70)
+		await frames(2)
+		settlement.camera.snap_to_target()
+		await frames(1)
+		settlement.handle_tap(_world_to_screen(settlement.camera, npc.position + Vector2(0, -25)))
+		await frames(120)
+		check(opened.size() == 1 and opened[0].get("kind", "") == "npc" and opened[0].get("title", "") == npc.record["name"] \
+				and String(opened[0].get("subtitle", "")) == CharacterCatalog.role_label(npc.record["role"]), "tapping an NPC opens its name and role")
+		var to_player := player.global_position - npc.position
+		check(npc.rig.facing == Iso.facing_index(to_player), "NPC looks at the player")
+		hud.close_panel()
+
+	if root_has_character_assets():
+		# Menu -> "Figur bearbeiten" -> change -> "Fertig" updates the player.
+		var cat: Node = get_tree().root.get_node("CharacterCatalog")
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 4711
+		var new_look: Dictionary = cat.random_appearance(rng)
+		_main.open_character_editor("edit")
+		await frames(3)
+		check(_main.editor != null and not player.input_enabled, "edit mode opens the editor and blocks movement")
+		_main.editor.confirmed.emit(new_look, "Testname")
+		await frames(3)
+		var rig: CharacterRig = player.get_node("Visual").rig if player.has_node("Visual") else null
+		check(_main.editor == null and player.input_enabled, "editor closes after Fertig")
+		check(cat.appearance_key(profile.character, "idle") == cat.appearance_key(cat.normalize(new_look), "idle") and profile.display_name == "Testname", "edited character is saved")
+		check(rig != null and cat.appearance_key(rig.appearance, "idle") == cat.appearance_key(cat.normalize(new_look), "idle"), "player in the world shows the edited character")
 
 	print("[camera]")
 	var cam := settlement.camera
@@ -205,6 +462,10 @@ func _run() -> void:
 	_touch(0, world_pt, false)
 	await get_tree().process_frame
 	check(taps.size() == 1, "touch tap on world reaches gesture surface")
+	# The tap may have started a walk to an object; stop it and close panels.
+	settlement.player.cancel_move_target()
+	hud.close_panel()
+	await get_tree().process_frame
 	_touch(0, world_pt + Vector2(-40, 0), true)
 	_touch(1, world_pt + Vector2(40, 0), true)
 	await get_tree().process_frame
@@ -234,7 +495,7 @@ func _run() -> void:
 	_drag(0, jr.get_center() + Vector2(50, 0), Vector2(50, 0))
 	await get_tree().process_frame
 	check(stick_vectors.size() > 0 and stick_vectors.back().x > 0.5, "joystick reports drag direction")
-	player.global_position = Iso.grid_to_world(Vector2(12.2, 12.4))
+	player.global_position = Iso.grid_to_world(Vector2(10.95, 11.05))
 	await frames(4)
 	var interacts := [0]
 	bus.interact_pressed.connect(func() -> void: interacts[0] += 1)
@@ -248,6 +509,7 @@ func _run() -> void:
 	check(stick_vectors.back() == Vector2.ZERO, "joystick resets on release")
 
 	print("[relaunch]")
+	var settlement_npc_keys: Array = settlement.npcs.map(func(n): return "%s|%s|%s" % [n.record["name"], n.record["role"], CharacterCatalog.appearance_key(CharacterCatalog.normalize(n.record["appearance"]), "idle")])
 	_main.queue_free()
 	await get_tree().process_frame
 	world.load_world()
@@ -257,12 +519,26 @@ func _run() -> void:
 	var again: SettlementScene = _main.get_node("Settlement")
 	check(not again.just_founded and world.get_settlements().size() == 1, "relaunch reuses the founded settlement")
 	check(again.data.ids.get("settlement_id") == founded[0]["settlement_id"], "settlement ID is persistent")
+	if root_has_character_assets():
+		var same := again.npcs.size() == settlement_npc_keys.size()
+		for i in again.npcs.size():
+			var n2: Npc = again.npcs[i]
+			var k2 := "%s|%s|%s" % [n2.record["name"], n2.record["role"], CharacterCatalog.appearance_key(CharacterCatalog.normalize(n2.record["appearance"]), "idle")]
+			if k2 != settlement_npc_keys[i]:
+				print("       ", k2, " != ", settlement_npc_keys[i])
+			same = same and k2 == settlement_npc_keys[i]
+		check(same, "NPCs keep name, role and appearance across relaunches")
+	clock.preview_minute_of_day = -1.0
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
 	for f in _failed:
 		print("  - ", f)
 	get_tree().quit(1 if _failed.size() > 0 else 0)
+
+
+func root_has_character_assets() -> bool:
+	return get_tree().root.get_node("CharacterCatalog").is_available()
 
 
 func _world_to_screen(cam: CameraRig, world: Vector2) -> Vector2:

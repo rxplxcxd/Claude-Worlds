@@ -18,6 +18,8 @@ const ARRIVE_DISTANCE := 6.0
 const DETECT_RADIUS := 64.0
 
 var player_id: String = ""
+## False while a full-screen UI (character editor) owns the input.
+var input_enabled := true
 var facing: int = 6
 
 var _joystick := Vector2.ZERO
@@ -68,6 +70,8 @@ func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if _joystick.length_squared() > input.length_squared():
 		input = _joystick
+	if not input_enabled:
+		input = Vector2.ZERO
 	var dir := Vector2.ZERO
 	if input.length_squared() > 0.01:
 		if _target != null:
@@ -101,6 +105,11 @@ func cancel_move_target() -> void:
 	_pending_interaction = null
 
 
+## Applies the saved character after the editor was closed.
+func refresh_appearance() -> void:
+	_visual.refresh_appearance()
+
+
 func has_move_target() -> bool:
 	return _target != null
 
@@ -111,6 +120,8 @@ func get_focused_interactable() -> Interactable:
 
 func try_interact() -> void:
 	if _focused:
+		_face_towards(_focused.global_position)
+		_visual.play_interact()
 		interaction_requested.emit(_focused)
 
 
@@ -166,7 +177,16 @@ func _update_focus() -> void:
 func _arrive_and_interact() -> void:
 	var it := _pending_interaction
 	cancel_move_target()
+	_face_towards(it.global_position)
+	_visual.play_interact()
 	interaction_requested.emit(it)
+
+
+func _face_towards(world_pos: Vector2) -> void:
+	var d := world_pos - global_position
+	if d.length_squared() > 1.0:
+		facing = Iso.facing_index(d)
+		_visual.set_motion(0.0, facing)
 
 
 static func _ellipse(r: float, y_scale: float, segments: int) -> PackedVector2Array:

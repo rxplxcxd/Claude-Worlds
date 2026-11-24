@@ -16,6 +16,9 @@ var settings: Dictionary = {
 	"time_speed": 1.0,
 }
 var saved_game_minutes: float = -1.0
+## The player's character appearance (CharacterCatalog format). Empty until
+## the player finished the character editor once.
+var character: Dictionary = {}
 
 var _config := ConfigFile.new()
 
@@ -33,6 +36,9 @@ func load_profile() -> void:
 		for key in settings.keys():
 			settings[key] = _config.get_value("settings", key, settings[key])
 		saved_game_minutes = _config.get_value("world", "game_minutes", -1.0)
+		var raw_text := str(_config.get_value("character", "appearance", ""))
+		var raw: Variant = JSON.parse_string(raw_text) if raw_text != "" else null
+		character = raw if typeof(raw) == TYPE_DICTIONARY else {}
 	if player_id == "":
 		player_id = Ids.generate("plr")
 		save_profile()
@@ -45,9 +51,23 @@ func save_profile() -> void:
 	for key in settings.keys():
 		_config.set_value("settings", key, settings[key])
 	_config.set_value("world", "game_minutes", GameClock.get_total_minutes())
+	_config.set_value("character", "appearance", JSON.stringify(character) if not character.is_empty() else "")
 	var err := _config.save(SAVE_PATH)
 	if err != OK:
 		push_warning("LocalProfile: could not save (%s)" % error_string(err))
+
+
+func has_character() -> bool:
+	return not character.is_empty()
+
+
+## Stores the player's character (appearance + name) and persists it.
+func set_character(appearance: Dictionary, name_text: String = "") -> void:
+	character = appearance.duplicate(true)
+	var n := name_text.strip_edges()
+	if n != "":
+		display_name = n.substr(0, 24)
+	save_profile()
 
 
 func set_setting(key: String, value: Variant) -> void:

@@ -6,11 +6,20 @@
 
 ## 2. Lokaler Build
 ```bash
+# optional: gekaufte Penzilla-Assets holen und verarbeiten (Link = privat!)
+pip install pillow requests cryptography
+python3 -I tools/assets/fetch_mega_folder.py "$MEGA_ASSETS_URL" /tmp/penzilla_src --only GiantCityBuilder.zip,Ultimate_Protagonist.zip,Basic_GUI_Bundle.zip,Isometric_RPG_Buildings.zip,Top-Down_Retro_Interior.zip,Stylized_GrassAndDirt.zip
+python3 -I tools/assets/import_penzilla.py /tmp/penzilla_src .     # Einzeldateien + zusammengesetzte RPG-Läden
+python3 -I tools/assets/import_character.py /tmp/penzilla_src .   # Figuren-Ebenen (Ultimate Protagonist)
+
+godot --headless --path . -s res://scripts/geography/planet_bake.gd   # nur nach Änderung an Seed/Generator (Ergebnis wird committet)
 godot --headless --path . --import
 godot --headless --path . res://tests/test_runner.tscn          # Exitcode 0 = ok
 mkdir -p build/web
 godot --headless --path . --export-release "Web" build/web/index.html
 node tools/serve_and_shoot.js build/web build/shots              # optional: Browser-Smoke-Test (Playwright)
+node tools/browser_editor_test.js build/web build/editor          # optional: Charakter-Editor im Browser
+TZ_ID=America/New_York node tools/world_shots.js build/web build/world "?preview=21:00"   # Welt, Zeitzone, Nachtvorschau
 ```
 `build/` ist in `.gitignore`.
 
@@ -34,6 +43,7 @@ node tools/serve_and_shoot.js build/web build/shots              # optional: Bro
 ## 4. GitHub Actions (`.github/workflows/web.yml`) [IMPLEMENTIERT, in CI verifiziert]
 Ablauf bei jedem Push / Pull Request:
 1. Godot 4.7.2 + Web-Templates laden (gecacht).
+1a. **Penzilla-Assets**: aus dem Cache, sonst über das Secret `MEGA_ASSETS_URL` von MEGA laden und mit `import_penzilla.py` verarbeiten. Ohne Secret: Warnung + Platzhalter-Build.
 2. `--import`
 3. **Testsuite** (`tests/test_runner.tscn`) – Build bricht bei Fehlern ab.
 4. Web-Export + Prüfung, dass `wasm`, `pck`, Manifest und Service Worker existieren.
@@ -42,7 +52,14 @@ Ablauf bei jedem Push / Pull Request:
 
 Erster Lauf auf `claude/worlds-phase-1-foundation-5131yh`: Build, Tests, Export, Artefakt ✅; Deployment korrekt übersprungen (kein `main`).
 
-## 5. GitHub Pages einrichten (einmalig, durch Projektinhaber) [OFFEN]
+## 4a. Secret für die Penzilla-Assets (einmalig, durch Projektinhaber) [ERLEDIGT – in CI-Lauf #13 erkannt, 24.11.2026]
+Damit die veröffentlichte Version die echten Grafiken enthält:
+1. github.com → Repository **Claude-Worlds** → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
+2. Name: `MEGA_ASSETS_URL` · Wert: der MEGA-Ordnerlink inkl. `#…`-Schlüssel.
+3. Speichern. Der nächste Build lädt die Pakete (einmalig ~1 GB, danach aus dem Cache).
+Secrets sind verschlüsselt, in Logs maskiert und für Pull Requests aus Forks nicht verfügbar.
+
+## 5. GitHub Pages einrichten (einmalig, durch Projektinhaber) [ERLEDIGT 24.11.2026]
 1. Repository → **Settings → Pages → Build and deployment → Source: „GitHub Actions“**.
 2. Phase-1-Branch nach `main` mergen (Pull Request) **oder** Workflow manuell starten: *Actions → Build & Deploy (Web) → Run workflow* (Branch wählen). Hinweis: Die Umgebung `github-pages` erlaubt standardmäßig nur Deployments vom Standard-Branch; für Feature-Branches ggf. unter *Settings → Environments → github-pages* freigeben.
 3. URL: `https://rxplxcxd.github.io/Claude-Worlds/`
@@ -56,4 +73,5 @@ Erster Lauf auf `claude/worlds-phase-1-foundation-5131yh`: Build, Tests, Export,
 
 ## 7. Bekannte Hinweise
 - GitHub meldet eine Node-20-Deprecation-Warnung für `actions/*@v4` (läuft auf Node 24 weiter). Aktualisierung auf neuere Hauptversionen bei Bedarf.
+- Web-Build mit Penzilla-Assets: `index.pck` ≈ 5,2 MB (Grafiken 3,5 MB + Mipmaps).
 - `index.wasm` ist ~39,5 MB unkomprimiert (GitHub Pages liefert komprimiert aus). Eine reduzierte Engine-Build-Variante (eigene Templates ohne 3D) ist eine spätere Optimierung (PERFORMANCE.md).

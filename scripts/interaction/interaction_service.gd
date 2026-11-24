@@ -27,8 +27,8 @@ func open(it: Interactable) -> void:
 func run_action(interaction_id: String, action_id: String) -> void:
 	match action_id:
 		"rest":
-			GameClock.skip_to_hour(7)
-			EventBus.toast_requested.emit("Du hast dich ausgeruht. Tag %d, %s Uhr." % [GameClock.get_day(), GameClock.format_time()])
+			# Real time cannot be skipped; resting is a moment of calm.
+			EventBus.toast_requested.emit("Du ruhst dich einen Moment aus. Es ist %s Uhr." % GameClock.format_time())
 		"drink":
 			EventBus.toast_requested.emit("Das Brunnenwasser ist kühl und klar.")
 		_:

@@ -25,7 +25,7 @@ Diese Regel **ersetzt** Abschnitt 2 des Masterprompts („Die Welt ist jedoch ni
 - `WorldState` (Autoload): Register aller Siedlungen. `found_settlement()` verweigert jede Gründung ohne menschlichen Gründer (`plr_…`); jede Siedlung hat `founder_player_id` und `resident_player_ids` (≥ 1 Mensch).
 - Lichtfeld ist **keine vorhandene Siedlung** mehr, sondern eine **Gründungsvorlage** (`data/settlement_templates/founding_basic.json`). Beim ersten Start gründet der lokale Spieler daraus seine Siedlung (Toast: „Du hast Lichtfeld gegründet – die erste Siedlung auf Aurel.“).
 - Tests: Planet startet leer · Gründung ohne Gründer/NPC-Gründung wird abgelehnt · erster Start gründet genau eine Siedlung mit dir als Gründer · Neustart verwendet dieselbe Siedlung.
-- Noch **nicht** in Phase 1: Standortwahl auf dem Globus und Namenswahl (Phase 2/4) – bis dahin wird automatisch an einem festen Ort gegründet.
+- **Phase 2 [IMPLEMENTIERT]:** Der Planet Aurel wird nur mit Natur erzeugt (5 Kontinente, 157 Regionen, alle `wild`). Der erste Spieler wählt Ort und Namen seiner Siedlung auf dem Globus; die Gründung beansprucht die Region als Gebiet. Keine vorplatzierten Siedlungen, Straßen oder Grenzen (getestet).
 
 ## 2. Setting und Hintergrundgeschichte [OFFEN – neu zu entscheiden]
 
@@ -45,7 +45,7 @@ Tonalität: hoffnungsvoll, Aufbau-Optimismus, keine Dauerbedrohung.
 - Eigene Kontinentformen, Namen und Kulturen; keine Kopie der Erde.
 - Natur ist reich und vielfältig: Seen, Flüsse, Küsten, Gebirge, Wälder, Ebenen, Wüsten, Tundra, Rohstoffvorkommen.
 - Regionennamen sind zunächst geografische Arbeitsnamen; **[OFFEN]**: Dürfen Gründer Regionen/Orte benennen?
-- Phase-1-Gründungsort: Ostmark-Ebene (`reg_ostmark`) auf Kontinent West (`cnt_west`) – fester Platzhalter bis zur Standortwahl.
+- Seit Phase 2: Regionen und Kontinente tragen generierte Namen (z. B. Kontinent „Kalistia“, Region „Briislis-Küste“); der Phase-1-Platzhalter „Ostmark-Ebene“ entfällt (alte Spielstände werden verortet).
 
 ## 4. Kalender [OFFEN]
 Aktuell 120 Spieltage pro Spieljahr (`GameClock.DAYS_PER_YEAR`). Abhängig vom Weltrat-Rhythmus festlegen.

@@ -1,0 +1,4 @@
+"Interior spritesheet 16x16 tiles" by InThePixel
+Source: https://opengameart.org/node/114339
+License: CC0 (public domain dedication)
+Author note: "free to use in commercial projects or personal projects. credit appreciated but not required."

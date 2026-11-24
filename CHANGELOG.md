@@ -2,6 +2,60 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.3.0] – Phase 2: World Geography
+
+### Hinzugefügt
+- **Planet Aurel:** deterministischer Generator (Höhe auf der Kugel, Ozeane/Seen, Klima, 70 Flüsse, Biome, 5 Kontinente, 157 Voronoi-Regionen mit Gelände, Klima, Wasserzugang, Rohstoffen, Namen); einmal gebacken nach `data/world/planet/` (630 KB), Test prüft byte-genaue Übereinstimmung.
+- **Koordinaten:** `Geo` (Breite/Länge ↔ Kugel, Großkreisdistanz).
+- **Autoload `Geography`:** Planet bei Bedarf laden, Standortbewertung (Wasser, Klima, Boden, Rohstoffe, Gelände, Nachbarschaft; Regeln: kein Wasser/Eis/Hochgebirge, ±62°, 300 km Abstand, keine fremde Region), bester freier Ort.
+- **Globus:** 3D-Kugel mit eigenem Shader (Küstenlinie, Regionsgrenzen, Gebiete, Hervorhebung), Atmosphäre, Sterne; Drehen, Zoomen, Antippen; Zoomstufen planetar/kontinental/regional/lokal; Beschriftungen und Siedlungsmarker; Infotafel mit Regionsdaten.
+- **Gründung auf dem Globus:** Ort wählen, Bewertung, Name, „Vorschlag“, „Hier gründen“.
+- **Territorien:** Gründung beansprucht die Region; Anzeige auf dem Globus; Invarianten geprüft.
+- HUD-Taste „Karte“ (und M); Sonnenstand folgt der Breite der Siedlung.
+- Tests: 118 Prüfungen (u. a. Planet, Determinismus, Koordinaten, Standortregeln, Migration, Auswahl, Zoomstufen, Gründung, Gebiet).
+
+### Geändert
+- Gründungsablauf: Charakter → Globus → Siedlung (statt automatischer Gründung an festem Ort).
+- Alte Spielstände werden einmalig auf den besten freien Ort gesetzt (Hinweis beim Laden).
+
+## [0.2.0] – Charakter-Editor, NPC-Rollen, Echtzeit, Stadtbild
+
+### Hinzugefügt
+- **Modularer Charakter** aus dem Penzilla-Ultimate-Protagonist-Baukasten (`CharacterCatalog`, `CharacterComposer`, `CharacterRig`): Körper, Gesicht, 10 Frisuren + Mütze/Strohhut, Oberteile, Ärmel, Hosen, Overalls, Schuhe, Taschen, Schals, Fliegen, Ketten, Werkzeuge; Farbvarianten durch Einfärbung; Blinzeln; 8 Richtungen.
+- **Charakter-Editor** vor der Gründung und über „Figur bearbeiten“: lebendige Vorschau (Atmen, Drehen, Gehen, Benutzen), Karten mit der eigenen Figur, Farbfelder, 6 Outfits, Zufall, Rückgängig, Zurücksetzen, Name; responsiv; gespeichert im Profil.
+- **NPC-Gründungsgemeinschaft** (12 NPCs, 8 Rollen) mit dauerhaften Namen, Arbeitsplätzen, Wohnungen und rollentypischer Kleidung; Präsenz nach Tageszeit; ansprechbar.
+- **Echtzeituhr** mit UTC-Basis, automatischer IANA-Zeitzone und Sommerzeit, Sonnenstandsmodell, Tageszeit-Vorschau (Menü/URL); Zeitzone wird bei der Gründung gespeichert.
+- **Stadtbild v2**: Gehwege an allen Straßen, `StreetPlanner` mit Platzierungsregeln und Validierung (Laternen, Hydranten, Schilder, Bushaltestelle, Briefkästen), Auslegerlaternen aus Penzilla-Teilen mit Lichthof, Lichtkegel und Lichtfleck.
+- **Verdeckung**: weiches Durchsicht-Loch um die Figur hinter Gebäuden/Bäumen.
+- **Isometric RPG Buildings**: Marktzeile (Bäckerei, Gemischtwaren, Schmiede) aus Ebenen zusammengesetzt und auf das City-Builder-Raster abgebildet; Gründerzelt.
+- Docs: CHARACTER_SYSTEM.md, QA_CHECKLIST.md; Zeitmodell, Platzierungsregeln, NPCs, ADR-8…11.
+- Tests: 82 Prüfungen (u. a. Zeitzonen, Platzierungsregeln, Verdeckung, NPC-Rollen/Plätze/Präsenz/Persistenz).
+
+### Geändert
+- Spielgeschwindigkeit und Zeitsprung entfernt (Echtzeit); „Ausruhen“ ist ein Moment ohne Zeitsprung.
+- Gründungsvorlage v2 (26×26, Kreuzung am Dorfplatz, Seitenstraße, 21 Gebäude).
+- Blickrichtungen der Penzilla-Sheets korrigiert (Reihen S, SO, O, NO, N; Westen gespiegelt).
+
+### Behoben
+- „Figur bearbeiten“ → „Fertig“ aktualisierte die Figur in der Welt nicht (fehlende Weiterleitung `Player.refresh_appearance`).
+- Editor im Bearbeiten-Modus (Querformat): „Fertig“ wurde durch „Abbrechen“ aus dem Bild geschoben, Reiter „Outfits“ war verdeckt → Aktionen brechen bei Bedarf in eine zweite Zeile um, Reiter umbrechen statt versteckt zu scrollen.
+- Menütext „gelbe Taste“ → „orange Taste“.
+
+## [0.1.2] – Penzilla-Assets integriert
+
+### Hinzugefügt
+- Asset-Pipeline: `tools/assets/fetch_mega_folder.py` (MEGA-Ordner, nur HTTPS) und `tools/assets/import_penzilla.py` (Auswahl, Verkleinerung, Ankerpunkte). Ergebnis `assets/penzilla/` (83 Dateien, 3,5 MB) ist git-ignoriert.
+- CI lädt die Assets über das Secret `MEGA_ASSETS_URL`, cached das Ergebnis, Platzhalter-Fallback ohne Secret.
+- Penzilla Giant City Builder: texturierter Boden, Straßen und Feldwege mit Autotiling (9 Varianten + Spiegelung), 18 Gebäude, Bäume, Büsche, Felder mit Pflanzen, Brunnen, Laternen (an/aus + Licht), Deko.
+- Penzilla Ultimate Protagonist (Character1): 8 Richtungen, Idle/Walk/Interact-Animation.
+- Penzilla Basic GUI: 9-Slice-Panels und Buttons, Icons, orange Aktionstaste; Credit im Menü.
+- CC0-Interior-Assets (Kenney Roguelike Indoors, Kenney Furniture Kit, OpenGameArt) inkl. Lizenzdateien in `assets/interior/`.
+
+### Geändert
+- Projektion an das Penzilla-Raster angepasst (128×73 Welt-Einheiten = 512×292 px).
+- Gründungsvorlage neu gestaltet (24×24 Kacheln, einspurige Straßen, Platz mit Brunnen, Gebäudefronten zur Straße, Freiflächen für Wachstum).
+- Mipmaps für verkleinerte Sprites; HUD-Layout im Hochformat korrigiert.
+
 ## [0.1.1] – Designänderung „Leerer Planet“
 
 ### Geändert

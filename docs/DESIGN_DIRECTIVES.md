@@ -2,7 +2,7 @@
 
 **Festgelegt vom Projektinhaber am 24.11.2026 (nach Abschluss von Phase 2).** Diese Vorgaben bilden die langfristige Designrichtung von WORLDS und haben Vorrang vor älteren Vorschlägen in anderen Dokumenten. Die technische Bewertung steht in [TECHNICAL_ASSESSMENT.md](TECHNICAL_ASSESSMENT.md).
 
-> Status: **dokumentiert, nicht implementiert.** Phase 3 ist ausdrücklich **nicht** freigegeben. Einige Phase-2-Regeln im Code widersprechen diesen Vorgaben (siehe §10) und werden erst nach Freigabe angepasst.
+> Status: teilweise umgesetzt (siehe §10). Phase 3 freigegeben und umgesetzt am 24.11.2026.
 
 ## 1. Geografische Welt und Regionen
 - Die 5 Kontinente und 157 Regionen bleiben die erste **natürliche** Gliederung.
@@ -75,5 +75,6 @@
 | Siedlungsfläche, Territorium, bebaute Fläche, Erweiterung getrennt | ✅ Datenmodell getrennt (`settlement_area`, `territory`, `expansions[]`); bebaute Fläche/Erweiterungen noch ohne Funktion |
 | Beitreten oder Gründen | ✅ Auswahl vorhanden; Beitreten ehrlich als „noch nicht verfügbar“ gekennzeichnet |
 | Sonne auch an den Polen | ✅ Polartag/-nacht |
-| Freies Bauen, Eigentum, Gesetze, Simulation | ⏳ geplant (Phasen 3–13) |
+| Mehrstufige Simulation (Nahbereich, ohne Einfrieren, ohne sichtbares Nachsimulieren) | ✅ S0/S1 lokal (Phase 3, 0.5.0) – [LIVING_WORLD.md](LIVING_WORLD.md); S2/S3 später |
+| Freies Bauen, Eigentum, Gesetze | ⏳ geplant (Phasen 7–13) |
 | 60 FPS | ⏳ Diagnose umgesetzt, Optimierungen vorgeschlagen ([PERFORMANCE.md](PERFORMANCE.md) §7) |

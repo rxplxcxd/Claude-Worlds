@@ -1,6 +1,6 @@
 # SIMULATION_ARCHITECTURE – Mehrstufige, persistente Weltsimulation
 
-**Status: [GEPLANT]** – Grundlage: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §8. Umsetzung beginnt frühestens mit Phase 3 (lokal) und wird mit Phase 12/13 serverseitig. Heute existiert nur die Grundlage: Echtzeit in UTC (`GameClock`), persistente NPC-Identitäten, Präsenz nach Uhrzeit.
+**Status: S0/S1 lokal UMGESETZT (Phase 3, 0.5.0)** – `advance()` ereignisgesteuert, Darstellung als Funktion des Zustands, Nachholen nach Abwesenheit, Persistenz: [LIVING_WORLD.md](LIVING_WORLD.md). S2/S3 (Kohorten, andere Siedlungen, Server) folgen mit Phase 8/12/13.
 
 ## 1. Grundsatz
 Die Welt läuft in **Echtzeit** (UTC) weiter – auch ohne Zuschauer. Detailgrad und Rechenaufwand hängen von der **Relevanz** ab (Nähe zu Spielern, Beobachtung, wichtige Ereignisse). Der Zustand jeder Einheit ist zu jedem Zeitpunkt **berechenbar**, ohne die Zwischenzeit Schritt für Schritt nachzuspielen.

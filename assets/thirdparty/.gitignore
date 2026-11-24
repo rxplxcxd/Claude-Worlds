@@ -1,0 +1,3 @@
+# third-party files that must not be redistributed (licenses forbid repository uploads)
+*
+!.gitignore

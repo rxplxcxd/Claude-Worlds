@@ -1,0 +1,448 @@
+{
+ "_comment": "Phase 3 – Living World. Data-driven needs, activities and professions (docs/LIVING_WORLD.md). Rates are per hour, needs 0..1 (1 = fully satisfied). Hours are SETTLEMENT local time; windows may run past 24 (e.g. [21, 30] = 21:00-06:00).",
+ "version": 1,
+ "walk_tiles_per_second": 0.3,
+ "max_catchup_days": 14,
+ "needs": {
+  "food": {
+   "label": "Hunger",
+   "decay": 0.065,
+   "sleep_factor": 0.35
+  },
+  "energy": {
+   "label": "Energie",
+   "decay": 0.045,
+   "sleep_factor": 0.0
+  },
+  "social": {
+   "label": "Gesellschaft",
+   "decay": 0.04,
+   "sleep_factor": 0.0,
+   "trait": "sociability"
+  },
+  "leisure": {
+   "label": "Freizeit",
+   "decay": 0.035,
+   "sleep_factor": 0.0,
+   "trait": "openness"
+  },
+  "hygiene": {
+   "label": "Hygiene",
+   "decay": 0.03,
+   "sleep_factor": 0.4
+  }
+ },
+ "activities": {
+  "sleep": {
+   "label": "schläft",
+   "place": "home",
+   "indoors": true,
+   "minutes": [
+    300,
+    600
+   ],
+   "gain": {
+    "energy": 0.14
+   },
+   "windows": [
+    [
+     0,
+     24
+    ]
+   ]
+  },
+  "eat_home": {
+   "label": "isst zu Hause",
+   "place": "home",
+   "indoors": true,
+   "minutes": [
+    30,
+    30
+   ],
+   "gain": {
+    "food": 1.3
+   },
+   "windows": [
+    [
+     5.5,
+     9.5
+    ],
+    [
+     11,
+     14.5
+    ],
+    [
+     17,
+     21.5
+    ]
+   ],
+   "cooldown_h": 2.5
+  },
+  "wash": {
+   "label": "macht sich frisch",
+   "place": "home",
+   "indoors": true,
+   "minutes": [
+    20,
+    20
+   ],
+   "gain": {
+    "hygiene": 2.4
+   },
+   "windows": [
+    [
+     5,
+     24
+    ]
+   ],
+   "cooldown_h": 6
+  },
+  "relax_home": {
+   "label": "entspannt zu Hause",
+   "place": "home",
+   "indoors": true,
+   "minutes": [
+    60,
+    60
+   ],
+   "gain": {
+    "leisure": 0.22,
+    "energy": 0.02
+   },
+   "windows": [
+    [
+     0,
+     24
+    ]
+   ]
+  },
+  "work": {
+   "label": "arbeitet",
+   "place": "work",
+   "indoors": false,
+   "minutes": [
+    30,
+    660
+   ],
+   "gain": {
+    "social": 0.03,
+    "energy": -0.012
+   },
+   "windows": [
+    [
+     0,
+     24
+    ]
+   ]
+  },
+  "eat_out": {
+   "label": "isst auswärts",
+   "place": "eatery",
+   "indoors": false,
+   "minutes": [
+    45,
+    45
+   ],
+   "gain": {
+    "food": 0.9,
+    "social": 0.25
+   },
+   "windows": [
+    [
+     7,
+     9.5
+    ],
+    [
+     11.5,
+     14
+    ],
+    [
+     17.5,
+     20.5
+    ]
+   ],
+   "trait": "sociability",
+   "cooldown_h": 4
+  },
+  "socialize": {
+   "label": "trifft Leute am Platz",
+   "place": "plaza",
+   "indoors": false,
+   "minutes": [
+    60,
+    60
+   ],
+   "gain": {
+    "social": 0.45,
+    "leisure": 0.15
+   },
+   "windows": [
+    [
+     9,
+     22
+    ]
+   ],
+   "trait": "sociability",
+   "cooldown_h": 2
+  },
+  "leisure": {
+   "label": "erholt sich im Grünen",
+   "place": "park",
+   "indoors": false,
+   "minutes": [
+    60,
+    60
+   ],
+   "gain": {
+    "leisure": 0.42,
+    "hygiene": -0.01
+   },
+   "windows": [
+    [
+     8,
+     21
+    ]
+   ],
+   "trait": "openness",
+   "cooldown_h": 2
+  },
+  "errand": {
+   "label": "erledigt Einkäufe",
+   "place": "shop",
+   "indoors": false,
+   "minutes": [
+    30,
+    30
+   ],
+   "gain": {
+    "leisure": 0.1,
+    "social": 0.15
+   },
+   "windows": [
+    [
+     8,
+     19
+    ]
+   ],
+   "cooldown_h": 5
+  }
+ },
+ "professions": {
+  "admin": {
+   "title": "Verwaltung",
+   "skill": "verwaltung",
+   "shifts": [
+    {
+     "days": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "start": 8.0,
+     "end": 16.5
+    }
+   ],
+   "outdoor_share": 0.4
+  },
+  "merchant": {
+   "title": "Handel",
+   "skill": "handel",
+   "shifts": [
+    {
+     "days": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "start": 8.5,
+     "end": 18.0
+    }
+   ],
+   "outdoor_share": 0.7
+  },
+  "medic": {
+   "title": "Sanitätsdienst",
+   "skill": "medizin",
+   "shifts": [
+    {
+     "days": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "start": 7.0,
+     "end": 15.5
+    },
+    {
+     "days": [
+      6
+     ],
+     "start": 9.0,
+     "end": 13.0
+    }
+   ],
+   "outdoor_share": 0.35
+  },
+  "security": {
+   "title": "Sicherheit",
+   "skill": "sicherheit",
+   "shifts": [
+    {
+     "days": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      6
+     ],
+     "start": 14.0,
+     "end": 22.0
+    }
+   ],
+   "outdoor_share": 0.8
+  },
+  "builder": {
+   "title": "Bau",
+   "skill": "bau",
+   "shifts": [
+    {
+     "days": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "start": 7.0,
+     "end": 15.5
+    }
+   ],
+   "outdoor_share": 0.85
+  },
+  "craftsman": {
+   "title": "Handwerk",
+   "skill": "handwerk",
+   "shifts": [
+    {
+     "days": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "start": 8.0,
+     "end": 17.0
+    }
+   ],
+   "outdoor_share": 0.5
+  },
+  "farmer": {
+   "title": "Landwirtschaft",
+   "skill": "landwirtschaft",
+   "shifts": [
+    {
+     "days": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "start": 6.0,
+     "end": 14.0
+    }
+   ],
+   "outdoor_share": 0.9
+  },
+  "resident": {
+   "title": "Bewohner:in",
+   "skill": "",
+   "shifts": [],
+   "outdoor_share": 0.0
+  }
+ },
+ "places": {
+  "eatery_types": [
+   "trade_post",
+   "shop"
+  ],
+  "shop_types": [
+   "shop",
+   "farm_shop",
+   "trade_post"
+  ],
+  "park_props": [
+   "fountain",
+   "garden",
+   "bench"
+  ],
+  "plaza_tile": "plaza"
+ },
+ "walk_costs": {
+  "sidewalk": 1.0,
+  "path": 1.0,
+  "plaza": 1.0,
+  "dirt": 1.1,
+  "grass": 1.3,
+  "sand": 1.4,
+  "field": 1.8,
+  "road": 2.5
+ },
+ "visual_events": {
+  "_comment": "active: effects derived from what NPCs do right now (activity or activity@building type); building: simulation events -> VisualState events (Living Assets). Building events are emitted by later phases (fire, damage, construction); Phase 3 provides the mapping and storage.",
+  "active": {
+   "eat_home": {
+    "vfx": "chimney_smoke",
+    "hours": [
+     [
+      6,
+      9.5
+     ],
+     [
+      11,
+      14
+     ],
+     [
+      17,
+      21
+     ]
+    ]
+   },
+   "work@workshop": {
+    "vfx": "work_sparks"
+   },
+   "work@shop": {
+    "vfx": "chimney_smoke",
+    "hours": [
+     [
+      5,
+      11
+     ]
+    ]
+   }
+  },
+  "building": {
+   "cleaned": "maintained",
+   "neglected": "neglected",
+   "damaged": "damaged",
+   "fire_small": "fire_small",
+   "fire_large": "fire_large",
+   "burnt_out": "burnt_out",
+   "destroyed": "destroyed",
+   "repaired": "repaired",
+   "restored": "restored",
+   "overgrown": "overgrown",
+   "cleared": "cleared"
+  }
+ }
+}

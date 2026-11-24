@@ -6,8 +6,8 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 |---|---|---|
 | 1 | World Foundation | **Freigegeben** (Projektinhaber startete Phase 2 am 24.11.2026); iPhone-Test weiterhin offen |
 | 2 | World Geography | **Implementiert (0.3.0)** + **Paket 2.1 umgesetzt (0.4.0)**, Abnahme ausstehend |
-| 2.x | Living Assets (visuelles Projekt, kein Gameplay) | Schritte A–G umgesetzt (Standard bestätigt, Serienproduktion geprüft); Einbau ins Spiel erst mit den Simulationssystemen; Lizenz-PDF offen |
-| 3 | Living World | geplant – **ausdrücklich noch nicht freigegeben** |
+| 2.x | Living Assets (visuelles Projekt, kein Gameplay) | Schritte A–G umgesetzt; Lizenz-PDF geprüft (Pflichtnennung + Bearbeitungsliste im Spiel seit 0.5.0); Anbindung an Simulationsereignisse vorbereitet (VisualEventRouter) |
+| 3 | Living World | **Freigegeben 24.11.2026 – implementiert (0.5.0)**: Identitäten, Bedürfnisse, Tagesabläufe, Berufe, Navigation, Utility AI, Interaktionen, Simulations-LOD, Persistenz ([LIVING_WORLD.md](LIVING_WORLD.md)); Abnahme + iPhone-Test ausstehend |
 | 4 | Settlement Foundation | geplant |
 | 5 | Social Life | geplant |
 | 6 | Economy | geplant |
@@ -95,6 +95,11 @@ Verbindlich: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) · Bewertung: [TECHNIC
 | **9 Government & Politics** | Gesetzes-Engine mit Ebenen, Verfahren, Abstimmungen ([LAW_ENGINE.md](LAW_ENGINE.md)) |
 | **12/13 Multiplayer** | Server-Autorität für Gründung/Bau/Gesetze/Simulation (S2/S3), Beitreten, Anti-Exploit |
 
-## Voraussetzungen für Phase 3 (Living World)
-- Abnahme Phase 2 (insb. Planetengröße, Gründungsregeln – GEOGRAPHY_SYSTEM.md §7).
-- Entscheidungen: NPC-Anzahl je Siedlung auf dem iPhone (Leistungsbudget), Tagesablauf nach Siedlungszeitzone, offene Fragen WORLD_DESIGN.md §5 (verlassene Siedlungen).
+## Voraussetzungen für Phase 4 (Settlement Foundation)
+Vorhanden aus Phase 3: Bewohner mit Bedürfnissen, Berufen, Arbeitsplätzen und Tagesablauf; Orte und Wegnetz; ereignisgesteuerte, persistente Simulation; Ereignis-Schnittstelle zu Living Assets.
+Offen / zu entscheiden:
+- Abnahme Phase 3 auf dem iPhone (Tagesablauf, Lesbarkeit, Leistung mit `?perf=1`).
+- Startbevölkerung: bleibt es bei 12 oder abhängig von Schwierigkeit/Region? Obergrenze NPCs je Siedlung auf älteren iPhones (Messung).
+- Grundversorgung: sollen Essen/Wasser/Energie Vorräte verbrauchen (Kopplung Bedürfnisse ↔ Ressourcen) schon in Phase 4 oder erst Phase 6?
+- Siedlungsfläche 1 km² in Chunks (ADR-17) und Navigation über Chunks (Wegnetz je Chunk, Fernwege).
+- Bevölkerungsentwicklung (Zuzug, Geburten) und verlassene Siedlungen (WORLD_DESIGN.md §5).

@@ -1,45 +1,63 @@
-# Lizenzen – Penzilla-Grafiken und abgeleitete Zustände
+# Lizenzen – verbindliche Auswertung
 
-Stand **24.11.2026**. Ziel: dokumentieren, **welche Bearbeitungen und welche Weitergabe im Rahmen des Spiels erlaubt sind**, was belegt und was noch offen ist. Keine Rechtsberatung – maßgeblich ist der Lizenztext von Penzilla.
+Stand **24.11.2026**. Grundlage: **`PenzillaDesign_StandardLicense.pdf`, „Updated Dec. 2024“** (3 Seiten, vom Projektinhaber bereitgestellt, vollständig gelesen) sowie `LICENSE.pdf` von Cooked FX. Keine Rechtsberatung; maßgeblich sind die Originaltexte. Das PDF selbst liegt **nicht** im Repository (privat beim Projektinhaber).
 
-## 1. Was geprüft wurde
+## 1. Penzilla Standard Licence – Kernaussagen (sinngemäß, Abschnittsnummern wie im PDF)
 
-| Quelle | Inhalt | Belegt? |
+| Abschnitt | Inhalt | Bedeutung für WORLDS |
 |---|---|---|
-| Produktseiten auf itch.io (Giant City Builder, Isometric RPG Buildings, Top-Down Retro Interior, Ultimate Protagonist/Hero Creator, Giant Basic GUI) – am 24.11.2026 abgerufen | Abschnitt „**Royalty free and commercial use – Once purchased (see also licence)**“; jede Seite listet als Download-Datei für Käufer **`PenzillaDesign_StandardLicense.pdf` (86 kB)** | ja, Seitentext |
-| Heruntergeladene ZIP-Archive (MEGA-Ordner des Projektinhabers) | **keine** Lizenzdatei enthalten – das PDF ist ein **separater** Download auf itch.io | ja, geprüft (Dateiliste aller 6 Archive) |
-| Antwort von Penzilla in den Kommentaren (itch.io, Beitrag 13196728, Top-Down Retro Interior) | „Yes, you can use it for commercial projects, as long as you credit me with ‚Graphics created by Penzilla Design'." · „Redistribution (like in logos, asset packs, or reselling) is not allowed." · „The license is for one project per purchase." · „The pack must be purchased at the suggested price for commercial use to be allowed." | ja, wörtlich gelesen |
-| Weitere Kommentare auf dem Penzilla-Profil | sinngemäß: Änderungen mit Namensnennung erlaubt; Originaldateien nicht weitergeben oder in andere Asset-Pakete aufnehmen | **nur sinngemäß** (Zusammenfassung, nicht wörtlich geprüft) |
+| General usage 1 – Royalty free | private und kommerzielle Projekte lizenzfrei, **sofern der Ersteller genannt wird**: Pflichtnennung **„Graphics created by Penzilla Design“** (optional Link zum Paket); sichtbar in Credits, Dokumentation oder einem anderen zugänglichen Ort im Projekt | **erfüllt seit 0.5.0**: Menü → *Mitwirkende & Lizenzen* + `CREDITS.md` |
+| General usage 2 – Usage | erlaubt in Spielen, Animationen, Videos, **Websites**, Anwendungen | Web-Spiel (GitHub Pages, PWA) ist eine erlaubte Nutzungsart |
+| General usage 3 | nicht in Logo oder Marke ohne Erlaubnis | WORLDS-Logo/Icon ist eigene Arbeit – einhalten |
+| General usage 4 / Disclaimers 4 – Project limitation | **ein Projekt pro Kauf** (ein Spiel, ein Video oder eine Website); weitere kommerzielle Projekte erfordern weitere Käufe | WORLDS = **ein** Projekt; Testgalerien sind Teil desselben Projekts |
+| Commercial 1 – Non-transferable | Lizenz gilt nur für den **ursprünglichen Käufer** | Käufer = Projektinhaber; Mitarbeit am selben Projekt ist Nutzung durch den Käufer |
+| Commercial 2 – Redistribution | nur zur Nutzung; **kein Weiterverkauf und keine Weitergabe der enthaltenen Dateien** | keine Penzilla-Dateien (original oder bearbeitet) im öffentlichen Repository, keine Downloads einzelner Dateien |
+| Commercial 3 | nicht in anderen Asset-Paketen, Vorlagen oder Design-Ressourcen | WORLDS ist kein Asset-Paket – einhalten (z. B. keine Veröffentlichung der Zustandsbilder als Sammlung) |
+| Commercial 4 – Modifications | **Bearbeitungen erlaubt**, solange die Pflichtnennung in jedem öffentlichen Projekt steht; **die Bearbeitungen müssen vollständig und deutlich neben der Pflichtnennung aufgelistet werden** | Liste in `data/credits.json` (im Spiel angezeigt) und `CREDITS.md` – bei jeder neuen Bearbeitungsart ergänzen |
+| Commercial 5 – Public projects | bei öffentlich verfügbaren Projekten **muss ein Link o. Ä. an PenzillaDesign@gmail.com gesendet werden** | **offen – nur der Projektinhaber** kann das tun (GitHub-Pages-Adresse senden) |
+| Disclaimers 1 | Haftungsausschluss, Freistellung von Penzilla | zur Kenntnis |
+| Disclaimers 3 – Support | Support nur für Unity | – |
+| Disclaimers 6/10 – Revocation/Validity | Lizenz gilt unbefristet bei Einhaltung; Widerruf bei Verstoß | Einhaltung dokumentieren (diese Datei) |
+| Disclaimers 8 | dänisches Recht | – |
+| Disclaimers 9 – **AI** | Assets dürfen **nicht zur Erstellung von KI-/ML-Datensätzen oder -Modellen** verwendet werden | WORLDS erzeugt Zustände **regelbasiert** (Bildverarbeitung, kein Training, keine Datensätze). Keine Penzilla-Grafik in Trainingsdaten, Feinabstimmungen oder als Vorlage für Bild-Generatoren verwenden. |
 
-**Das Lizenz-PDF selbst liegt weiterhin nicht vor.** Es kann nur vom Käufer heruntergeladen werden: itch.io → *My Library* → jeweiliges Paket → `PenzillaDesign_StandardLicense.pdf`. Bitte ablegen (z. B. im privaten MEGA-Ordner) – **nicht** ins öffentliche Repository, falls das PDF selbst nicht zur Weitergabe bestimmt ist.
+## 2. Verbindliche Einordnung für WORLDS
 
-## 2. Einordnung nach heutigem Kenntnisstand
-
-| Handlung | Einschätzung | Grundlage |
+| Fall | Erlaubt? | Bedingungen |
 |---|---|---|
-| Penzilla-Grafik im eigenen kommerziellen Spiel verwenden | **erlaubt** (nach Kauf zum Mindestpreis) | Seitentext + Penzilla-Antwort |
-| Grafiken **bearbeiten** (Zustände: Schmutz, Schäden, Ruinen, Schnee …) für die Nutzung **im Spiel** | **sehr wahrscheinlich erlaubt** (sinngemäße Aussage „Modifications are allowed with proper credit") – **bis zur Prüfung des PDF als offen markiert** | Kommentar (sinngemäß) |
-| Namensnennung | **erforderlich**: „Graphics created by Penzilla Design" (bei Bearbeitungen „Based on graphics by Penzilla Design") → Abspann/Impressum im Spiel nötig (**noch nicht umgesetzt**) | Penzilla-Antwort |
-| Rohdateien oder abgeleitete Einzeldateien **weitergeben** (Asset-Paket, öffentliches Repository, Download) | **nicht erlaubt** | „Redistribution … is not allowed" |
-| Grafiken als Teil eines **ausgelieferten Spiels** (Web-Build) | übliche Nutzung „im Projekt" – **aber:** in einem Web-Build sind die Bilddateien technisch abrufbar. Ob das als Weitergabe gilt, regelt nur das PDF → **offen** | – |
-| Nutzung in mehreren Projekten | eine Lizenz **pro Projekt** – WORLDS gilt als **ein** Projekt | Penzilla-Antwort |
+| **Originalgrafiken im Spiel** (Web-Build, PWA, später App) | **ja** | Pflichtnennung sichtbar; ein Projekt; Projektinhaber ist Käufer |
+| **Bearbeitungen** (Skalieren, Zusammensetzen, Einfärben, Zuschneiden) | **ja** | jede Bearbeitungsart in der Liste neben der Pflichtnennung (heute 6 Punkte) |
+| **Abgeleitete Zustandsvarianten** (Living Assets) | **ja, als Bearbeitung** | in der Liste aufgeführt (Punkt 6); Originale bleiben unverändert; nur als Teil des Spiels, **nicht** als eigenständige Sammlung, nicht als Asset-Paket |
+| **Veröffentlichung im Web (GitHub Pages)** | **ja** – Websites/Spiele sind erlaubte Nutzung; die Grafiken liegen im gepackten Spiel (`index.pck`), nicht als einzelne Downloads | Pflichtnennung im Spiel (✅ ab 0.5.0), **Link an Penzilla senden (offen)** |
+| Penzilla-Dateien im **öffentlichen Git-Repository** | **nein** (Weitergabe der Dateien) | bleibt git-ignoriert; CI holt sie aus dem privaten MEGA-Ordner (Secret) |
+| Kontaktbögen/Vorschaubilder mit Penzilla-Grafik öffentlich teilen | **nein** (außerhalb des Projekts = Weitergabe) | nur privat an den Projektinhaber |
+| Verwendung in einem **zweiten** Projekt | **nein** | erfordert weiteren Kauf |
+| Penzilla-Grafik in **KI-Training/-Datensätze** | **nein** | auch nicht als Vorlage für Bild-Generatoren |
 
-## 3. Was das Projekt heute tut (Schutzmaßnahmen)
-1. **Keine** Penzilla-Datei und **keine** abgeleitete Zustandsdatei im öffentlichen Repository: `assets/penzilla/` ist git-ignoriert; Kontaktbögen und Materialkarten liegen nur im privaten Arbeitsordner bzw. wurden direkt an den Projektinhaber übergeben.
-2. Im Repository stehen nur **Metadaten** (Dateinamen, Maße, Kategorien im Inventar) und **Werkzeuge** (Python-Skripte, die aus den gekauften Archiven lokal/in CI erzeugen).
-3. Die **Originaldateien bleiben unverändert** (nur gelesen); alle Zustände sind separate, neu erzeugte Dateien.
-4. Eigene VFX (`assets/vfx/`) sind **projekteigen** und frei verwendbar.
+### Bereits vorhandene Dateien im GitHub-Pages-Build
+- Der seit Phase 1 veröffentlichte Build enthält die importierten Penzilla-Grafiken (verkleinert, RPG-Läden zusammengesetzt, Figurenebenen zugeschnitten) **gepackt in `index.pck`**. Das ist **Nutzung in einer Website/einem Spiel** und damit erlaubt.
+- **Bis 0.4.2 fehlte die Pflichtnennung im Spiel** (es gab nur „Penzilla (penzilla.itch.io) – lizenziert“ im Menü und keine Bearbeitungsliste). Ab **0.5.0** steht beides im Menü → *Mitwirkende & Lizenzen*. Mit dem nächsten Deployment (Merge nach `main`) ist der öffentliche Build konform.
+- Die abgeleiteten Living-Assets-Zustände sind **nicht** im öffentlichen Build (werden in der CI nicht erzeugt). Wenn sie später aufgenommen werden: Punkt 6 der Bearbeitungsliste ist bereits vorhanden.
+- **Offen (Projektinhaber):** Link zum öffentlichen Spiel an PenzillaDesign@gmail.com senden (Commercial 5).
 
-## 4. Offene Punkte (vor einer Veröffentlichung der abgeleiteten Grafiken)
+## 3. Cooked FX (The Cooked Works) – LICENSE.pdf v1.0, Oktober 2026
+| Erlaubt | Nicht erlaubt |
+|---|---|
+| unbegrenzt viele Projekte, kommerziell; Bearbeitung jeder Art; fertige Produkte verteilen – „auch wenn ein Spieler die Dateien technisch extrahieren könnte“ | Dateien einzeln weitergeben/verkaufen – original oder bearbeitet –, **auch nicht in ein Repository**; Aufnahme in Asset-Pakete/Vorlagen; als eigene Arbeit ausgeben |
+| Namensnennung **nicht** erforderlich (erwünscht: „Effects: Cooked FX by The Cooked Works“) | |
+
+→ wie Penzilla behandeln: privat importiert (`assets/thirdparty/cooked_fx/`, git-ignoriert). Bewertung: [COOKED_FX_EVALUATION.md](COOKED_FX_EVALUATION.md). Hinweis: laut Hersteller KI-gestützt erstellt.
+
+## 4. Weitere Quellen
+- Kenney- und OpenGameArt-Effekte/-Möbel: CC0 (geprüft), siehe [VFX_SOURCES.md](VFX_SOURCES.md) und [ASSET_INVENTORY.md](../ASSET_INVENTORY.md) §5.
+- „Stylized Grass & Dirt“ (Editor-Hintergrund): Hersteller/Lizenz im Paket nicht angegeben – vom Projektinhaber bereitgestellt; **Lizenz offen** (Projektinhaber).
+
+## 5. Offene Punkte
 | # | Punkt | Wer |
 |---|---|---|
-| L1 | `PenzillaDesign_StandardLicense.pdf` herunterladen und bereitstellen | Projektinhaber |
-| L2 | PDF prüfen: Bearbeitung erlaubt? Auslieferung in einem **Web-Build** (abrufbare PNGs) erlaubt? Pflicht zur Verschlüsselung/Packung? | gemeinsam, nach L1 |
-| L3 | Namensnennung „Graphics created by Penzilla Design / Based on graphics by Penzilla Design" im Spiel (Abspann/Info) | Umsetzung nach Freigabe |
-| L4 | **Bereits heute** veröffentlicht der GitHub-Pages-Build die importierten Penzilla-Grafiken als Teil des Web-Spiels (seit Phase 1). Die **abgeleiteten Zustände** sind dort **nicht** enthalten (werden in CI nicht erzeugt). Vor dem Aufnehmen der Zustände in den öffentlichen Build L2 klären. | Entscheidung Projektinhaber |
-| L5 | Bei Bedarf Penzilla direkt fragen (Kontakt laut Seite: PenzillaDesign@gmail.com) – **nur durch den Projektinhaber** | Projektinhaber |
-
-## 5. Weitere Quellen
-- Kenney- und OpenGameArt-Effekte: CC0 (geprüft, siehe [VFX_SOURCES.md](VFX_SOURCES.md)), nicht eingebunden.
-- CC0-Innenausstattung (Kenney, OpenGameArt): siehe [ASSET_INVENTORY.md](../ASSET_INVENTORY.md) §5.
-- „Stylized Grass & Dirt": Hersteller/Lizenz unbekannt (nur Editor-Hintergrund) – siehe ASSET_INVENTORY.
+| L1 | ~~Lizenz-PDF bereitstellen~~ | ✅ erledigt (24.11.2026) |
+| L2 | Link zum öffentlichen Spiel an PenzillaDesign@gmail.com senden | Projektinhaber |
+| L3 | ~~Namensnennung + Bearbeitungsliste im Spiel~~ | ✅ 0.5.0 (nach Deployment öffentlich) |
+| L4 | Bei neuen Bearbeitungsarten `data/credits.json` ergänzen | laufend |
+| L5 | Lizenz „Stylized Grass & Dirt“ klären | Projektinhaber |
+| L6 | Cooked FX: Entscheidung über Verwendung (KI-gestützte Herstellung), private CI-Quelle | Projektinhaber |

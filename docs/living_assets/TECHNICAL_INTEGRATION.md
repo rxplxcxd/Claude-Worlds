@@ -54,6 +54,9 @@ LivingComposer (scripts/living/living_composer.gd)
 - **Laden verändert nichts** – es gibt keine Funktion, die Verfall aus verstrichener Echtzeit ableitet (Test: *absence does not cause decay*).
 - Wetter wird **nicht** gespeichert (kommt aus der Umwelt).
 
+### Anbindung an die Simulation (Phase 3)
+`VisualEventRouter` (`scripts/sim/visual_event_router.gd`): Simulationsereignisse → `VisualState.apply_event` → `record.visual_states[building_id]` (dauerhaft); aktive Effekte (Kaminrauch, Funken) werden aus dem aktuellen Simulationszustand abgeleitet. Siehe [LIVING_WORLD.md](../LIVING_WORLD.md) §10.
+
 ## 4. Qualitätsprofile (Referenzgerät iPhone 15 Pro Max) – umgesetzt in `LivingComposer.PROFILES`
 
 | | **Ultra** (iPhone 15 Pro/Max und neuer) | **Hoch** (Standard; iPhone 12–14) | **Leistung** (ältere iPhones, z. B. XR/11/SE) |

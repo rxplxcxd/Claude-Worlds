@@ -1,6 +1,6 @@
 # NPC_SYSTEM
 
-**Status:** Gründungsgemeinschaft mit dauerhaften Identitäten, Rollenkleidung und Tagespräsenz **[IMPLEMENTIERT, Phase 1]** · Bedürfnisse, KI, Navigation, Gespräche **[GEPLANT, Phase 3]**.
+**Status:** Gründungsgemeinschaft mit dauerhaften Identitäten und Rollenkleidung **[Phase 1]** · Persönlichkeit, Beruf, Bedürfnisse, Tagesabläufe, Utility AI, Navigation, Interaktionen, Simulations-LOD, Persistenz **[IMPLEMENTIERT, Phase 3 – siehe [LIVING_WORLD.md](LIVING_WORLD.md)]** · Beziehungen, Erinnerungen, Dialoge **[GEPLANT, Phase 5]**.
 
 ## 0a. Was in Phase 1 implementiert ist
 - **Gründungsgemeinschaft** (`scripts/npc/npc_roster.gd`): Bei der Gründung entstehen 12 NPCs – Verwaltung 1, Händler:in 2, Sanitäter:in 1, Sicherheitsdienst 1, Bauarbeiter:in 2, Handwerker:in 1, Landwirt:in 2, Bewohner:in 2. Deterministisch aus der Siedlungs-ID (Seed), danach **im Siedlungsdatensatz gespeichert** (`record.npcs[]`): `npc_id, name, role, workplace_id, home_id, appearance, index_in_role`. Ältere Spielstände ohne NPCs erhalten sie beim nächsten Laden einmalig.
@@ -9,7 +9,7 @@
 - **Präsenz nach Uhrzeit** (`scripts/npc/npc.gd`): 07:30–18:30 neben der Tür des Arbeitsplatzes (Bewohner:innen am Dorfplatz), 18:30–22:00 neben dem eigenen Wohnhaus, nachts drinnen (unsichtbar, keine Kollision). Plätze (`NpcRoster.plan_spots`): nie auf Straße/Wasser/Gebäude, nie im Eingang, nie auf Straßenmobiliar, eindeutig, sichtbare Gebäudeseite bevorzugt.
 - **Verhalten:** Idle-Animation mit Blinzeln, gelegentliches Umdrehen, Werkzeuggebrauch (Rollen mit Werkzeug), schaut den Spieler an, wenn er näher als ~70 px kommt. Antippen → Karte mit Name, Rolle, Arbeitsplatz, Wohnung.
 - **Darstellung:** gleicher `CharacterRig` wie der Spieler im Composite-Modus (2 Texturen pro Figur und Animation, gecacht).
-- **Grenzen (ehrlich):** keine Wege zwischen Wohnung und Arbeit (sie „erscheinen“ am neuen Ort), keine Gespräche, keine Bedürfnisse. Präsenz nutzt in Phase 1 die Lokalzeit des Spielers (siehe ARCHITECTURE.md §4).
+- **Abgelöst in Phase 3:** Die feste Präsenz nach Uhrzeit (Phase 1) ist durch die Simulation ersetzt – NPCs gehen ihre Wege, arbeiten in Schichten, essen, treffen sich, schlafen; Tagesablauf nach Siedlungszeit ([LIVING_WORLD.md](LIVING_WORLD.md)).
 
 ## 0. Grundregel [VERBINDLICH]
 NPCs existieren **nur innerhalb von Siedlungen, die ein Mensch gegründet hat** (als Gründungsgemeinschaft des Gründers oder durch Zuzug). NPCs **gründen keine Siedlungen**, und es gibt keine Siedlung ohne menschliche Bewohner (WORLD_DESIGN.md §1). NPC-Umzüge erfolgen nur zwischen bestehenden Spielersiedlungen.

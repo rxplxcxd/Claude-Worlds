@@ -31,5 +31,7 @@ func run_action(interaction_id: String, action_id: String) -> void:
 			EventBus.toast_requested.emit("Du ruhst dich einen Moment aus. Es ist %s Uhr." % GameClock.format_time())
 		"drink":
 			EventBus.toast_requested.emit("Das Brunnenwasser ist kühl und klar.")
+		"talk":
+			pass   # handled by the settlement (living world simulation)
 		_:
 			push_warning("InteractionService: unknown action %s on %s" % [action_id, interaction_id])

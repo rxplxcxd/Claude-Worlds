@@ -287,6 +287,18 @@ func _build_menu() -> void:
 	debug_toggle.button_pressed = bool(LocalProfile.get_setting("show_debug", false))
 	debug_toggle.toggled.connect(_set_debug_visible)
 	box.add_child(debug_toggle)
+	# Graphics profile (presentation only – the simulation is the same in all)
+	var gfx := OptionButton.new()
+	gfx.focus_mode = Control.FOCUS_NONE
+	gfx.custom_minimum_size = Vector2(0, 44)
+	for key in GraphicsProfile.ORDER:
+		var label: String = "Grafik: automatisch (%s)" % GraphicsProfile.PROFILES[GraphicsProfile.detect()]["label"] if key == "auto" else "Grafik: " + GraphicsProfile.PROFILES[key]["label"]
+		gfx.add_item(label)
+	gfx.selected = GraphicsProfile.ORDER.find(GraphicsProfile.setting())
+	gfx.item_selected.connect(func(i: int) -> void:
+		LocalProfile.set_setting("graphics_profile", GraphicsProfile.ORDER[i])
+		LocalProfile.save_profile())
+	box.add_child(gfx)
 	if CharacterCatalog.is_available():
 		var edit_char := Button.new()
 		edit_char.text = "Figur bearbeiten"
@@ -497,10 +509,10 @@ func _toggle_menu() -> void:
 			GameClock.timezone_name if GameClock.timezone_name != "" else "unbekannt", GameClock.timezone_abbr,
 			GameClock.utc_offset_minutes / 60, absi(GameClock.utc_offset_minutes) % 60, ", Sommerzeit" if GameClock.is_dst else "",
 			_sun_text(0), _sun_text(1)]
-		+ "[b]Grafik[/b]\nAußenwelt, Figur & Oberfläche: Penzilla (penzilla.itch.io) – lizenziert\n\n"
-		+ "[b]Projekt[/b]\nVersion %s · Phase 2 + Paket 2.1 · Godot %s\nSpieler-ID (lokal): %s" % [
+		+ "[b]Projekt[/b]\nVersion %s · Phase 3 (Living World) · Godot %s\nSpieler-ID (lokal): %s\n\n" % [
 			ProjectSettings.get_setting("application/config/version", "?"),
-			Engine.get_version_info().get("string", "?"), LocalProfile.player_id])
+			Engine.get_version_info().get("string", "?"), LocalProfile.player_id]
+		+ "[font_size=20][b]Mitwirkende & Lizenzen[/b][/font_size]\n" + Credits.bbcode())
 	_menu.visible = true
 	_layout_modal(_menu, _menu_text)
 	modal_changed.emit(true)

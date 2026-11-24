@@ -2,6 +2,22 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.5.0] – Phase 3: Living World
+
+### Hinzugefügt
+- **Simulation des Siedlungslebens** (`scripts/sim/`, `data/sim/living_world.json`): persistente NPC-Identitäten (Persönlichkeit, Alter, Beruf mit Fertigkeit), 5 Bedürfnisse, 9 Aktivitäten, Berufe mit Schichten, Utility AI, ereignisgesteuertes Fortschreiben (`advance`), Siedlungszeitzone.
+- **Navigation**: Raster-A* (AStarGrid2D), Orte (Türen, Dorfplatz, Grün) mit Stehplätzen, gecachte Wegzeiten; NPCs gehen sichtbar über Gehwege und queren Straßen.
+- **Simulations-LOD**: S0 (im Bild, detailliert, nach Grafikprofil begrenzt) / S1 (nur Daten); Darstellung als Funktion von Zustand und Zeit → nie veraltet, kein Nachsimulieren; Nachholen nach Abwesenheit beim Laden.
+- **Interaktionen**: Live-Infokarte und „Grüßen“ (persistente Wirkung), Gruppen und Sprechblasen auf Platz/Grün/Läden, Arbeits- und Benutzen-Animationen.
+- **Visuelle Folgen**: `VisualEventRouter` – Kaminrauch/Werkstattfunken aus dem aktuellen Zustand; Simulationsereignisse → dauerhafte Living-Assets-Zustände (`record.visual_states`).
+- **Grafikprofile** Ultra/Hoch/Leistung (automatisch erkannt, nur Darstellung).
+- **Lizenz**: Penzilla-Pflichtnennung und vollständige Bearbeitungsliste im Menü („Mitwirkende & Lizenzen“) und in `CREDITS.md`; verbindliche Lizenzauswertung.
+- **Cooked FX** (Cozy Chunky) bewertet: privater Import, Testgalerie `?gallery=cookedfx`, Entscheidungsvorlage.
+- Tests: 185 Prüfungen (Determinismus, Ein-Sprung = viele Schritte, Schichten, Nachtruhe, Navigation, Speichern/Laden, Nachholen, LOD-Invarianz, 1 000 NPCs, Interaktion, Router, Credits).
+
+### Geändert
+- Speicherschema 4 (Migration automatisch). NPC-Präsenz nach fester Uhrzeit (Phase 1) durch die Simulation ersetzt.
+
 ## [0.4.2] – Living Assets Schritt G: Materialerkennung, kombinierbare Zustände, Serienproduktion
 
 ### Hinzugefügt

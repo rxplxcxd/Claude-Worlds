@@ -45,14 +45,21 @@ func _ready() -> void:
 		_start_world()
 
 
-## QA hook (web only): "?gallery=living" opens the Living-Assets test gallery
-## (technical check of state variants and VFX) instead of the game.
+## QA hook (web only): "?gallery=living" opens the Living-Assets test gallery,
+## "?gallery=cookedfx" the Cooked-FX evaluation gallery, instead of the game.
 func _qa_gallery() -> bool:
-	if not OS.has_feature("web") or not str(JavaScriptBridge.eval("location.search", true)).contains("gallery=living"):
+	if not OS.has_feature("web"):
+		return false
+	var q := str(JavaScriptBridge.eval("location.search", true))
+	var g: Node2D = null
+	if q.contains("gallery=living"):
+		g = LivingGallery.new()
+	elif q.contains("gallery=cookedfx"):
+		g = CookedFxGallery.new()   # evaluation of the Cooked FX pack (private files)
+	if g == null:
 		return false
 	hud.visible = false
-	var g := LivingGallery.new()
-	g.name = "LivingGallery"
+	g.name = "Gallery"
 	add_child(g)
 	return true
 

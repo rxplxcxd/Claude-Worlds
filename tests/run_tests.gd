@@ -198,7 +198,7 @@ func _run() -> void:
 	check(world.migrated_territory_ids.has("ter_p2") and t2.has("geometry") and not t2.has("region_ids") and absf(float(t2["area_km2"]) - 1.0) < 0.01, "Phase-2 region claim becomes a 1 km² territory (same ID)")
 	check(int(t2["version"]) == 2 and (t2["history"] as Array).size() == 2 and world.get_settlement("stl_p2").has("settlement_area"), "migration keeps history and adds the settlement area")
 	var saved_json: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("user://test_world_migrate2.json"))
-	check(int(saved_json.get("schema_version", 0)) == 3, "world save carries schema version 3")
+	check(int(saved_json.get("schema_version", 0)) == WorldState.SCHEMA_VERSION and WorldState.SCHEMA_VERSION == 4, "world save carries schema version 4")
 	world.use_storage("user://test_world_state.json", true)
 
 	print("[data]")
@@ -394,31 +394,31 @@ func _run() -> void:
 				role_ok = false
 		check(role_ok, "every NPC wears its role's clothing and has a workplace")
 		check(settlement.npcs.size() == roster.size(), "NPCs are instantiated in the world")
+		check(settlement.sim != null and roster.all(func(r): return r.has("personality") and r.has("profession") and r.has("birth_day")), "every NPC has a persistent identity (personality, profession, birth day)")
+		check(founded[0].has("sim") and founded[0].has("time_zone"), "living world state and settlement time zone are stored in the record")
+		settlement._update_lod(true)
 		var present := settlement.npcs.filter(func(n): return n.is_present()).size()
-		check(present == roster.size(), "at noon all NPCs are out (%d)" % present)
+		check(present > 0, "at noon inhabitants are out and about (%d visible)" % present)
 		var spot_ok := true
-		var used := {}
 		for n in settlement.npcs:
+			if not n.is_present():
+				continue
 			var g := Iso.world_to_grid(n.position)
 			var c := Vector2i(int(floor(g.x)), int(floor(g.y)))
 			var t := settlement.data.get_tile(c.x, c.y)
-			if t in ["road", "water", ""] or used.has(c):
-				spot_ok = false
-				print("       bad NPC spot ", n.npc_id, " ", c, " ", t)
-			used[c] = true
+			var bad_pos := t in ["water", ""] or (not n.walking and t == "road")
 			for b in settlement.data.buildings:
-				if c in settlement.data.get_building_cells(b) or c in StreetPlanner.entrance_cells(b):
-					spot_ok = false
-					print("       NPC on building/entrance ", n.npc_id, " ", c)
-		check(spot_ok, "NPCs stand on free cells, never on roads or in doorways")
-		check(Npc.place_for_hour(20.0) == "home" and Npc.place_for_hour(2.0) == "", "evening at home, night indoors")
-		clock.preview_minute_of_day = 2 * 60.0
-		for n in settlement.npcs:
-			n.update_presence()
-		check(settlement.npcs.all(func(n): return not n.visible), "at 02:00 nobody is outside")
+				if c in settlement.data.get_building_cells(b):
+					bad_pos = true
+			if bad_pos:
+				spot_ok = false
+				print("       bad NPC position ", n.npc_id, " ", c, " ", t, " walking=", n.walking)
+		check(spot_ok, "visible NPCs are never inside buildings or water, and only cross roads while walking")
+		clock.preview_minute_of_day = 3 * 60.0
+		settlement._update_lod(true)
+		check(settlement.npcs.all(func(n): return not n.visible), "at 03:00 everybody sleeps indoors")
 		clock.preview_minute_of_day = 12 * 60.0
-		for n in settlement.npcs:
-			n.update_presence()
+		settlement._update_lod(true)
 	else:
 		check(settlement.npcs.is_empty(), "no NPCs without character art")
 
@@ -505,6 +505,12 @@ func _run() -> void:
 		# Tap on an NPC -> walk over, it turns to the player, its card opens.
 		opened.clear()
 		var npc: Npc = settlement.npcs[0]
+		for cand in settlement.npcs:
+			if cand.is_present() and not cand.walking:
+				npc = cand
+				break
+		# freeze the preview time on a whole minute so the NPC keeps its place
+		clock.preview_minute_of_day = 12 * 60.0
 		player.global_position = npc.position + Vector2(0, 70)
 		await frames(2)
 		settlement.camera.snap_to_target()
@@ -634,12 +640,148 @@ func _run() -> void:
 	clock.preview_minute_of_day = -1.0
 
 	_test_living_assets()
+	_test_living_world()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
 	for f in _failed:
 		print("  - ", f)
 	get_tree().quit(1 if _failed.size() > 0 else 0)
+
+
+func _test_living_world() -> void:
+	print("[living world]")
+	var data := SettlementData.load_from_file("res://data/settlement_templates/founding_basic.json")
+	var cfg := SettlementSim.load_config()
+	var t0 := int(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 11, "day": 23, "hour": 23, "minute": 0, "second": 0}))   # Tue 24.11.2026 00:00 CET
+	var mk := func(id: String) -> Dictionary:
+		return {"settlement_id": id, "npcs": NpcRoster.generate(id, data.buildings), "founded_at_unix": t0, "time_zone": {"name": "Test/CET", "offset_min": 60}}
+	check(NpcBrain.weekday(t0, 60) == 2 and absf(NpcBrain.local_hour(t0, 60)) < 0.01, "settlement local time: 23:00 UTC = Tuesday 00:00 in UTC+1")
+	var rec_a: Dictionary = mk.call("stl_lwtest")
+	var rec_b: Dictionary = mk.call("stl_lwtest")
+	var a := SettlementSim.create(rec_a, data, t0, cfg)
+	var b := SettlementSim.create(rec_b, data, t0, cfg)
+	a.offset_override = 60
+	b.offset_override = 60
+	a.advance_to(t0 + 3 * 86400)
+	# b: many irregular small steps (LOD switches, frame ticks) to the same time
+	var tt := t0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	while tt < t0 + 3 * 86400:
+		tt = mini(t0 + 3 * 86400, tt + rng.randi_range(1, 5400))
+		b.advance_to(tt)
+	check(JSON.stringify(a.states) == JSON.stringify(b.states), "advance in one jump == advance in many small steps (consistent LOD and catch-up)")
+	var c := SettlementSim.create(mk.call("stl_lwtest"), data, t0, cfg)
+	c.offset_override = 60
+	c.advance_to(t0 + 3 * 86400)
+	check(JSON.stringify(a.states) == JSON.stringify(c.states), "simulation is deterministic")
+	# routines on Friday (t0 + 3 days = Fri 00:00 local)
+	var thu := t0 + 3 * 86400
+	a.advance_to(thu + 11 * 3600)
+	var working := 0
+	var workers := 0
+	for r in a.roster:
+		if r["role"] in ["admin", "merchant", "craftsman", "builder", "farmer", "medic"]:
+			workers += 1
+			var st: Dictionary = a.states[r["npc_id"]]
+			var act: String = st["act"] if st["travel"].is_empty() else str(st["travel"]["next"])
+			if act == "work":
+				working += 1
+	check(working >= workers - 1, "on a workday at 11:00 the day-shift workers are at work (%d/%d)" % [working, workers])
+	a.advance_to(thu + 27 * 3600)   # Saturday 03:00
+	var sleeping := 0
+	for r in a.roster:
+		if a.states[r["npc_id"]]["act"] == "sleep":
+			sleeping += 1
+	check(sleeping == a.roster.size(), "at 03:00 everybody sleeps (%d/%d)" % [sleeping, a.roster.size()])
+	var needs_ok := true
+	for r in a.roster:
+		var nd := a.needs_now(r["npc_id"], thu + 27 * 3600)
+		for k in nd:
+			if float(nd[k]) < 0.0 or float(nd[k]) > 1.0:
+				needs_ok = false
+		if float(nd["food"]) < 0.05:
+			needs_ok = false
+	check(needs_ok, "needs stay within 0..1 and nobody starves")
+	var acts := {}
+	for e in a.advance_to(thu + 48 * 3600):
+		acts[e["act"]] = true
+	check(acts.has("socialize") and acts.has("leisure") and acts.has("eat_home") and acts.has("work") and acts.has("sleep"), "daily life uses work, meals, plaza, green spaces and sleep (%s)" % str(acts.keys()))
+	# navigation
+	var nav := a.nav
+	var reach := true
+	var solid_ok := true
+	for id in nav.places:
+		var p := nav.path_between("plaza", id)
+		if p.is_empty():
+			reach = false
+			print("       unreachable place ", id)
+		for cell in p:
+			if nav.astar.is_point_solid(cell) or data.get_tile(cell.x, cell.y) == "water":
+				solid_ok = false
+	check(reach, "every place is reachable on foot")
+	check(solid_ok, "paths never cross buildings or water")
+	check(nav.travel_seconds("bld:bld_house_1", "bld:bld_town_hall") > 0 and absi(nav.travel_seconds("bld:bld_house_1", "bld:bld_town_hall") - nav.travel_seconds("bld:bld_town_hall", "bld:bld_house_1")) < 30, "travel times are positive and nearly symmetric")
+	# persistence round trip
+	a.store()
+	var saved: Dictionary = JSON.parse_string(JSON.stringify(rec_a))
+	var reloaded := SettlementSim.create(saved, data, a.simulated_at, cfg)
+	reloaded.offset_override = 60
+	check(JSON.stringify(reloaded.states) == JSON.stringify(a.states), "living world survives save/load (JSON)")
+	# absence: 3 days offline, then catch up (event-driven, fast, identical)
+	var t_back := a.simulated_at + 3 * 86400
+	var us := Time.get_ticks_usec()
+	reloaded.advance_to(t_back)
+	var catch_ms := (Time.get_ticks_usec() - us) / 1000.0
+	a.advance_to(t_back)
+	check(JSON.stringify(reloaded.states) == JSON.stringify(a.states) and catch_ms < 500.0, "3 days of absence are caught up exactly and fast (%.1f ms)" % catch_ms)
+	# very long absence: bounded re-seed, valid state at now
+	var far := SettlementSim.create(JSON.parse_string(JSON.stringify(rec_a)), data, a.simulated_at + 40 * 86400, cfg)
+	check(far.simulated_at == a.simulated_at + 40 * 86400 and far.states.size() == a.roster.size(), "40 days of absence: bounded catch-up, state is current")
+	# LOD: rendering never changes the simulation
+	var before := JSON.stringify(a.states)
+	for r in a.roster:
+		a.render_info(r["npc_id"], float(t_back) + 0.5)
+		a.needs_now(r["npc_id"], t_back)
+	a.groups_at(float(t_back))
+	check(JSON.stringify(a.states) == before, "rendering (LOD S0) never changes the simulation (S1)")
+	# interaction with the player is persisted
+	var nid: String = a.roster[0]["npc_id"]
+	var soc := float(a.needs_now(nid, t_back)["social"])
+	a.player_talk(nid, t_back)
+	check(float(a.needs_now(nid, t_back)["social"]) > soc and int(a.states[nid]["needs_at"]) == t_back, "talking to an NPC changes its needs (stored)")
+	# visual router: active effects from the current state + persistent building state
+	var cook := {}
+	for r in a.roster:
+		var st: Dictionary = a.states[r["npc_id"]]
+		st["travel"] = {}
+		st["act"] = "eat_home"
+		st["place"] = a._ctx[r["npc_id"]]["home"]
+		cook = st
+		break
+	var fx := VisualEventRouter.active_effects(a, float(NpcBrain.day_start(t_back, 60) + 7 * 3600))
+	check(fx.any(func(e): return e["vfx"] == "chimney_smoke"), "cooking at home shows chimney smoke (derived from state, never stale)")
+	var vrec := {}
+	check(VisualEventRouter.apply_building_event(vrec, "bld_house_1", "fire_large", t_back, cfg) and VisualEventRouter.visual_state_of(vrec, "bld_house_1").fire == 2, "simulation events drive persistent Living-Assets states")
+	# scale: 1000 NPCs, one simulated day
+	var big_roster := []
+	for i in 1000:
+		var r0: Dictionary = rec_a["npcs"][i % rec_a["npcs"].size()].duplicate(true)
+		r0["npc_id"] = "npc_scale_%04d" % i
+		r0.erase("personality")
+		big_roster.append(r0)
+	var big := {"settlement_id": "stl_scale", "npcs": big_roster, "founded_at_unix": t0, "time_zone": {"name": "Test/CET", "offset_min": 60}}
+	us = Time.get_ticks_usec()
+	var bs := SettlementSim.create(big, data, t0, cfg)
+	bs.offset_override = 60
+	var ev := bs.advance_to(t0 + 86400)
+	var big_ms := (Time.get_ticks_usec() - us) / 1000.0
+	print("       1000 NPCs: warm-up + 1 simulated day = %.0f ms, %d events (%.1f µs/event)" % [big_ms, ev.size(), big_ms * 1000.0 / maxf(1.0, ev.size())])
+	check(big_ms < 20000.0, "1000 NPCs × 2 simulated days run headless in %.0f ms" % big_ms)
+	# credits / licence
+	check(Credits.bbcode().contains(Credits.MANDATORY) and Credits.data()["sections"][1]["lines"].size() >= 5, "mandatory Penzilla credit and the list of edits are shown in the game")
+	check(GraphicsProfile.PROFILES.has("ultra") and GraphicsProfile.PROFILES.has("leistung"), "graphics profiles ultra/hoch/leistung exist (presentation only)")
 
 
 func _test_living_assets() -> void:

@@ -161,3 +161,6 @@ Davon sind in der Siedlung ~100 Ebenen geladen (Spieler + 12 NPCs + Editor-Vorsc
 2. In der Siedlung „Messung starten (20 s)“ tippen, nicht bewegen → Bildschirmfoto der Anzeige.
 3. Dasselbe nach 1 Minute Herumlaufen, danach im Globus („Karte“).
 4. Optional `?perf=1&perfsplit=6` für die Aufschlüsselung (Wert erscheint nur in der Konsole – Safari-Web-Inspector am Mac nötig).
+
+## 8. Phase 3 – Lebendige Welt (Messung 24.11.2026)
+Chromium/SwiftShader, iPhone-15-Pro-Max-Emulation, Kontext **spiel** (`docs/perf/phase3-iphone-reports.json`): Siedlung **445 Draw Calls** (vorher 444), **359 MB** Texturspeicher (vorher 377), 773 Knoten, 12 NPCs. Die Simulation selbst kostet im Spielbetrieb praktisch nichts (Fortschreiben 4×/s in Sekunden-Schritten; headless: 1 000 NPCs × 1 Tag = 2,2 s, ~100 µs je Entscheidung). Unsichtbare NPCs (LOD S1) werden nicht verarbeitet; die Detailstufe S0 ist je Grafikprofil begrenzt (Ultra 400, Hoch 150, Leistung 50). Größtes Risiko bleibt der Boden (357 Draw Calls) und die Figurentexturen (§7). Echtes iPhone: noch nicht gemessen.

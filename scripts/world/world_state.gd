@@ -28,8 +28,11 @@ signal settlement_founded(record: Dictionary)
 
 const GENESIS_PATH := "res://data/world/genesis.json"
 const DEFAULT_SAVE_PATH := "user://worlds_world.json"
-## 1 = Phase 1, 2 = Phase 2 (position + region claim), 3 = Paket 2.1 (polygon territories)
-const SCHEMA_VERSION := 3
+## 1 = Phase 1, 2 = Phase 2 (position + region claim), 3 = Paket 2.1 (polygon territories),
+## 4 = Phase 3 (living world: npcs[] gain personality/profession/birth_day,
+##     settlement gains time_zone, sim {version, simulated_at, npcs{state}},
+##     visual_states{}) – filled lazily by SettlementSim.create (migration)
+const SCHEMA_VERSION := 4
 
 var world_id: String = ""
 var planet_id: String = ""

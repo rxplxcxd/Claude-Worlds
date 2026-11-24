@@ -20,7 +20,7 @@ Eigenständiges visuelles Projekt (Auftrag vom 24.11.2026, vor Phase 3). **Keine
 | Vollständige Asset-Inventarliste | [asset_inventory.csv](asset_inventory.csv) – Datei, Kategorie, Quelle, Maße, Perspektive, Animation, Verwendung im Spiel, Godot-Kompatibilität, Lizenz, Zustandsgruppe |
 | Zustandsmatrix | [STATE_MATRIX.md](STATE_MATRIX.md) |
 | Sammlung der erzeugten Varianten | `assets/penzilla/states/` (privat) + Kontaktbögen (direkt übergeben, nicht öffentlich) |
-| Übersicht VFX-Quellen | [VFX_SOURCES.md](VFX_SOURCES.md) |
+| Übersicht VFX-Quellen | [VFX_SOURCES.md](VFX_SOURCES.md), Bewertung Cooked FX „Cozy Chunky“: [COOKED_FX_EVALUATION.md](COOKED_FX_EVALUATION.md) |
 | Lizenzdokumentation (Penzilla: erlaubte Bearbeitung/Weitergabe, offene Punkte) | [LICENSES.md](LICENSES.md) |
 | Technische Integrationsdokumentation | [TECHNICAL_INTEGRATION.md](TECHNICAL_INTEGRATION.md) |
 | Performance-Einschätzung | [TECHNICAL_INTEGRATION.md §6](TECHNICAL_INTEGRATION.md) |

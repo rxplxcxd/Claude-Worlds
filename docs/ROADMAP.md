@@ -4,8 +4,8 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 
 | Phase | Name | Status |
 |---|---|---|
-| 1 | World Foundation | **Implementiert (0.2.0), Abnahme ausstehend** (iPhone-Test durch Projektinhaber; Merge nach `main` für Pages) |
-| 2 | World Geography | geplant |
+| 1 | World Foundation | **Freigegeben** (Projektinhaber startete Phase 2 am 24.11.2026); iPhone-Test weiterhin offen |
+| 2 | World Geography | **Implementiert (0.3.0), Abnahme ausstehend** |
 | 3 | Living World | geplant |
 | 4 | Settlement Foundation | geplant |
 | 5 | Social Life | geplant |
@@ -58,6 +58,28 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 ### Designänderung 24.11.2026: Leerer Planet
 Planet startet ohne Siedlungen; Siedlungen nur durch Spielergründung; keine NPC-only-Siedlungen. In Phase 1 als Regel umgesetzt (genesis.json, WorldState, Gründungsvorlage, Tests). Phase 2 muss die Planetengenese ohne Siedlungen und die Standortwahl für Gründungen liefern.
 
-## Voraussetzungen für Phase 2
-- Abnahme Phase 1, Bereitstellung der Penzilla-Pakete.
-- Entscheidungen: Hintergrundgeschichte passend zum leeren Planeten und offene Fragen zur Grundregel (WORLD_DESIGN.md §2, §5), Planetengröße/Kontinentzahl, Globus als 3D-Szene (Compatibility) oder 2D-Projektion (GEOGRAPHY_SYSTEM.md).
+## Phase 2 – World Geography: Umfang und Stand
+
+| Masterprompt-Punkt | Stand |
+|---|---|
+| Planetenmodell | ✅ Aurel, deterministisch erzeugt und gebacken (Seed 777, Generator v2) |
+| Kontinente | ✅ 5 Kontinente + Inseln |
+| Regionen | ✅ 157 Regionen mit Gelände, Klima, Wasser, Rohstoffen, Erschließung |
+| Geografische Koordinaten | ✅ Breite/Länge, Großkreisdistanz, Zellraster |
+| Weltkarte | ✅ Globus mit Infotafel, Ebenenschalter „Gebiete“ |
+| Erste Globusdarstellung | ✅ 3D-Kugel, Küsten, Grenzen, Atmosphäre, Sterne |
+| Zoomstufen | ✅ planetar → kontinental → regional → lokal (Siedlung betreten) |
+| Siedlungsstandorte | ✅ Standortwahl + Bewertung bei der Gründung, Marker, Migration alter Spielstände |
+| Territorien | ✅ Gründung beansprucht die Region; Anzeige, Regeln (keine fremde Region, Mindestabstand) |
+
+### Bekannte Einschränkungen Phase 2
+1. Lokale Siedlungskarte ist überall gleich (Vorlage), unabhängig von Region/Küste/Fluss → Phase 4.
+2. Ein Gebiet = eine Region; kein Wachstum, keine Grenzen zwischen Siedlungen → Phase 4/9.
+3. 49-km-Zellen wirken in der regionalen Zoomstufe grob (Grenzen als Treppenlinien).
+4. Nur eine lokale Siedlung (Singleplayer); „Beitreten“ fremder Siedlungen erst mit Mehrspieler (Phase 12).
+5. Kein Tag/Nacht-Schatten auf dem Globus.
+6. Globus-Leistung auf echtem iPhone ungemessen.
+
+## Voraussetzungen für Phase 3 (Living World)
+- Abnahme Phase 2 (insb. Planetengröße, Gründungsregeln – GEOGRAPHY_SYSTEM.md §7).
+- Entscheidungen: NPC-Anzahl je Siedlung auf dem iPhone (Leistungsbudget), Tagesablauf nach Siedlungszeitzone, offene Fragen WORLD_DESIGN.md §5 (verlassene Siedlungen).

@@ -1,6 +1,6 @@
 # QA_CHECKLIST
 
-Prüfliste für Version 0.2.0 (Phase 1). Spalte **Stand**: ✅ automatisiert (Headless-Testsuite, 82 Prüfungen) · 🌐 im Browser geprüft (Chromium/Playwright, Desktop 1280×720, Software-GL) · ⏳ muss vom Projektinhaber auf dem iPhone geprüft werden.
+Prüfliste für Version 0.3.0 (Phase 1 + Phase 2). Spalte **Stand**: ✅ automatisiert (Headless-Testsuite, 118 Prüfungen) · 🌐 im Browser geprüft (Chromium/Playwright, Desktop 1280×720, Software-GL) · ⏳ muss vom Projektinhaber auf dem iPhone geprüft werden.
 
 > Ehrlicher Hinweis: Es wurde **kein echtes iPhone** getestet. Alle 🌐-Prüfungen liefen in Chromium; Safari/WebKit-Eigenheiten (Touch, Tastatur, Speicher) sind damit nicht abgedeckt.
 
@@ -65,6 +65,23 @@ Prüfliste für Version 0.2.0 (Phase 1). Spalte **Stand**: ✅ automatisiert (He
 | F3 | iPhone Safari: Start, Bildrate (Menü → Leistungsanzeige), Wärme, Speicher | ⏳ |
 | F4 | „Zum Home-Bildschirm“ → Start als PWA im Vollbild | ⏳ |
 | F5 | Hoch-/Querformat-Wechsel während des Spiels | ⏳ |
+
+## G. Planet & Globus (Phase 2)
+| # | Prüfung | Stand |
+|---|---|---|
+| G1 | Neuer Spieler: nach „Fertig“ im Editor öffnet sich der Globus im Gründungsmodus (ohne „Zurück“) | ✅ 🌐 |
+| G2 | Planet: 5 Kontinente, 157 Regionen, jede Landzelle hat Region und Kontinent, alles „Wildnis“ | ✅ |
+| G3 | Gebackener Planet = Neuerzeugung aus dem Seed (byte-genau) | ✅ |
+| G4 | Drehen (Ziehen), Zoomen (Pinch/Mausrad/+−), Zoomstufen planetar → kontinental → regional | ✅ 🌐 |
+| G5 | Antippen einer Region → Infotafel (Gelände, Fläche, Höhe, Klima, Wasser, Rohstoffe, Erschließung, Gebiet, Position) | ✅ 🌐 |
+| G6 | Antippen trifft genau die Stelle unter dem Finger (auch neben der Infotafel versetzt) | ✅ |
+| G7 | Standortbewertung mit Balken; Wasser/Eis/Hochgebirge/Polnähe/zu nah/fremdes Gebiet werden abgelehnt mit Begründung | ✅ 🌐 |
+| G8 | „Vorschlag“ springt zum besten freien Ort; „Hier gründen“ gründet dort, Name wird übernommen | ✅ 🌐 |
+| G9 | In der Siedlung: HUD zeigt Region der Position; „Karte“/M öffnet den Globus mit Marker; „Siedlung betreten“/„Zurück“ kehrt zurück | ✅ 🌐 |
+| G10 | Gebiet (goldene Tönung + Rand) sichtbar, „Gebiete“ blendet es aus | 🌐 |
+| G11 | Alter Spielstand (Phase 1) wird einmal verortet, Hinweis erscheint | ✅ ⏳ (auf deinem Gerät mit deinem echten Spielstand) |
+| G12 | Hochformat: Globus oben, Infotafel unten, „Hier gründen“ sichtbar | 🌐 (iPhone-13-Emulation) ⏳ |
+| G13 | Bildrate des Globus auf dem iPhone | ⏳ |
 
 ## Ausführen
 ```bash

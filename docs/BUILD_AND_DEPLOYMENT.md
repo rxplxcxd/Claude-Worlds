@@ -12,6 +12,7 @@ python3 -I tools/assets/fetch_mega_folder.py "$MEGA_ASSETS_URL" /tmp/penzilla_sr
 python3 -I tools/assets/import_penzilla.py /tmp/penzilla_src .     # Einzeldateien + zusammengesetzte RPG-Läden
 python3 -I tools/assets/import_character.py /tmp/penzilla_src .   # Figuren-Ebenen (Ultimate Protagonist)
 
+godot --headless --path . -s res://scripts/geography/planet_bake.gd   # nur nach Änderung an Seed/Generator (Ergebnis wird committet)
 godot --headless --path . --import
 godot --headless --path . res://tests/test_runner.tscn          # Exitcode 0 = ok
 mkdir -p build/web

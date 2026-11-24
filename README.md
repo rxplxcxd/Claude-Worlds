@@ -3,7 +3,7 @@
 **Lebendige, persistente Gesellschafts-, Wirtschafts- und Zivilisationssimulation**
 2.5D-isometrische Lebens-, Aufbau- und Gesellschaftssimulation · Godot 4.7.2 · GDScript · Web / iOS Safari / PWA
 
-> **Projektstatus: Phase 1 – World Foundation, Version 0.2.0** (zur Abnahme durch den Projektinhaber).
+> **Projektstatus: Phase 2 – World Geography, Version 0.3.0** (zur Abnahme durch den Projektinhaber). Phase 1 ist freigegeben.
 > Spätere Phasen sind dokumentiert, aber **nicht implementiert**.
 
 ## Was Phase 1 enthält (implementiert)
@@ -12,6 +12,7 @@
 |---|---|
 | Godot-Projekt | Godot 4.7.2, GL Compatibility Renderer, GDScript |
 | Leerer Planet | Planet startet ohne Siedlungen (`data/world/genesis.json`); Siedlungen entstehen nur durch Gründung eines Spielers (`WorldState`), keine NPC-only-Siedlungen |
+| **Planet & Globus (Phase 2)** | Planet Aurel mit 5 Kontinenten und 157 Regionen (Gelände, Klima, Wasser, Rohstoffe), 3D-Globus mit Zoomstufen, Standortwahl mit Bewertung bei der Gründung, Territorien – [GEOGRAPHY_SYSTEM](docs/GEOGRAPHY_SYSTEM.md) |
 | Deine Siedlung „Lichtfeld“ | Beim ersten Start von dir gegründet aus der Vorlage `data/settlement_templates/founding_basic.json`, 26×26 Kacheln, 21 Gebäude (inkl. Marktzeile), Dorfplatz mit Brunnen, Straßen mit Gehwegen, Felder, Teich, Gründerzelt, Vegetation |
 | Charakter-Editor | Modulare Penzilla-Figur (Körper, Gesicht, Frisur/Hüte, Oberteile, Hosen/Overalls, Schuhe, Extras, Farben, Outfits), lebendige Vorschau (Atmen, Blinzeln, Drehen, Gehen, Benutzen), Zufall/Rückgängig, Speicherung – [CHARACTER_SYSTEM](docs/CHARACTER_SYSTEM.md) |
 | NPCs | Gründungsgemeinschaft (12) mit dauerhaften Namen, Rollen, Arbeitsplätzen und rollentypischer Kleidung; tagsüber am Arbeitsplatz, abends zu Hause, nachts drinnen – [NPC_SYSTEM](docs/NPC_SYSTEM.md) |
@@ -24,7 +25,7 @@
 | Interaktion | Gebäude/Objekte ansehen, NPCs ansprechen (Name, Rolle, Arbeitsplatz), Schwarzes Brett, Ausruhen, Brunnen |
 | HUD | Siedlungsname, Region, Uhrzeit & Datum (Ortszeit), Kamera-Buttons, Interaktions-Taste, Menü (Figur bearbeiten, Tageszeit-Vorschau, Zeitzone, Sonnenauf-/-untergang), Hinweise, FPS-Anzeige |
 | Web | Export ohne Threads (kompatibel mit GitHub Pages & iOS Safari), PWA (Manifest, Service Worker, Icons) |
-| CI/CD | GitHub Actions: Asset-Import → 82 automatische Tests → Web-Export → GitHub Pages (von `main`) |
+| CI/CD | GitHub Actions: Asset-Import → 118 automatische Tests → Web-Export → GitHub Pages (von `main`) |
 
 ![Lichtfeld mit Penzilla-Grafik (Chromium, iPhone-Emulation)](docs/screenshots/phase1-iphone-landscape-emulated.png)
 
@@ -54,6 +55,8 @@ godot --headless --path . --export-release "Web" build/web/index.html
 | Interagieren / NPC ansprechen | Orange Taste unten rechts | `E` / Enter / Leertaste |
 | Kamera zentrieren | „Fokus“ | `C` |
 | Menü / FPS | „Menü“ | `Esc` / `F3` |
+| Weltkarte | „Karte“ | `M` |
+| Globus drehen / zoomen | Ziehen / zwei Finger | Ziehen / Mausrad |
 | Figur drehen (Editor) | Pfeile neben der Figur, Wischen | Pfeile anklicken, Ziehen |
 
 ## Projektstruktur
@@ -61,10 +64,10 @@ godot --headless --path . --export-release "Web" build/web/index.html
 ```
 project.godot, export_presets.cfg, icon.svg
 scenes/      main/, settlement/, player/          (schlanke Szenen)
-scripts/     core/ geography/ world/ settlement/ buildings/ player/ character/ npc/
+scripts/     core/ geography/ globe/ world/ settlement/ buildings/ player/ character/ npc/
              camera/ interaction/ ui/ persistence/
-shaders/     occluder.gdshader
-data/        asset_manifest.json, character_catalog.json, world/genesis.json, settlement_templates/founding_basic.json
+shaders/     occluder, globe, atmosphere, stars
+data/        asset_manifest.json, character_catalog.json, world/genesis.json, world/planet/ (gebackener Planet), settlement_templates/
 assets/      penzilla/ (generiert, git-ignoriert) · interior/ (CC0-Innenraum-Assets)
 web/icons/   PWA-/Home-Screen-Icons
 tests/       Headless-Testsuite

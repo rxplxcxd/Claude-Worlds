@@ -19,10 +19,10 @@ Kleine Dokumente, Unterkollektionen für wachsende Listen, Schreibvorgänge bün
 
 ```
 worlds/{worldId}                                  name, seed, created_at (UTC); Zeit = Server-UTC, keine eigene Spielzeit
-worlds/{worldId}/continents/{continentId}
-worlds/{worldId}/regions/{regionId}               terrain, climate, resources, development, territory_id
-worlds/{worldId}/territories/{territoryId}
-worlds/{worldId}/settlements/{settlementId}       name, region_id, stage, founder_player_id, resident_player_ids, founded_at_unix (UTC), timezone (IANA), utc_offset_minutes_at_founding, population_counts, summary
+(Geografie: NICHT in Firestore – gebackene Dateien data/world/planet, gleich für alle; nur veränderliche Felder:)
+worlds/{worldId}/regions/{regionId}               development, territory_id (nur sobald ≠ Genesis)
+worlds/{worldId}/territories/{territoryId}        owner_settlement_id, owner_player_id, region_ids[], kind, claimed_at
+worlds/{worldId}/settlements/{settlementId}       name, region_id, stage, founder_player_id, resident_player_ids, founded_at_unix (UTC), timezone (IANA), utc_offset_minutes_at_founding, position {lat, lon}, region_id, continent_id, territory_id, population_counts, summary
   ├─ buildings/{buildingId}                       type, grid, footprint, state, owner_id
   ├─ properties/{propertyId}                      parcel, owner_id, lease_contract_id
   ├─ infrastructure/{segmentId}

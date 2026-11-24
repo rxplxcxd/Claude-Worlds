@@ -23,6 +23,17 @@ iPhone (iOS Safari, WebGL 2, begrenzter Speicher ~1–1,5 GB pro Tab, thermische
 | Lokale Speicherung nur bei Änderungen (Gründung, Figur) und beim Verlassen | wenige IndexedDB-Schreibvorgänge |
 | Logische Auflösung 960×540 / 540×960 | UI lesbar, Rendering skaliert mit Pixeldichte |
 
+**Phase 2 (Globus):**
+
+| Maßnahme | Wirkung |
+|---|---|
+| Planet gebacken statt erzeugt | Laden 81–130 ms (Desktop/Chromium) statt ~1,4 s Erzeugung |
+| Planet wird erst beim Öffnen der Karte / Gründen geladen | Start in der Siedlung kostet nichts zusätzlich |
+| Globus = 1 Kugel (96×48 Segmente) + Atmosphäre + Sternenkugel, unbeleuchteter Shader | 3 Draw-Calls; 7 Texturzugriffe pro Pixel |
+| Texturen 512×256 (Farbe RGB8, Höhe L8, IDs RGB8) + LUT 158×1 | < 1 MB Grafikspeicher |
+| Beschriftung in einem `_draw()` mit Überlappungs-Ausdünnung | keine Label-Knoten pro Region |
+| Siedlungsszene beim Öffnen der Karte angehalten (`PROCESS_MODE_DISABLED`) und ausgeblendet | keine doppelte Last |
+
 Gemessen (lokal, Headless-Chromium mit Software-GL/SwiftShader): Start ohne Konsolenfehler in Desktop-, iPhone-Hoch- und -Querformat-Emulation. **Echte FPS-Werte auf dem iPhone fehlen** → Menü „Leistungsanzeige“ beim Test einschalten. **[OFFEN]**
 
 ## 3. Simulations- und Darstellungs-LOD [GEPLANT]

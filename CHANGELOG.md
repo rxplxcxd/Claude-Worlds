@@ -2,6 +2,22 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.3.0] – Phase 2: World Geography
+
+### Hinzugefügt
+- **Planet Aurel:** deterministischer Generator (Höhe auf der Kugel, Ozeane/Seen, Klima, 70 Flüsse, Biome, 5 Kontinente, 157 Voronoi-Regionen mit Gelände, Klima, Wasserzugang, Rohstoffen, Namen); einmal gebacken nach `data/world/planet/` (630 KB), Test prüft byte-genaue Übereinstimmung.
+- **Koordinaten:** `Geo` (Breite/Länge ↔ Kugel, Großkreisdistanz).
+- **Autoload `Geography`:** Planet bei Bedarf laden, Standortbewertung (Wasser, Klima, Boden, Rohstoffe, Gelände, Nachbarschaft; Regeln: kein Wasser/Eis/Hochgebirge, ±62°, 300 km Abstand, keine fremde Region), bester freier Ort.
+- **Globus:** 3D-Kugel mit eigenem Shader (Küstenlinie, Regionsgrenzen, Gebiete, Hervorhebung), Atmosphäre, Sterne; Drehen, Zoomen, Antippen; Zoomstufen planetar/kontinental/regional/lokal; Beschriftungen und Siedlungsmarker; Infotafel mit Regionsdaten.
+- **Gründung auf dem Globus:** Ort wählen, Bewertung, Name, „Vorschlag“, „Hier gründen“.
+- **Territorien:** Gründung beansprucht die Region; Anzeige auf dem Globus; Invarianten geprüft.
+- HUD-Taste „Karte“ (und M); Sonnenstand folgt der Breite der Siedlung.
+- Tests: 118 Prüfungen (u. a. Planet, Determinismus, Koordinaten, Standortregeln, Migration, Auswahl, Zoomstufen, Gründung, Gebiet).
+
+### Geändert
+- Gründungsablauf: Charakter → Globus → Siedlung (statt automatischer Gründung an festem Ort).
+- Alte Spielstände werden einmalig auf den besten freien Ort gesetzt (Hinweis beim Laden).
+
 ## [0.2.0] – Charakter-Editor, NPC-Rollen, Echtzeit, Stadtbild
 
 ### Hinzugefügt

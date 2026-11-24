@@ -5,7 +5,7 @@ Legende: **[IMPLEMENTIERT]** in Phase 1 vorhanden und getestet · **[GEPLANT]** 
 ## 1. Leitprinzipien
 
 1. **Daten ≠ Darstellung.** Weltzustand liegt in reinen Datenklassen/JSON (`SettlementData`), Szenen bauen sich daraus auf. Dieselben Daten können später aus Firestore oder vom Simulationsserver kommen.
-2. **Nur die aktive Siedlung als Szene.** Globus/Weltkarte (Phase 2) ist eine eigene Szene; entfernte Siedlungen existieren nur als Daten (Simulations-LOD).
+2. **Nur die aktive Siedlung als Szene.** Globus/Weltkarte ist eine eigene Szene (seit Phase 2); entfernte Siedlungen existieren nur als Daten (Simulations-LOD).
 3. **Lose Kopplung.** UI ↔ Welt nur über `EventBus`-Signale und Dictionaries – nie direkte Knotenreferenzen.
 4. **Server-tauglich.** Aktionen laufen über einen Service (`InteractionService.run_action`), der später zur Anfrage an den autoritativen Server wird.
 5. **Kleine Skripte.** Kein Gott-Manager; jedes Skript hat eine Aufgabe.
@@ -13,7 +13,7 @@ Legende: **[IMPLEMENTIERT]** in Phase 1 vorhanden und getestet · **[GEPLANT]** 
 ## 2. Laufzeitstruktur [IMPLEMENTIERT]
 
 ```
-Main (scripts/core/main.gd)                 Ablauf: Figur erstellen → Welt; Orientierung
+Main (scripts/core/main.gd)                 Ablauf: Figur erstellen → Globus (Gründung) → Welt; Orientierung
 ├─ Settlement (SettlementScene)             lokale Siedlung, LOD "aktiv"
 │  ├─ DayNight (CanvasModulate)             Umgebungsfarbe aus dem Sonnenstand
 │  ├─ Ground (GroundLayer)                  Kacheln, einmal gezeichnet
@@ -24,8 +24,11 @@ Main (scripts/core/main.gd)                 Ablauf: Figur erstellen → Welt; Or
 │  └─ Camera (CameraRig)
 ├─ HUD (CanvasLayer, Hud)
 │  └─ Root ─ GestureSurface (hinten) · Info · Uhr/Buttons · Joystick · Interact · Panels
+├─ Globe (GlobeScreen)                      nur bei Gründung / „Karte“; Siedlung derweil angehalten
+│  ├─ GlobeView (Node3D)                    Kugel, Atmosphäre, Sterne, Orbit-Kamera
+│  └─ CanvasLayer 20 ─ Gesten · GlobeLabels · Kopfzeile · Zoom · Infotafel
 └─ CanvasLayer 30 ─ CharacterEditor        nur bei Erstellung / „Figur bearbeiten“
-Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · WorldState · CharacterCatalog · CharacterComposer
+Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · Geography · WorldState · CharacterCatalog · CharacterComposer
 ```
 
 ## 3. Module
@@ -33,7 +36,8 @@ Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · WorldState 
 | Ordner | Inhalt | Status |
 |---|---|---|
 | `scripts/core` | `event_bus`, `game_clock` (Echtzeit/Zeitzonen/Sonne), `asset_registry`, `ids`, `input_actions`, `main` | IMPLEMENTIERT |
-| `scripts/geography` | `Iso` – Projektion Raster↔Welt, Facing | IMPLEMENTIERT (Planet/Kontinente GEPLANT Phase 2) |
+| `scripts/geography` | `Iso` (Raster↔Welt), `Geo` (Breite/Länge), `PlanetGenerator`, `PlanetData`, `PlanetTextures`, `planet_bake.gd`, Autoload `Geography` (Planet laden, Standortbewertung) | IMPLEMENTIERT – GEOGRAPHY_SYSTEM.md |
+| `scripts/globe` | `GlobeScreen` (Modi Gründen/Erkunden, Infotafel), `GlobeView` (3D, Kamera, Auswahl, Zoomstufen), `GlobeLabels` | IMPLEMENTIERT |
 | `scripts/settlement` | `SettlementData` (Vorlage + Gründungsdatensatz, Validierung), `SettlementScene`, `StreetPlanner` (Platzierungsregeln Straßenmobiliar) | IMPLEMENTIERT |
 | `scripts/world` | `WorldState` (Siedlungsregister, Gründungsregel), `GroundLayer`, `Prop`, `StreetLamp` (Auslegerlaterne + Licht), `IsoPainter` (Platzhalter) | IMPLEMENTIERT |
 | `scripts/buildings` | `Building` (inkl. Verdeckungs-Fläche) | IMPLEMENTIERT |
@@ -44,7 +48,8 @@ Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · WorldState 
 | `scripts/interaction` | `Interactable`, `InteractionService` | IMPLEMENTIERT |
 | `scripts/ui` | `Hud`, `CharacterEditor`, `CharacterThumb`, `GestureSurface`, `TouchJoystick`, `TouchButton`, `UiTheme` | IMPLEMENTIERT |
 | `scripts/persistence` | `LocalProfile` (inkl. Figur) | IMPLEMENTIERT (lokal) |
-| `shaders` | `occluder.gdshader` (Durchsicht-Loch) | IMPLEMENTIERT |
+| `shaders` | `occluder.gdshader` (Durchsicht-Loch), `globe.gdshader`, `atmosphere.gdshader`, `stars.gdshader` | IMPLEMENTIERT |
+| `data/world/planet` | gebackener Planet (`planet.json`, `planet_cells.bin`) | IMPLEMENTIERT (generiert) |
 | `ai`, `economy`, `politics`, `firebase`, … | – | GEPLANT (werden erst mit ihrer Phase angelegt) |
 
 ## 4. Zeitmodell [IMPLEMENTIERT]
@@ -135,6 +140,21 @@ Code fragt logische Schlüssel ab (`exterior.building.town_hall`). Dateien entst
 ### ADR-11: Verdeckung per Durchsicht-Loch statt Ganz-Transparenz
 - *Entscheidung:* Gebäude/hohe Objekte vor dem Spieler bekommen ein weiches, kreisförmiges Loch um die Figur (Shader); Stärke wird pro Objekt weich ein-/ausgeblendet (6/s) und im Alpha der Modulate-Farbe codiert → ein gemeinsames Material, Batching bleibt erhalten.
 - *Folgen:* Nur der verdeckende Teil wird durchsichtig, kein Flackern beim Vorbeilaufen.
+
+### ADR-12: Planet einmal backen statt zur Laufzeit erzeugen
+- *Problem:* Erzeugung ~1,4 s (Desktop, auf dem iPhone mehrere Sekunden); Gleitkomma-Unterschiede zwischen Plattformen könnten Regionsgrenzen verschieben → in einer gemeinsamen Welt unzulässig.
+- *Entscheidung:* Deterministischer Generator + `planet_bake.gd`; die gebackenen Dateien sind versioniert und werden mit dem Spiel ausgeliefert. Test vergleicht Neuerzeugung byte-genau.
+- *Folgen:* Laden in ~0,1 s (Desktop); identische Geografie überall; Generatoränderungen brauchen neue Version + Migration.
+
+### ADR-13: 3D-Globus im Compatibility-Renderer mit eigenem Shader
+- *Alternativen:* (a) 2D-Kartenprojektion, (b) 3D-Kugel, (c) Hybrid.
+- *Entscheidung:* (b) für Phase 2 – eine Kugel mit unbeleuchtetem Shader (wenige Texturzugriffe), Zoomstufen über den Kameraabstand. Eine 2D-Regionalkarte kann später ergänzt werden.
+- *Folgen:* Ein Draw-Call für den Planeten; Auswahl analytisch (Strahl/Kugel) über die Projektionsmatrix; Bildschirmversatz per Frustum-Offset (ohne Parallaxe), damit die Kugel neben der Infotafel zentriert ist.
+
+### ADR-14: Regionen als Voronoi-Zellen auf der Kugel
+- *Problem:* Flutfüllung auf dem Gitter ergab achsenparallele, lineal-gerade Grenzen.
+- *Entscheidung:* Nächster Startpunkt nach Großkreisdistanz (leicht verrauscht), nur innerhalb derselben Landmasse.
+- *Folgen:* Natürliche, polygonale Grenzen; Regionen springen nicht übers Meer (außer kleinen Inseln ohne eigenen Startpunkt).
 
 ## 9. Zukünftige Systemtrennung [GEPLANT]
 

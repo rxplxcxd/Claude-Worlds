@@ -1,0 +1,13 @@
+{
+  "_comment": "Initial state of the planet. BINDING RULE: the planet starts completely empty - no settlements, no cities, no NPC-only places. Every settlement is founded by a human player. See docs/WORLD_DESIGN.md section 1.",
+  "schema_version": 1,
+  "world_id": "wld_prime",
+  "planet_id": "pln_aurel",
+  "planet_name": "Aurel",
+  "rules": {
+    "initial_settlements": 0,
+    "settlement_requires_human_founder": true,
+    "npc_only_settlements_allowed": false
+  },
+  "settlements": []
+}

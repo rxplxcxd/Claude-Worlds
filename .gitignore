@@ -1,0 +1,12 @@
+# Godot
+.godot/
+*.translation
+export_credentials.cfg
+# Build output
+build/
+# OS / editor
+.DS_Store
+*.tmp
+# Never commit secrets
+.env
+*.keystore

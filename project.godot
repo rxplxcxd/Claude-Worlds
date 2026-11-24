@@ -1,0 +1,53 @@
+; Engine configuration file.
+; WORLDS – Phase 1 (World Foundation)
+
+config_version=5
+
+[application]
+
+config/name="WORLDS"
+config/description="Lebendige, persistente Gesellschafts-, Wirtschafts- und Zivilisationssimulation (Phase 1: World Foundation)"
+config/version="0.1.1"
+run/main_scene="res://scenes/main/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0.0705882, 0.0901961, 0.12549, 1)
+boot_splash/show_image=false
+
+[autoload]
+
+EventBus="*res://scripts/core/event_bus.gd"
+GameClock="*res://scripts/core/game_clock.gd"
+AssetRegistry="*res://scripts/core/asset_registry.gd"
+LocalProfile="*res://scripts/persistence/local_profile.gd"
+WorldState="*res://scripts/world/world_state.gd"
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=540
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=6
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+
+[layer_names]
+
+2d_physics/layer_1="world"
+2d_physics/layer_2="player"
+2d_physics/layer_3="interaction"
+
+[physics]
+
+common/physics_ticks_per_second=60
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.0705882, 0.0901961, 0.12549, 1)
+anti_aliasing/quality/msaa_2d=0
+textures/vram_compression/import_etc2_astc=true

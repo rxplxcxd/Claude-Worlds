@@ -18,17 +18,17 @@ Daten- und Authentifizierungsgrundlage – **nicht** der Simulationsserver.
 Kleine Dokumente, Unterkollektionen für wachsende Listen, Schreibvorgänge bündeln.
 
 ```
-worlds/{worldId}                                  name, seed, created_at, clock {game_minutes, real_ts}
+worlds/{worldId}                                  name, seed, created_at (UTC); Zeit = Server-UTC, keine eigene Spielzeit
 worlds/{worldId}/continents/{continentId}
 worlds/{worldId}/regions/{regionId}               terrain, climate, resources, development, territory_id
 worlds/{worldId}/territories/{territoryId}
-worlds/{worldId}/settlements/{settlementId}       name, region_id, stage, founder_player_id, resident_player_ids, founded_at, population_counts, summary
+worlds/{worldId}/settlements/{settlementId}       name, region_id, stage, founder_player_id, resident_player_ids, founded_at_unix (UTC), timezone (IANA), utc_offset_minutes_at_founding, population_counts, summary
   ├─ buildings/{buildingId}                       type, grid, footprint, state, owner_id
   ├─ properties/{propertyId}                      parcel, owner_id, lease_contract_id
   ├─ infrastructure/{segmentId}
   ├─ inventories/{inventoryId}
   └─ snapshots/{snapshotId}                       komprimierter Zustand für Offline-Fortschreibung
-worlds/{worldId}/npcs/{npcId}                     Kerndaten (Bedürfnisse/Tagesplan nur serverseitig)
+worlds/{worldId}/npcs/{npcId}                     settlement_id, name, role, workplace_id, home_id, appearance {slot: {option, color}} (Phase 1 lokal: record.npcs[]); Bedürfnisse/Tagesplan nur serverseitig
   └─ memories/{memoryId}
 worlds/{worldId}/businesses/{businessId}
 worlds/{worldId}/contracts/{contractId}           parties (IDs), kind, terms, state
@@ -41,7 +41,7 @@ worlds/{worldId}/councils/{councilId}
        └─ decisions/{decisionId}
 worlds/{worldId}/events/{eventId}                 append-only Ereignisprotokoll (TTL für Altdaten)
 worlds/{worldId}/world_snapshots/{snapshotId}
-players/{playerId}                                profile, auth_uid, residence, settings
+players/{playerId}                                profile, auth_uid, residence, settings, display_name, appearance {slot: {option, color}} (Phase 1 lokal: LocalProfile.character)
   └─ relationships/{otherId}
 resources/{goodId}                                Stammdaten (global, read-only)
 ```

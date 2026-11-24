@@ -10,12 +10,17 @@ iPhone (iOS Safari, WebGL 2, begrenzter Speicher ~1–1,5 GB pro Tab, thermische
 | Web-Export ohne Threads | kein SharedArrayBuffer, stabil auf iOS |
 | Boden wird **einmal** gezeichnet (Canvas-Befehle gecacht) | 784 Kacheln ohne Kosten pro Frame |
 | Gebäude/Props zeichnen nur bei Änderung (`queue_redraw` beim Aufbau) | keine Per-Frame-Zeichnung |
-| Nur Laternen haben `_process` (Lichtstärke) | minimale Skriptlast |
+| Laternen, NPCs und Figuren haben schlanke `_process` (Licht, Frame-Wechsel, Blinzeln); NPC-Präsenz nur alle 0,5 s geprüft | geringe Skriptlast |
+| Figuren im **Composite-Modus**: Ebenen per SubViewport einmal zu 2 Texturen pro Animation zusammengesetzt, gecacht (gleiches Aussehen = gleicher Cache) | ~3 Sprites statt ~12 je Figur; 12 NPCs + Spieler ≈ 39 Sprites |
+| Figuren-Ebenen beim Import auf 40 % verkleinert und quantisiert (151 Dateien ≈ 3,8 MB) | Download/Speicher klein |
+| Verdeckung: **ein** gemeinsames Shader-Material, Stärke im Modulate-Alpha | Batching bleibt erhalten |
+| Laternenlicht: Verlaufs-Texturen + additive Polygone statt `Light2D` | keine Licht-Passes im Compatibility-Renderer |
+| Straßenmobiliar/NPC-Plätze einmal beim Aufbau berechnet | keine Laufzeitkosten |
 | Spielfigur zeichnet nur beim Laufen neu | |
 | Kollision: einfache Polygone, kein Navigationsmesh | |
 | Tag/Nacht per `CanvasModulate` (1 Uniform) | keine 2D-Lichter |
 | MSAA aus, Antialiasing nur an Linien | |
-| Lokale Speicherung nur stündlich (Spielzeit) | wenige IndexedDB-Schreibvorgänge |
+| Lokale Speicherung nur bei Änderungen (Gründung, Figur) und beim Verlassen | wenige IndexedDB-Schreibvorgänge |
 | Logische Auflösung 960×540 / 540×960 | UI lesbar, Rendering skaliert mit Pixeldichte |
 
 Gemessen (lokal, Headless-Chromium mit Software-GL/SwiftShader): Start ohne Konsolenfehler in Desktop-, iPhone-Hoch- und -Querformat-Emulation. **Echte FPS-Werte auf dem iPhone fehlen** → Menü „Leistungsanzeige“ beim Test einschalten. **[OFFEN]**

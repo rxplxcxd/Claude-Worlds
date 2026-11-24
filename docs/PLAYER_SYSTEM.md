@@ -1,8 +1,9 @@
 # PLAYER_SYSTEM
 
 ## 1. Implementiert (Phase 1)
-- **Lokale Spieleridentität**: `LocalProfile.player_id` (`plr_…`, zufällig, in `user://worlds_local.cfg` gespeichert), Anzeigename „Siedler:in“, Einstellungen (FPS-Anzeige, Spielgeschwindigkeit), gespeicherte Spielzeit.
-- **Spielfigur** (`Player`, `CharacterBody2D`): Geschwindigkeit 190 px/s auf der Bodenebene, Kollision (Ellipse), Interaktionsradius, Eingaben aus Tastatur, Joystick und Tipp-Zielen; 8 Blickrichtungen; Platzhalter-Optik mit Laufanimation, bereit für `SpriteFrames` (`idle_<dir>`, `walk_<dir>`).
+- **Lokale Spieleridentität**: `LocalProfile.player_id` (`plr_…`, zufällig, in `user://worlds_local.cfg` gespeichert), Anzeigename (im Charakter-Editor wählbar, Standard „Siedler:in“), Einstellungen (FPS-Anzeige), **Aussehen der Figur** (`LocalProfile.character`).
+- **Charakter-Editor & modulare Figur**: neue Spieler erstellen zuerst ihre Figur (vor der Gründung), später über Menü → „Figur bearbeiten“. Details: [CHARACTER_SYSTEM.md](CHARACTER_SYSTEM.md).
+- **Spielfigur** (`Player`, `CharacterBody2D`): Geschwindigkeit 190 px/s auf der Bodenebene, Kollision (Ellipse), Interaktionsradius, Eingaben aus Tastatur, Joystick und Tipp-Zielen; 8 Blickrichtungen; Darstellung mit dem eigenen modularen Penzilla-Charakter (Stehen mit Blinzeln, Gehen, Benutzen beim Interagieren; Rückfall: fertige Figur bzw. Platzhalter). Bleibt hinter Gebäuden sichtbar (Durchsicht-Loch, ARCHITECTURE ADR-11).
 - Beim ersten Start **gründet** der Spieler seine Siedlung (WorldState, Gründer = `player_id`) und wohnt im Haus `bld_player_home`. Danach lädt das Spiel die gespeicherte Siedlung (`user://worlds_world.json`).
 
 ## 2. Spieleridentität (Datenmodell) [GEPLANT]
@@ -30,4 +31,4 @@ Später jederzeit: umziehen (MIGRATION_SYSTEM).
 Siehe CONTRACT_SYSTEM: Abwesenheit ohne Verpflichtung ist folgenlos; Verpflichtungen haben faire, verhältnismäßige Folgen.
 
 ## 5. Offene Fragen [OFFEN]
-Charaktererstellung (Aussehen aus Ultimate Protagonist?), Fähigkeitensystem (Lernen durch Tun vs. Ausbildung).
+Fähigkeitensystem (Lernen durch Tun vs. Ausbildung).

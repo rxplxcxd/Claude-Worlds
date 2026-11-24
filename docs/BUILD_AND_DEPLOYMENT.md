@@ -8,14 +8,17 @@
 ```bash
 # optional: gekaufte Penzilla-Assets holen und verarbeiten (Link = privat!)
 pip install pillow requests cryptography
-python3 -I tools/assets/fetch_mega_folder.py "$MEGA_ASSETS_URL" /tmp/penzilla_src --only GiantCityBuilder.zip,Ultimate_Protagonist.zip,Basic_GUI_Bundle.zip,Isometric_RPG_Buildings.zip,Top-Down_Retro_Interior.zip
-python3 -I tools/assets/import_penzilla.py /tmp/penzilla_src .
+python3 -I tools/assets/fetch_mega_folder.py "$MEGA_ASSETS_URL" /tmp/penzilla_src --only GiantCityBuilder.zip,Ultimate_Protagonist.zip,Basic_GUI_Bundle.zip,Isometric_RPG_Buildings.zip,Top-Down_Retro_Interior.zip,Stylized_GrassAndDirt.zip
+python3 -I tools/assets/import_penzilla.py /tmp/penzilla_src .     # Einzeldateien + zusammengesetzte RPG-Läden
+python3 -I tools/assets/import_character.py /tmp/penzilla_src .   # Figuren-Ebenen (Ultimate Protagonist)
 
 godot --headless --path . --import
 godot --headless --path . res://tests/test_runner.tscn          # Exitcode 0 = ok
 mkdir -p build/web
 godot --headless --path . --export-release "Web" build/web/index.html
 node tools/serve_and_shoot.js build/web build/shots              # optional: Browser-Smoke-Test (Playwright)
+node tools/browser_editor_test.js build/web build/editor          # optional: Charakter-Editor im Browser
+TZ_ID=America/New_York node tools/world_shots.js build/web build/world "?preview=21:00"   # Welt, Zeitzone, Nachtvorschau
 ```
 `build/` ist in `.gitignore`.
 

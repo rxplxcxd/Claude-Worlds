@@ -12,8 +12,8 @@ Der Planet startet leer (siehe WORLD_DESIGN.md §1). **Jede Siedlung wird von ei
 - **Validierung** (`SettlementData.validate`): eindeutige `bld_`-IDs, keine Überlappungen, nur bebaubarer Untergrund, Requisiten nicht in Gebäuden, Spawn frei.
 - Gebäude besitzen bereits ihre **Funktion** (Verwaltung, Handel, Wasser, Energie, Lebensmittel, Bau, Gesundheit, Sicherheit/Brandschutz, Wohnen) – als Information, ohne Simulation.
 
-## 2. Gründungsgemeinschaft [GEPLANT, Phase 4]
-Startbevölkerung 20–50 NPCs, die **mit dem Gründer** kommen (Annahme, Bestätigung offen – WORLD_DESIGN.md §5). Funktionen können zusammengelegt sein:
+## 2. Gründungsgemeinschaft [Phase 1: 12 NPCs IMPLEMENTIERT – siehe NPC_SYSTEM.md §0a · Ausbau GEPLANT, Phase 4]
+Zielgröße der Startbevölkerung 20–50 NPCs, die **mit dem Gründer** kommen (Annahme, Bestätigung offen – WORLD_DESIGN.md §5). Funktionen können zusammengelegt sein:
 
 | Funktion | Gebäude in Lichtfeld | Min. Personal (Vorschlag) |
 |---|---|---|
@@ -40,6 +40,31 @@ Gründungssiedlung → Kleine Siedlung → Dorf → Kleinstadt → Stadt → Gro
 
 ## 5. Spielerfreundlicher Einstieg [teilweise IMPLEMENTIERT]
 Implementiert: eigenes Haus des Gründers, Gründungsmeldung, Orientierung (Schwarzes Brett), klare Steuerungshinweise. Geplant: erste Arbeitsangebote, Startkapital, kleine Einstiegsziele.
+
+## 7. Stadtbild & Platzierungsregeln [IMPLEMENTIERT]
+
+**Straßennetz (Vorlage v2):** Hauptstraßen (x = 12, y = 12) mit Kreuzung am Dorfplatz, Seitenstraße (y = 18) mit T-Kreuzung. **Jede Straße hat beidseitig Gehwege**; Gehwege verbinden Straße und Fußwege; Wege (Erde) schließen an Gehwege an (Autotiling `CONNECTS`). Gehwege = Penzilla-Beton + Penzilla-Gehwegplatten.
+
+**Straßenmobiliar wird aus Regeln erzeugt, nicht von Hand gesetzt** (`scripts/settlement/street_planner.gd`):
+
+| Objekt | Regel |
+|---|---|
+| Bordsteinzelle | Gehwegzelle, die direkt an eine Straße grenzt |
+| Straßenlaterne | nur auf Bordsteinzellen, alle 4 Zellen, auf beiden Straßenseiten versetzt (Zickzack); Mast an der Bordsteinkante, **Ausleger zeigt über die Fahrbahn**, Leuchte hängt über der Straße |
+| Hydrant | auf dem Gehweg an der Bordsteinkante, alle 6 Zellen; ≥ 1,5 Zellen Abstand zu Laternen; jede Kreuzung hat einen Hydranten im Umkreis von 3 Zellen |
+| Straßenschild | an einer Ecke jeder Kreuzung |
+| Vorfahrtsschild | an der Einmündung der Seitenstraße |
+| Bushaltestelle | an der Hauptstraße (Nordseite, östlich des Platzes), mit Mülleimer daneben |
+| Briefkasten | neben (nicht vor) dem Eingang jedes Wohnhauses |
+| Eingänge | die Zellen vor den sichtbaren Fassaden (+y, +x) bleiben frei |
+
+`StreetPlanner.validate()` prüft alle Regeln (nicht auf Straße/Wasser/Gebäude, Laternen/Hydranten/Haltestelle am Bordstein, keine blockierten Eingänge, Laterne zeigt zur Straße, Abstände) – getestet, inkl. Negativtest.
+
+**Laternen-Perspektive:** Penzilla hat keine Auslegerlaterne; sie wird aus Penzilla-Teilen gebaut (Mast + Wandausleger entlang der isometrischen Achse gedreht + Leuchtenkopf). Nachts: Lichthof am Kopf, weicher Lichtkegel (Farbverlauf) zur Fahrbahn, elliptischer Lichtfleck auf dem Boden in einer eigenen Ebene unter allen Objekten; die Helligkeit gleicht die Nachttönung aus, damit das Licht dezent bleibt.
+
+**Tiefensortierung:** Y-Sort nach Grundflächenmittelpunkt bzw. Fußpunkt (Figuren, Laternen, Props). **Verdeckung:** Steht der Spieler hinter einem Gebäude/Baum/Wasserturm/Bushäuschen/Zelt, wird nur der Bereich um die Figur weich durchsichtig (ARCHITECTURE.md ADR-11).
+
+**Marktzeile:** Bäckerei, Gemischtwaren, Schmiede (Isometric RPG Buildings, aus Ebenen zusammengesetzt, ADR-10) an der Seitenstraße; Gründerzelt am Westrand.
 
 ## 6. Offene Fragen [OFFEN]
 Rastergröße wachsender Städte (Chunks à 32×32 Kacheln vorgeschlagen), Stadtteile als eigene Szenen?

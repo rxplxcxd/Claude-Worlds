@@ -2,6 +2,24 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.2.0] – Charakter-Editor, NPC-Rollen, Echtzeit, Stadtbild
+
+### Hinzugefügt
+- **Modularer Charakter** aus dem Penzilla-Ultimate-Protagonist-Baukasten (`CharacterCatalog`, `CharacterComposer`, `CharacterRig`): Körper, Gesicht, 10 Frisuren + Mütze/Strohhut, Oberteile, Ärmel, Hosen, Overalls, Schuhe, Taschen, Schals, Fliegen, Ketten, Werkzeuge; Farbvarianten durch Einfärbung; Blinzeln; 8 Richtungen.
+- **Charakter-Editor** vor der Gründung und über „Figur bearbeiten“: lebendige Vorschau (Atmen, Drehen, Gehen, Benutzen), Karten mit der eigenen Figur, Farbfelder, 6 Outfits, Zufall, Rückgängig, Zurücksetzen, Name; responsiv; gespeichert im Profil.
+- **NPC-Gründungsgemeinschaft** (12 NPCs, 8 Rollen) mit dauerhaften Namen, Arbeitsplätzen, Wohnungen und rollentypischer Kleidung; Präsenz nach Tageszeit; ansprechbar.
+- **Echtzeituhr** mit UTC-Basis, automatischer IANA-Zeitzone und Sommerzeit, Sonnenstandsmodell, Tageszeit-Vorschau (Menü/URL); Zeitzone wird bei der Gründung gespeichert.
+- **Stadtbild v2**: Gehwege an allen Straßen, `StreetPlanner` mit Platzierungsregeln und Validierung (Laternen, Hydranten, Schilder, Bushaltestelle, Briefkästen), Auslegerlaternen aus Penzilla-Teilen mit Lichthof, Lichtkegel und Lichtfleck.
+- **Verdeckung**: weiches Durchsicht-Loch um die Figur hinter Gebäuden/Bäumen.
+- **Isometric RPG Buildings**: Marktzeile (Bäckerei, Gemischtwaren, Schmiede) aus Ebenen zusammengesetzt und auf das City-Builder-Raster abgebildet; Gründerzelt.
+- Docs: CHARACTER_SYSTEM.md, QA_CHECKLIST.md; Zeitmodell, Platzierungsregeln, NPCs, ADR-8…11.
+- Tests: 78 Prüfungen (u. a. Zeitzonen, Platzierungsregeln, Verdeckung, NPC-Rollen/Plätze/Präsenz/Persistenz).
+
+### Geändert
+- Spielgeschwindigkeit und Zeitsprung entfernt (Echtzeit); „Ausruhen“ ist ein Moment ohne Zeitsprung.
+- Gründungsvorlage v2 (26×26, Kreuzung am Dorfplatz, Seitenstraße, 21 Gebäude).
+- Blickrichtungen der Penzilla-Sheets korrigiert (Reihen S, SO, O, NO, N; Westen gespiegelt).
+
 ## [0.1.2] – Penzilla-Assets integriert
 
 ### Hinzugefügt

@@ -1,6 +1,15 @@
 # NPC_SYSTEM
 
-**Status: [GEPLANT] – Phase 3.** In Phase 1 existieren keine NPCs.
+**Status:** Gründungsgemeinschaft mit dauerhaften Identitäten, Rollenkleidung und Tagespräsenz **[IMPLEMENTIERT, Phase 1]** · Bedürfnisse, KI, Navigation, Gespräche **[GEPLANT, Phase 3]**.
+
+## 0a. Was in Phase 1 implementiert ist
+- **Gründungsgemeinschaft** (`scripts/npc/npc_roster.gd`): Bei der Gründung entstehen 12 NPCs – Verwaltung 1, Händler:in 2, Sanitäter:in 1, Sicherheitsdienst 1, Bauarbeiter:in 2, Handwerker:in 1, Landwirt:in 2, Bewohner:in 2. Deterministisch aus der Siedlungs-ID (Seed), danach **im Siedlungsdatensatz gespeichert** (`record.npcs[]`): `npc_id, name, role, workplace_id, home_id, appearance, index_in_role`. Ältere Spielstände ohne NPCs erhalten sie beim nächsten Laden einmalig.
+- **Rollenkleidung** (`CharacterCatalog.role_appearance(role, seed)`, Regeln in `data/character_catalog.json → roles`): zivile Zufallsbasis + Uniform der Rolle. Beispiele: Bau → Mütze orange/gelb, Overall orange/gelb, Hammer · Landwirtschaft → Strohhut, grünes Hemd, Schaufel/Gießkanne · Sanitäter → hellblaues Hemd mit langen Ärmeln, hellblaue Hose · Verwaltung → dunkles Hemd/Kleid, Fliege · Sicherheit → blaues Langarmhemd, schwarze Hose · Handel → Hemd orange/gelb/beige, Tasche. Strohhut und Mütze sind **Rollenmerkmale** und werden anderen Rollen nicht zufällig gegeben. Jede Kombination ist eindeutig (getestet); das Aussehen bleibt dauerhaft gleich (gespeichert, nicht neu gewürfelt).
+- **Arbeitsplätze** werden je Rolle reihum verteilt (z. B. Händler:in 1 → Handelsposten, Händler:in 2 → Bäckerei). Wohnungen reihum auf die Wohnhäuser.
+- **Präsenz nach Uhrzeit** (`scripts/npc/npc.gd`): 07:30–18:30 neben der Tür des Arbeitsplatzes (Bewohner:innen am Dorfplatz), 18:30–22:00 neben dem eigenen Wohnhaus, nachts drinnen (unsichtbar, keine Kollision). Plätze (`NpcRoster.plan_spots`): nie auf Straße/Wasser/Gebäude, nie im Eingang, nie auf Straßenmobiliar, eindeutig, sichtbare Gebäudeseite bevorzugt.
+- **Verhalten:** Idle-Animation mit Blinzeln, gelegentliches Umdrehen, Werkzeuggebrauch (Rollen mit Werkzeug), schaut den Spieler an, wenn er näher als ~70 px kommt. Antippen → Karte mit Name, Rolle, Arbeitsplatz, Wohnung.
+- **Darstellung:** gleicher `CharacterRig` wie der Spieler im Composite-Modus (2 Texturen pro Figur und Animation, gecacht).
+- **Grenzen (ehrlich):** keine Wege zwischen Wohnung und Arbeit (sie „erscheinen“ am neuen Ort), keine Gespräche, keine Bedürfnisse. Präsenz nutzt in Phase 1 die Lokalzeit des Spielers (siehe ARCHITECTURE.md §4).
 
 ## 0. Grundregel [VERBINDLICH]
 NPCs existieren **nur innerhalb von Siedlungen, die ein Mensch gegründet hat** (als Gründungsgemeinschaft des Gründers oder durch Zuzug). NPCs **gründen keine Siedlungen**, und es gibt keine Siedlung ohne menschliche Bewohner (WORLD_DESIGN.md §1). NPC-Umzüge erfolgen nur zwischen bestehenden Spielersiedlungen.

@@ -543,6 +543,69 @@
       "function": "Wohnen",
       "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
       "variant": 3
+    },
+    {
+      "id": "bld_shop_bakery",
+      "type": "shop",
+      "name": "Bäckerei am Birkenweg",
+      "grid": [
+        18,
+        16
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 70,
+      "roof": "flat",
+      "color": "#e6d6bf",
+      "roof_color": "#7a5a3a",
+      "accent": "#6b4e3a",
+      "function": "Laden der Gründungsgemeinschaft · Brot und Gebäck",
+      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 5).[/i]",
+      "variant": 0
+    },
+    {
+      "id": "bld_shop_grocer",
+      "type": "shop",
+      "name": "Gemischtwaren Lichtblick",
+      "grid": [
+        19,
+        16
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 70,
+      "roof": "flat",
+      "color": "#e6d6bf",
+      "roof_color": "#7a5a3a",
+      "accent": "#6b4e3a",
+      "function": "Laden der Gründungsgemeinschaft · Lebensmittel und Dinge des Alltags",
+      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 5).[/i]",
+      "variant": 1
+    },
+    {
+      "id": "bld_shop_smith",
+      "type": "shop",
+      "name": "Schmiede & Eisenwaren",
+      "grid": [
+        20,
+        16
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 70,
+      "roof": "flat",
+      "color": "#e6d6bf",
+      "roof_color": "#7a5a3a",
+      "accent": "#6b4e3a",
+      "function": "Laden der Gründungsgemeinschaft · Werkzeug, Nägel, Reparaturen",
+      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 5).[/i]",
+      "variant": 2
     }
   ],
   "props": [
@@ -670,6 +733,15 @@
         8.4,
         1.5
       ]
+    },
+    {
+      "kind": "tent",
+      "grid": [
+        5.5,
+        15.5
+      ],
+      "name": "Gründerzelt",
+      "text": "Hier hast du die erste Nacht verbracht, bevor {settlement} gegründet war."
     }
   ],
   "scatter": [

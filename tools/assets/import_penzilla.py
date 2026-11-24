@@ -38,6 +38,49 @@ def content_anchor(img):
     return [cx, float(bbox[3])], list(bbox)
 
 
+def footprint_bottom(floor):
+    """Bottom vertex of an isometric floor layer, in image pixels.
+
+    The RPG packs draw the floor partly hidden behind the front walls, so the
+    bottom vertex is reconstructed from the left/right vertices and the slope
+    of the (fully visible) back edges."""
+    a = floor.getchannel("A").point(lambda v: 255 if v > 128 else 0)
+    x0, y0, x1, y1 = a.getbbox()
+    def rows(x):
+        ys = [y for y in range(y0, y1) if a.getpixel((x, y))]
+        return (ys[0] + ys[-1]) / 2
+    left, right = (x0 + 1, rows(x0 + 1)), (x1 - 2, rows(x1 - 2))
+    cx = (x0 + x1) // 2
+    top_y = next(y for y in range(y0, y1) if a.getpixel((cx, y)))
+    slope = (left[1] - top_y) / (cx - left[0])
+    bx = (right[1] - left[1] + slope * (left[0] + right[0])) / (2 * slope)
+    return [bx, left[1] + slope * (bx - left[0])], right[0] - left[0], slope
+
+
+def compose(archives, spec):
+    """Flattens a layered Penzilla building (RPG pack) into one image and
+    maps it onto the Giant-City-Builder grid: footprint width -> tiles * 512
+    source px, vertical squash so the edge slope matches 292/512."""
+    zf = archives[spec["pack"]]
+    base = spec["dir"].rstrip("/") + "/"
+    layers = [Image.open(io.BytesIO(zf.read(base + name))).convert("RGBA") for name in spec["layers"]]
+    img = Image.new("RGBA", layers[0].size, (0, 0, 0, 0))
+    for layer in layers:
+        img.alpha_composite(layer)
+    if "floor" in spec:
+        floor = Image.open(io.BytesIO(zf.read(base + spec["floor"]))).convert("RGBA")
+        bottom, width, slope = footprint_bottom(floor)
+        sx = spec.get("tiles", 1) * 512.0 / width
+        sy = sx * (146.0 / 256.0) / slope
+    else:
+        bottom, bbox = content_anchor(img)
+        sx = spec["width_src"] / (bbox[2] - bbox[0])
+        sy = sx * spec.get("squash_y", 1.0)
+    out = img.resize((round(img.width * sx), round(img.height * sy)), Image.LANCZOS)
+    anchor = [bottom[0] * sx, bottom[1] * sy]
+    return out, anchor
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -89,6 +132,25 @@ def main():
             "size": [img.width, img.height],
             "anchor": anchor,
             "bbox": bbox,
+        }
+    # Layered buildings composed at import time (Isometric RPG Buildings).
+    for rel, spec in sel.get("composed", {}).items():
+        if spec["pack"] not in archives:
+            missing.append(rel)
+            continue
+        src, anchor = compose(archives, spec)
+        out = src.resize((max(1, round(src.width * scale)), max(1, round(src.height * scale))), Image.LANCZOS)
+        dest = os.path.abspath(os.path.join(out_root, rel))
+        if not dest.startswith(out_root + os.sep):
+            raise SystemExit(f"unsafe output path: {rel}")
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        out.save(dest, optimize=True)
+        meta["files"]["res://assets/penzilla/" + rel] = {
+            "source_pack": sel["packs"][spec["pack"]],
+            "source_file": spec["dir"] + " (" + ", ".join(spec["layers"]) + ")",
+            "size": [src.width, src.height],
+            "anchor": anchor,
+            "composed": True,
         }
     with open(os.path.join(out_root, "import_meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=1, sort_keys=True)

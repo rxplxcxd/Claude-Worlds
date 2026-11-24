@@ -368,6 +368,19 @@
       "source": "penzilla_giant_city_builder",
       "path": "res://assets/penzilla/tiles/sidewalk.png",
       "anchor_mode": "canvas"
+    },
+    "exterior.building.shop": {
+      "source": "penzilla_isometric_rpg_buildings",
+      "paths": [
+        "res://assets/penzilla/buildings/shop_baker.png",
+        "res://assets/penzilla/buildings/shop_grocer.png",
+        "res://assets/penzilla/buildings/shop_smith.png"
+      ],
+      "note": "Composed from the layered 2x2Tile_Store at import; mapped onto one Giant City Builder tile (vertical squash 0.945 to match the 512x292 projection)."
+    },
+    "exterior.prop.tent": {
+      "source": "penzilla_isometric_rpg_buildings",
+      "path": "res://assets/penzilla/props/tent.png"
     }
   }
 }

@@ -393,5 +393,82 @@
       "gcb",
       "DecorItems/TrashCanSmall.png"
     ]
+  },
+  "composed": {
+    "buildings/shop_baker.png": {
+      "pack": "rpg",
+      "dir": "2x2Tile_Store",
+      "floor": "Layer4_Floor.png",
+      "tiles": 1,
+      "layers": [
+        "Layer1_BackBeam_Wood.png",
+        "Layer2_InnerWalls.png",
+        "Layer3_MiddleBeams_Wood.png",
+        "Layer4_Floor.png",
+        "Layer5_WindowDisplay.png",
+        "Layer6_WindowItems_Baker.png",
+        "Layer7_ClosedDoor_Wood.png",
+        "Layer8_OuterWall_PaintedCream.png",
+        "Layer10_Window.png",
+        "Layer11_FrontBeam_Wood.png",
+        "layer12_Roof_Wood.png",
+        "Layer13_Fabric_Green.png",
+        "Layer14_SignAndHook.png",
+        "Layer15_StoreType_Baker.png"
+      ]
+    },
+    "buildings/shop_grocer.png": {
+      "pack": "rpg",
+      "dir": "2x2Tile_Store",
+      "floor": "Layer4_Floor.png",
+      "tiles": 1,
+      "layers": [
+        "Layer1_BackBeam_DarkWood.png",
+        "Layer2_InnerWalls.png",
+        "Layer3_MiddleBeams_DarkWood.png",
+        "Layer4_Floor.png",
+        "Layer5_WindowDisplay.png",
+        "Layer6_WindowItems_Grocer.png",
+        "Layer7_ClosedDoor_Wood.png",
+        "Layer8_OuterWall_PaintedSky.png",
+        "Layer10_Window.png",
+        "Layer11_FrontBeam_DarkWood.png",
+        "layer12_Roof_DarkWood.png",
+        "Layer13_Fabric_Orange.png",
+        "Layer14_SignAndHook.png",
+        "Layer15_StoreType_Grocer.png"
+      ]
+    },
+    "buildings/shop_smith.png": {
+      "pack": "rpg",
+      "dir": "2x2Tile_Store",
+      "floor": "Layer4_Floor.png",
+      "tiles": 1,
+      "layers": [
+        "Layer1_BackBeam_DarkWood.png",
+        "Layer2_InnerWalls.png",
+        "Layer3_MiddleBeams_DarkWood.png",
+        "Layer4_Floor.png",
+        "Layer5_WindowDisplay.png",
+        "Layer6_WindowItems_Smith.png",
+        "Layer7_ClosedDoor_DarkWood.png",
+        "Layer8_OuterWall_ClayBrick.png",
+        "Layer10_Window.png",
+        "Layer11_FrontBeam_DarkWood.png",
+        "layer12_Roof_DarkWood.png",
+        "Layer13_Fabric_Red.png",
+        "Layer14_SignAndHook.png",
+        "Layer15_StoreType_Smith.png"
+      ]
+    },
+    "props/tent.png": {
+      "pack": "rpg",
+      "dir": "1x1Tile_Tent",
+      "layers": [
+        "Tent_Cream.png"
+      ],
+      "width_src": 420,
+      "squash_y": 0.945
+    }
   }
 }

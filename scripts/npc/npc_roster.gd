@@ -24,9 +24,6 @@ const LAST_NAMES := ["Hoffmann", "Becker", "Wagner", "Schulz", "Krüger", "Lange
 static func generate(settlement_id: String, buildings: Array) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(settlement_id + "#npcs")
-	var by_type := {}
-	for b in buildings:
-		by_type[b.get("type", "")] = b.get("id", "")
 	var homes: Array = buildings.filter(func(b): return b.get("type", "") == "house").map(func(b): return b.get("id", ""))
 	# First names are drawn without repetition (shuffled), surnames freely.
 	var first: Array = FIRST_NAMES.duplicate()
@@ -42,9 +39,14 @@ static func generate(settlement_id: String, buildings: Array) -> Array:
 			var role: String = spec[0]
 			var name := "%s %s" % [first[n % first.size()], LAST_NAMES[rng.randi_range(0, LAST_NAMES.size() - 1)]]
 			var seed := rng.randi()
-			var workplace := ""
+			# Workplaces of the role's types, distributed round-robin (e.g. the
+			# first merchant runs the trade post, the second a shop).
+			var places: Array = []
 			for t in CharacterCatalog.data.get("roles", {}).get(role, {}).get("workplace", []):
-				workplace = by_type.get(t, "")
+				for b in buildings:
+					if b.get("type", "") == t:
+						places.append(b.get("id", ""))
+			var workplace: String = places[i % places.size()] if not places.is_empty() else ""
 			out.append({
 				"npc_id": "npc_%s_%02d" % [settlement_id.trim_prefix("stl_"), n],
 				"name": name,

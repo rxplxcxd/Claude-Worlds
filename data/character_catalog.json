@@ -1848,7 +1848,8 @@
     }
    },
    "workplace": [
-    "trade_post"
+    "trade_post",
+    "shop"
    ]
   },
   "builder": {
@@ -1916,7 +1917,8 @@
     }
    },
    "workplace": [
-    "workshop"
+    "workshop",
+    "shop"
    ]
   },
   "medic": {

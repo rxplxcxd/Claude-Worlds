@@ -13,6 +13,7 @@ const SOLID_RADIUS := {
 	"electrical_tower": 14.0, "mailbox": 8.0, "trash_can": 8.0, "hydrant": 6.0,
 	"water_tower": 22.0, "garden": 0.0, "crop": 0.0,
 	"street_sign": 5.0, "traffic_sign": 5.0, "trash_small": 6.0, "bus_stop": 22.0,
+	"tent": 30.0,
 }
 
 var kind: String = "tree"
@@ -157,7 +158,7 @@ func _ready() -> void:
 
 ## Only tall props hide the player.
 func is_occluder() -> bool:
-	return kind in ["tree", "electrical_tower", "water_tower", "bus_stop"]
+	return kind in ["tree", "electrical_tower", "water_tower", "bus_stop", "tent"]
 
 
 func occluder_item() -> CanvasItem:

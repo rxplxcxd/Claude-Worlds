@@ -13,7 +13,7 @@ const server = http.createServer((req, res) => {
 }).listen(8768);
 (async () => {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, timezoneId: 'Europe/Berlin' });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, timezoneId: process.env.TZ_ID || 'Europe/Berlin' });
   const page = await ctx.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error' || /SCRIPT ERROR/.test(m.text())) errors.push(m.text()); });

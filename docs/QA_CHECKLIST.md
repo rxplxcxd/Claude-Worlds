@@ -1,6 +1,6 @@
 # QA_CHECKLIST
 
-Prüfliste für Version 0.2.0 (Phase 1). Spalte **Stand**: ✅ automatisiert (Headless-Testsuite, 78 Prüfungen) · 🌐 im Browser geprüft (Chromium/Playwright, Desktop 1280×720, Software-GL) · ⏳ muss vom Projektinhaber auf dem iPhone geprüft werden.
+Prüfliste für Version 0.2.0 (Phase 1). Spalte **Stand**: ✅ automatisiert (Headless-Testsuite, 82 Prüfungen) · 🌐 im Browser geprüft (Chromium/Playwright, Desktop 1280×720, Software-GL) · ⏳ muss vom Projektinhaber auf dem iPhone geprüft werden.
 
 > Ehrlicher Hinweis: Es wurde **kein echtes iPhone** getestet. Alle 🌐-Prüfungen liefen in Chromium; Safari/WebKit-Eigenheiten (Touch, Tastatur, Speicher) sind damit nicht abgedeckt.
 
@@ -22,9 +22,9 @@ Prüfliste für Version 0.2.0 (Phase 1). Spalte **Stand**: ✅ automatisiert (He
 | B4 | Zufall, Rückgängig, Zurücksetzen, Abbrechen (nur im Bearbeiten-Modus) | 🌐 |
 | B5 | Drehen per Pfeil und Wischen; Auto-Drehen; Gehen/Benutzen-Vorschau; Blinzeln | 🌐 |
 | B6 | Mütze/Strohhut ersetzen die Frisur (Hinweis sichtbar) | 🌐 |
-| B7 | Hochformat: Bühne oben, Bedienfeld unten, nichts abgeschnitten | ⏳ |
+| B7 | Hochformat: Bühne oben, Bedienfeld unten, alle Kategorien sichtbar (Reiter umbrechen) | 🌐 (iPhone-13-Emulation) ⏳ |
 | B8 | Namensfeld: iOS-Tastatur öffnet sich | ⏳ |
-| B9 | Menü → „Figur bearbeiten“ → Änderung → Figur in der Welt aktualisiert | 🌐 |
+| B9 | Menü → „Figur bearbeiten“ → Änderung → „Fertig“ → Figur in der Welt aktualisiert; „Fertig“ bleibt bei schmaler Fläche sichtbar (zweite Zeile) | ✅ 🌐 |
 
 ## C. Welt, Stadtbild, Tiefe
 | # | Prüfung | Stand |

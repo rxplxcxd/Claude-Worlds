@@ -301,6 +301,22 @@ func _run() -> void:
 		check(npc.rig.facing == Iso.facing_index(to_player), "NPC looks at the player")
 		hud.close_panel()
 
+	if root_has_character_assets():
+		# Menu -> "Figur bearbeiten" -> change -> "Fertig" updates the player.
+		var cat: Node = get_tree().root.get_node("CharacterCatalog")
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 4711
+		var new_look: Dictionary = cat.random_appearance(rng)
+		_main.open_character_editor("edit")
+		await frames(3)
+		check(_main.editor != null and not player.input_enabled, "edit mode opens the editor and blocks movement")
+		_main.editor.confirmed.emit(new_look, "Testname")
+		await frames(3)
+		var rig: CharacterRig = player.get_node("Visual").rig if player.has_node("Visual") else null
+		check(_main.editor == null and player.input_enabled, "editor closes after Fertig")
+		check(cat.appearance_key(profile.character, "idle") == cat.appearance_key(cat.normalize(new_look), "idle") and profile.display_name == "Testname", "edited character is saved")
+		check(rig != null and cat.appearance_key(rig.appearance, "idle") == cat.appearance_key(cat.normalize(new_look), "idle"), "player in the world shows the edited character")
+
 	print("[camera]")
 	var cam := settlement.camera
 	var z := cam.zoom.x

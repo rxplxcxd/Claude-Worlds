@@ -13,12 +13,17 @@ Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config
 - **Verdeckung**: weiches Durchsicht-Loch um die Figur hinter Gebäuden/Bäumen.
 - **Isometric RPG Buildings**: Marktzeile (Bäckerei, Gemischtwaren, Schmiede) aus Ebenen zusammengesetzt und auf das City-Builder-Raster abgebildet; Gründerzelt.
 - Docs: CHARACTER_SYSTEM.md, QA_CHECKLIST.md; Zeitmodell, Platzierungsregeln, NPCs, ADR-8…11.
-- Tests: 78 Prüfungen (u. a. Zeitzonen, Platzierungsregeln, Verdeckung, NPC-Rollen/Plätze/Präsenz/Persistenz).
+- Tests: 82 Prüfungen (u. a. Zeitzonen, Platzierungsregeln, Verdeckung, NPC-Rollen/Plätze/Präsenz/Persistenz).
 
 ### Geändert
 - Spielgeschwindigkeit und Zeitsprung entfernt (Echtzeit); „Ausruhen“ ist ein Moment ohne Zeitsprung.
 - Gründungsvorlage v2 (26×26, Kreuzung am Dorfplatz, Seitenstraße, 21 Gebäude).
 - Blickrichtungen der Penzilla-Sheets korrigiert (Reihen S, SO, O, NO, N; Westen gespiegelt).
+
+### Behoben
+- „Figur bearbeiten“ → „Fertig“ aktualisierte die Figur in der Welt nicht (fehlende Weiterleitung `Player.refresh_appearance`).
+- Editor im Bearbeiten-Modus (Querformat): „Fertig“ wurde durch „Abbrechen“ aus dem Bild geschoben, Reiter „Outfits“ war verdeckt → Aktionen brechen bei Bedarf in eine zweite Zeile um, Reiter umbrechen statt versteckt zu scrollen.
+- Menütext „gelbe Taste“ → „orange Taste“.
 
 ## [0.1.2] – Penzilla-Assets integriert
 

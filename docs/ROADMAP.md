@@ -36,7 +36,7 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 | 12 | Verwendete Assets dokumentiert | ✅ ASSET_INVENTORY.md |
 | 13 | Art-Direction-Regeln eingehalten | ✅ keine Fremd-Außenassets; technischer Wächter |
 | 14 | Bekannte Fehler dokumentiert | ✅ siehe unten |
-| 15 | Charakter-Editor (modular, lebendige Vorschau, Speicherung, im Spiel genutzt) | ✅ Browser + Tests; ⏳ iPhone |
+| 15 | Charakter-Editor (modular, lebendige Vorschau, Speicherung, im Spiel genutzt) | ✅ Browser + Tests (inkl. Bearbeiten-Ablauf); ⏳ iPhone |
 | 16 | NPC-Rollenkleidung, dauerhaft | ✅ |
 | 17 | Stadtbild nach Platzierungsregeln, Laternen mit Ausleger und Licht | ✅ |
 | 18 | Figur hinter Gebäuden sichtbar | ✅ |

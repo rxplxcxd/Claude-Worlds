@@ -105,6 +105,11 @@ func cancel_move_target() -> void:
 	_pending_interaction = null
 
 
+## Applies the saved character after the editor was closed.
+func refresh_appearance() -> void:
+	_visual.refresh_appearance()
+
+
 func has_move_target() -> bool:
 	return _target != null
 

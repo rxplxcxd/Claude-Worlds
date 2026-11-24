@@ -24,7 +24,7 @@
 | Interaktion | Gebäude/Objekte ansehen, NPCs ansprechen (Name, Rolle, Arbeitsplatz), Schwarzes Brett, Ausruhen, Brunnen |
 | HUD | Siedlungsname, Region, Uhrzeit & Datum (Ortszeit), Kamera-Buttons, Interaktions-Taste, Menü (Figur bearbeiten, Tageszeit-Vorschau, Zeitzone, Sonnenauf-/-untergang), Hinweise, FPS-Anzeige |
 | Web | Export ohne Threads (kompatibel mit GitHub Pages & iOS Safari), PWA (Manifest, Service Worker, Icons) |
-| CI/CD | GitHub Actions: Asset-Import → 78 automatische Tests → Web-Export → GitHub Pages (von `main`) |
+| CI/CD | GitHub Actions: Asset-Import → 82 automatische Tests → Web-Export → GitHub Pages (von `main`) |
 
 ![Lichtfeld mit Penzilla-Grafik (Chromium, iPhone-Emulation)](docs/screenshots/phase1-iphone-landscape-emulated.png)
 

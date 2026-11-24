@@ -52,8 +52,14 @@ var _right_button: Button
 var _anim_buttons := {}
 var _auto_button: Button
 var _panel: PanelContainer
-var _tab_scroll: ScrollContainer
-var _tabs: HBoxContainer
+## Category tabs wrap into a second row on narrow (portrait) screens, so
+## every category stays visible without hidden scrolling.
+var _tabs: HFlowContainer
+var _actions_row1: HBoxContainer
+var _actions_row2: HBoxContainer
+var _actions_left: HBoxContainer
+var _actions_right: HBoxContainer
+var _actions_spacer: Control
 var _tab_buttons := {}
 var _content_scroll: ScrollContainer
 var _content: VBoxContainer
@@ -213,14 +219,10 @@ func _build_panel() -> void:
 	box.add_theme_constant_override("separation", 10)
 	_panel.add_child(box)
 
-	_tab_scroll = ScrollContainer.new()
-	_tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	_tab_scroll.custom_minimum_size = Vector2(0, 52)
-	box.add_child(_tab_scroll)
-	_tabs = HBoxContainer.new()
-	_tabs.add_theme_constant_override("separation", 6)
-	_tab_scroll.add_child(_tabs)
+	_tabs = HFlowContainer.new()
+	_tabs.add_theme_constant_override("h_separation", 6)
+	_tabs.add_theme_constant_override("v_separation", 6)
+	box.add_child(_tabs)
 	for cat in CharacterCatalog.data.get("categories", []):
 		var b := Button.new()
 		b.text = cat["label"]
@@ -242,9 +244,22 @@ func _build_panel() -> void:
 	_content.add_theme_constant_override("separation", 8)
 	_content_scroll.add_child(_content)
 
+	# Two button groups: edit tools (left) and close/confirm (right). If both
+	# do not fit next to each other, the right group moves to its own row
+	# (see _fit_actions) – "Fertig" must never be pushed off-screen.
+	var actions_box := VBoxContainer.new()
+	actions_box.add_theme_constant_override("separation", 6)
+	box.add_child(actions_box)
+	_actions_row1 = HBoxContainer.new()
+	_actions_row1.add_theme_constant_override("separation", 8)
+	actions_box.add_child(_actions_row1)
+	_actions_row2 = HBoxContainer.new()
+	_actions_row2.alignment = BoxContainer.ALIGNMENT_END
+	actions_box.add_child(_actions_row2)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
-	box.add_child(actions)
+	_actions_left = actions
+	_actions_row1.add_child(actions)
 	var rnd := _small_button("Zufall", "Zufällige Figur")
 	rnd.pressed.connect(_randomize)
 	actions.add_child(rnd)
@@ -255,9 +270,13 @@ func _build_panel() -> void:
 	var reset := _small_button("Zurücksetzen", "Auf den Anfangszustand zurücksetzen")
 	reset.pressed.connect(func() -> void: _change(_initial.duplicate(true)))
 	actions.add_child(reset)
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(spacer)
+	_actions_spacer = Control.new()
+	_actions_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_actions_row1.add_child(_actions_spacer)
+	actions = HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	_actions_right = actions
+	_actions_row1.add_child(actions)
 	_cancel_button = _small_button("Abbrechen", "Ohne Speichern schließen")
 	_cancel_button.pressed.connect(func() -> void: cancelled.emit())
 	actions.add_child(_cancel_button)
@@ -343,9 +362,25 @@ func _layout() -> void:
 	var side := minf(char_h * 0.75, stage_rect.size.x * 0.5 - 40.0)
 	_left_button.position = Vector2(maxf(10.0, feet.x - side - 56.0), feet.y - char_h * 0.55)
 	_right_button.position = Vector2(minf(stage_rect.size.x - 66.0, feet.x + side), feet.y - char_h * 0.55)
+	_fit_actions(panel_rect.size.x - 40.0)
+	_panel.size = panel_rect.size
 	if absf(panel_rect.size.x - _last_width) > 8.0:
 		_last_width = panel_rect.size.x
 		_render_category()
+
+
+## Moves "Abbrechen/Fertig" to a second row when the panel is too narrow.
+func _fit_actions(inner_width: float) -> void:
+	var need := _actions_left.get_combined_minimum_size().x + _actions_right.get_combined_minimum_size().x + 24.0
+	var two_rows := need > inner_width
+	var parent := _actions_right.get_parent()
+	if two_rows and parent != _actions_row2:
+		parent.remove_child(_actions_right)
+		_actions_row2.add_child(_actions_right)
+	elif not two_rows and parent != _actions_row1:
+		parent.remove_child(_actions_right)
+		_actions_row1.add_child(_actions_right)
+	_actions_row2.visible = two_rows
 
 
 # --- behaviour ------------------------------------------------------------
@@ -360,6 +395,8 @@ func _refresh_all() -> void:
 		_title.text = "Figur bearbeiten"
 		_subtitle.text = "Änderungen siehst du sofort. „Fertig“ speichert."
 	_cancel_button.visible = mode == "edit"
+	if is_inside_tree():
+		_layout.call_deferred()
 	_rig.set_appearance(app)
 	_set_anim(_anim)
 	for id in _tab_buttons.keys():

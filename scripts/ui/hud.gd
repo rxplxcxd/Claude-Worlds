@@ -474,7 +474,7 @@ func _toggle_menu() -> void:
 	var s := AssetRegistry.get_status_summary()
 	_menu_text.text = (
 		"[b]Steuerung[/b]\n"
-		+ "Touch: Joystick unten links · Tippen = dorthin gehen · Ziehen = Kamera · zwei Finger = Zoom · gelbe Taste = benutzen\n"
+		+ "Touch: Joystick unten links · Tippen = dorthin gehen · Ziehen = Kamera · zwei Finger = Zoom · orange Taste = benutzen / ansprechen\n"
 		+ "Tastatur: WASD/Pfeile · Klick = gehen · Maus ziehen = Kamera · Mausrad/+/− = Zoom · E = benutzen · C = zentrieren · F3 = FPS\n\n"
 		+ "[b]Asset-Status[/b]\n%d von %d Asset-Einträgen integriert · %d Platzhalter · %d Art-Direction-Verstöße\n\n" % [s["resolved"], s["total"], s["placeholders"], s["violations"]]
 		+ "[b]Zeit[/b]\nEchtzeit · Zeitzone %s (%s, UTC%+d:%02d%s) · Sonnenaufgang %s, Sonnenuntergang %s (Näherung für 51° N)\n\n" % [

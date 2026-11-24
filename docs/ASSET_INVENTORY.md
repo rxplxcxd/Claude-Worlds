@@ -2,103 +2,90 @@
 
 Legende: **[IMPLEMENTIERT]** · **[GEPLANT]** · **[OFFEN]**
 
-## 1. Status der vorgegebenen Asset-Pakete
+## 1. Bereitstellung der gekauften Penzilla-Pakete [IMPLEMENTIERT]
 
-**Kein einziges Paket konnte heruntergeladen werden.** Es wurden keine Asset-Dateien geprüft, entpackt oder integriert. Folgende Schritte wurden tatsächlich durchgeführt (24.11.2026):
+| Schritt | Stand |
+|---|---|
+| Quelle | Privater MEGA-Ordner des Projektinhabers („Worlds_Assets“, 6 Dateien, 1,1 GB) |
+| Download | `tools/assets/fetch_mega_folder.py` – nur HTTPS, Dateinamen bereinigt, keine Pfade aus dem Archiv übernommen; byte-identisch verifiziert |
+| Prüfung | Alle ZIPs vollständig gelesen, **keine** unsicheren Pfade (`..`, absolute Pfade), nur PNG/SVG-Bilddateien (+ eine `.blend` im Fremdpaket), nichts ausgeführt |
+| Verarbeitung | `tools/assets/import_penzilla.py` liest **nur die ausgewählten Dateien direkt aus den ZIPs** (`tools/assets/penzilla_selection.json`), verkleinert sie (Welt 50 %, GUI 25 %), berechnet Ankerpunkte → `assets/penzilla/` + `import_meta.json` |
+| Originale | Bleiben unverändert in den ZIP-Archiven (MEGA) |
+| Ergebnis | **83 Dateien, 3,5 MB** (aus 1,1 GB Quellmaterial) |
 
-| # | Paket | Bereitgestellter Link | Ergebnis |
-|---|---|---|---|
-| 1 | Ultimate Protagonist | https://storage.to/pfDPS1D0I | ❌ nicht geladen |
-| 2 | GiantCityBuilder | https://storage.to/4DrGboO8h | ❌ nicht geladen |
-| 3 | Isometric RPG Buildings | https://storage.to/lxRphdPEO | ❌ nicht geladen |
-| 4 | Basic GUI | https://storage.to/KAzmtRSF0 | ❌ nicht geladen |
-| 5 | Top-Down-Retro-Interior | https://storage.to/vw1xE9UNW | ❌ nicht geladen |
+### Lizenz und öffentliches Repository
+Laut Shopseiten: „Royalty free and commercial use – once purchased (see also licence)“; Details in `PenzillaDesign_StandardLicense.pdf` (**nicht** im MEGA-Ordner enthalten → **[OFFEN]**: bitte nachreichen). Übliche Standardlizenzen verbieten die Weitergabe der Rohdateien. Deshalb:
+- `assets/penzilla/` steht in `.gitignore` – die gekauften Grafiken liegen **nicht** im öffentlichen Repo.
+- CI lädt die Pakete über das Repository-Secret `MEGA_ASSETS_URL` (siehe BUILD_AND_DEPLOYMENT.md) und baut sie in den Web-Build ein (normale Nutzung in einem veröffentlichten Spiel).
+- Ohne Secret/Assets startet das Spiel mit markierten Platzhaltern (getestet).
 
-**Verlauf:**
-1. Erster Abruf: Netzwerkrichtlinie der Cloud-Umgebung blockierte `storage.to` (Proxy 403).
-2. Nach Freigabe von `storage.to` in der Umgebung: Jede Seite liefert eine **Cloudflare-Bot-Prüfung** („Just a moment…“, HTTP 403, `cType: managed`), keine Datei und keine Downloadseite.
-3. Versuch mit einem normalen Chromium-Browser: Die Prüfung benötigt zusätzlich `challenges.cloudflare.com`; nach dessen Freigabe wurde das weitere automatisierte Umgehen der Bot-Prüfung von der Sicherheitsrichtlinie der Agent-Umgebung untersagt. Dieser Weg wurde daher **bewusst nicht weiter verfolgt**.
+## 2. Paket-Inventar
 
-**Benötigt vom Projektinhaber – eine der folgenden Bereitstellungen:**
-- **Empfohlen:** Pakete (ZIP) in ein privates GitHub-Repository bzw. als **GitHub Release Asset** von `Claude-Worlds` hochladen (bei Größen > 100 MB Release Assets oder Git LFS verwenden), oder
-- direkte Download-Links ohne Bot-Prüfung (z. B. itch.io-Download-Links aus dem Kaufkonto, Dropbox/Google-Drive-Direktlinks), oder
-- die Dateien in eine neue Cloud-Sitzung hochladen.
+| Paket (Datei) | Größe | Inhalt (tatsächlich geprüft) | Raster | Verwendung | Status |
+|---|---|---|---|---|---|
+| **GiantCityBuilder.zip** (Penzilla) | 59 MB, 864 Einträge | Tiles (Gras, Erde, Wasser, Beton, Asphalt, Straßen 9×, Feldwege 9×, Gehwege 9×, Schienen, Rohre), Appartments (54), Houses (163, 8 Farben), Public (82: Rathaus, Wasserwerk, Kraftwerk, Arzt, Feuerwehr, Schule, Hotel, Stadien…), Restaurants (32), Shopping (68), DecorItems (142), Plants (82), Fences (33), Vehicles (116) | 512×292 px pro Kachel | **Außenwelt: Boden, Straßen, Gebäude, Pflanzen, Deko** | ✅ integriert |
+| **Isometric_RPG_Buildings.zip** (Penzilla) | 20 MB, 407 Einträge | Zelt, Kleines Haus 2×2, Laden 2×2, Haus 3×3 – in Ebenen zerlegt (Wände, Balken, Dächer, Fenster, Türen in Holz-/Dachvarianten), Icons | 800×486 px | **nicht verwendet**: anderes Raster (Verhältnis 1,646 statt 1,753) → würde nicht exakt auf den Giant-City-Builder-Boden passen. Ebenen eignen sich später für „Figuren im Haus“ | dokumentiert |
+| **Ultimate_Protagonist.zip** (Penzilla) | 998 MB, 5 582 Einträge | 8 fertige Figuren (Character0–7) + Baukasten in Ebenen; Animationen Idle, Walk, Run, Interact, Sit, Dig, Fish, Swing, Damage, Die, GetUp … jeweils mit Werkzeugvarianten | Frame 460×460 px, 5 Richtungsreihen (S, SW, W, NW, N; Ost = gespiegelt) | **Spielfigur: Character1** (Entdecker mit Hut) – Idle 8, Walk 6, Run 4, Interact 3 Frames | ✅ integriert |
+| **Basic_GUI_Bundle.zip** (Penzilla) | 3 MB, 543 Einträge | Boxen/Banner, Text-Buttons, Icon-Buttons (Rund/Eckig/Kreis in 6 Farben), Icons (Menü, X, Home, Pause, Audio, Herzen, Sterne, Münzen…), Slider/Scrollbars – PNG + SVG | – | **HUD**: 9-Slice-Panels und Buttons, Menü-/Schließen-Icons, orange Aktionstaste | ✅ integriert |
+| **Top-Down_Retro_Interior.zip** (Penzilla) | 60 KB, 6 Sheets | 39 Möbel (Wohnzimmer, Küche, Bad: Wanne/WC/Waschbecken, Regale, Teppiche, Uhr, Kamin), 64 Kleinteile, 4 Böden/Tapeten, Treppen, Türen, Fenster | 16×16 px (Pixel Art, Top-Down) | Innenräume (ab begehbaren Gebäuden) | geprüft, noch nicht im Spiel |
+| **Stylized_GrassAndDirt.zip** | 20 MB | 3D-PBR-Materialien (Basecolor/Normal/Height/AO …, JPEG) + Blender-Datei; **Hersteller unbekannt**, kein Penzilla | – | **nicht verwendet**: Außenwelt nur Penzilla (Art Direction); 3D-Materialien passen nicht zur 2D-Isometrie | ausgeschlossen |
 
-> Hinweis: Lizenzbedingungen von Penzilla (Weitergabe/Redistribution) sollten vor einem öffentlichen Repository geprüft werden. Bei öffentlichem Repo nur die tatsächlich benötigten, exportierten Dateien einchecken oder ein privates Asset-Repository nutzen. **[OFFEN]**
+## 3. Verwendete Dateien (Auswahl → logischer Schlüssel)
+Vollständige Liste: `tools/assets/penzilla_selection.json`, Zuordnung: `data/asset_manifest.json`.
 
-## 2. Recherche-Ergebnisse zu den vorgegebenen Paketen (öffentliche Shopseiten, nicht die Dateien)
-
-Alle fünf Pakete stammen nach Shop-Recherche vom Hersteller **Penzilla** (itch.io). Angaben unverifiziert, da die Dateien selbst nicht vorliegen:
-
-| Paket | Shopseite | Bekannte Angaben |
+| Bereich | Penzilla-Quelle | Schlüssel |
 |---|---|---|
-| Ultimate Protagonist | https://penzilla.itch.io/ultimate-protagonist | Animierte Pixel-Art-Spielfigur; Download ca. 951 MB (`Ultimate_Protagonist.zip`); verwandte Pakete bieten 8 Richtungen für Top-Down/Isometrie |
-| Giant City Builder | https://penzilla.itch.io/giant-city-builder | Isometrisches City-Builder-Tileset (Shop: „500+ isometric tiles“, inkl. ~50 Fahrzeuge) |
-| Isometric RPG Buildings | https://penzilla.itch.io/isometric-rpg-village (vermutlich) | Handgezeichnete isometrische Häuser und Läden |
-| Basic GUI | unbekannt | – |
-| Top-Down-Retro-Interior | https://penzilla.itch.io/top-down-retro-interior | Top-Down-Innenraum-Pixel-Art |
+| Boden | Tiles/Grass, Dirt, LowDirt (Felder, abgesenkt), Water, Concreet (Platz) | `exterior.tile.*` |
+| Straßen | Tiles/Road_Tile1–9 (Autotiling + Spiegelung) | `exterior.tile.road` |
+| Feldwege | Tiles/GrassRoad_Tile1–9 | `exterior.tile.path` |
+| Gemeindehaus | Public/Public_Townhall | `exterior.building.town_hall` |
+| Handelsposten | Shopping/Groceries_Market | `…trade_post` |
+| Wasserwerk | Public/Industrial_WaterPlant | `…water_works` |
+| Sanitätsstation | Public/Doctor_Office | `…clinic` |
+| Notfall-/Brandschutz | Public/Emergency_FireStation | `…emergency_post` |
+| Energiestation | Public/Industrial_PowerPlant | `…energy_station` |
+| Werkstatt | Shopping/Workplace_Handyman_OneFloor | `…workshop` |
+| Gemüsehof | Shopping/Shop_Veggies_OneFloor | `…farm_shop` |
+| Lager & Wertstoffhof | Public/Recycling | `…depot` |
+| Dein Haus | Houses/Green/House_Type11 | `…player_home` |
+| Wohnhäuser | Houses/{Blue,Red,Yellow,White,Brown,Grey}/House_Type{1,5,3,7,10,12} | `…house` (6 Varianten) |
+| Platz | Public/Park_Fountain (Dorfbrunnen), DecorItems/SignMap (Schwarzes Brett), Seat, StreetLampOn/Off, AppleCrate, Cart2, Boxes1 | `exterior.prop.*` |
+| Natur | Plants/Tree1,3,5,7,9,11,13,16, Pine1,3,5, Plant3/5/9/11, Weeds1/3 | `exterior.prop.tree/bush/crop` |
+| Infrastruktur | ElectricalBox1, ElectricalTower, Watertower, Mailbox, TrashCan, FireHydrant, WheelBarrel, Houses/Garden_Rustic | `exterior.prop.*` |
+| Spielfigur | AnimationSheets/PremadeCharacters/Character1 (Idle, Walk, Run, Interact) | `character.player` |
+| HUD | IconButton_Large_Background/Rounded/Blue/Orange_Rounded, Icon_Small_WhiteOutline_Menu/X/Pause | `ui.*` |
 
-**Konsequenzen für die Integration [GEPLANT]:**
-- Ultimate Protagonist (951 MB) ist für Web viel zu groß → nur benötigte Animationen/Richtungen als Sprite-Sheets/`SpriteFrames` exportieren, Texturgröße für iPhone begrenzen (≤ 2048 px Atlas).
-- Kachelmaß des Giant City Builder prüfen; `Iso.TILE_W/TILE_H` (128×64) und die Manifest-Felder `anchor`/`scale` sind dafür vorgesehen.
-- Lizenztexte aus den Archiven übernehmen (`assets/<paket>/LICENSE*`) – **Lizenzrechte werden nicht erfunden**.
+## 4. Art Direction [IMPLEMENTIERT]
+- **Außenwelt ausschließlich Penzilla:** technisch erzwungen (`AssetRegistry`: `exterior.*` nur Hersteller „penzilla“, getestet). Alle sichtbaren Außenobjekte stammen aus Giant City Builder.
+- **Innenräume:** andere lizenzierte Hersteller erlaubt (Test vorhanden).
+- **Bewusst nicht verwendet:** Isometric RPG Buildings (anderes Raster), Stylized_GrassAndDirt (Fremdhersteller, 3D).
+- **Lücken in der Außenwelt (kein Fremdstil eingeführt):**
+  - Solarfeld/Solarmodule – Giant City Builder enthält keine → ersetzt durch Kraftwerk + Stromkästen/Strommast.
+  - Gewächshaus – ersetzt durch „Gemüsehof“ (Shop_Veggies) + Felder (LowDirt + Pflanzen).
+  - Lösungsvorschlag für echte Lücken: weitere Penzilla-Pakete (z. B. *Medieval City Builder*, *Free City Builder*, laut Hersteller kompatibel) – Kauf nur nach Zustimmung.
 
-## 3. Asset-Inventar (Dateien)
+## 5. Interior-Assets: Recherche, Lizenzprüfung, Download
 
-| Datei | Quelle | Format | Kategorie | Auflösung | Animationen | Godot-Kompatibilität | Verwendung | Lizenz |
-|---|---|---|---|---|---|---|---|---|
-| *(keine Dateien vorhanden)* | – | – | – | – | – | – | – | – |
+Lizenzen am **24.11.2026 direkt auf den Originalseiten geprüft**.
 
-Selbst erstellte Projektdateien:
+| Paket | Quelle | Stil | Lizenz (geprüft) | Status |
+|---|---|---|---|---|
+| **Penzilla Top-Down Retro Interior** (gekauft) | penzilla.itch.io/top-down-retro-interior | Pixel Art 16×16 | Penzilla Standard | vorhanden (privat) – Wohnzimmer, Küche, Bad, **kein Bett** |
+| **Kenney Roguelike Indoors** | kenney.nl/assets/roguelike-indoors | Pixel Art 16×16, warme Brauntöne – passt sehr gut zum Retro-Interior | **CC0** (`License.txt`) | ✅ heruntergeladen → `assets/interior/kenney_roguelike_indoors/` – **Betten**, Tische, Stühle, Theken, Herde, Regale, Teppiche |
+| **Kenney Furniture Kit** | kenney.nl/assets/furniture-kit | 3D-Renders, isometrisch, 4 Richtungen | **CC0** (`License.txt`) | ✅ heruntergeladen → `assets/interior/kenney_furniture_kit/isometric/` (120 Möbel × 4): Büro (Schreibtisch, PC, Bürostuhl), Bad, Küche, Schlafzimmer, Wohnzimmer |
+| **Interior spritesheet 16×16** (InThePixel) | opengameart.org/node/114339 | Pixel Art 16×16 | **CC0** | ✅ heruntergeladen → `assets/interior/opengameart_interior_16x16/` |
+| **MetroCity – Free Top Down Interior** (JIK-A-4) | jik-a-4.itch.io/metrocity | Pixel Art | **CC0 v1.0** (Seite geprüft) | ⚠️ automatischer Download von itch.io abgelehnt („invalid key“) → manuell herunterladen (`Interior.rar`, 180 KB) |
+| Modern Interiors Free Pack (SOMETHING) | a-something.itch.io/dev-essentials-modern-interiors | Pixel Art 16×16, Apartment | kommerziell erlaubt, **keine Weitergabe** | nicht heruntergeladen (nur über privaten Weg nutzbar) |
+| Pixel Interior (bitglow) | bitglow.itch.io/pixel-interior | Pixel Art 16×16 | kommerziell erlaubt, **keine Weitergabe** | nicht heruntergeladen |
+| LimeZu Modern Interiors | limezu.itch.io/moderninteriors | Pixel Art 16×16, sehr umfangreich (Büro, Krankenhaus, Schule, Läden …) | kostenpflichtig ab 1,50 USD, **Credits Pflicht**, keine Weitergabe | **Kaufempfehlung** (nur nach Zustimmung) |
+| Penzilla Ultimate Interior Pack | penzilla.itch.io/ultimate-interior-pack | isometrisch, Penzilla | kostenpflichtig (~10 USD) | Alternative für isometrische Innenräume im Penzilla-Stil (nur nach Zustimmung) |
 
-| Datei | Herkunft | Verwendung | Lizenz |
-|---|---|---|---|
-| `icon.svg` | Für WORLDS erstellt | Projekt-/App-Icon | Projekt-eigen |
-| `web/icons/icon-{144,180,192,512}.png` | aus `icon.svg` gerendert (`tools/render_icons.js`) | PWA-/Home-Screen-Icons | Projekt-eigen |
+**Weiterhin ohne freie Quelle:** Krankenhaus, Schule, Fabrik/Lager, Werkstatt-Innenräume → LimeZu Modern Interiors deckt diese ab (Kauf nach Zustimmung).
 
-## 4. Platzhalter-Register [IMPLEMENTIERT]
+`assets/interior/` enthält nur CC0-Dateien (öffentlich erlaubt) und ist per `.gdignore` vom Import ausgeschlossen, bis Innenräume gebaut werden.
 
-Alle sichtbaren Grafiken sind **prozedurale Platzhalter** (Code, keine Bilddateien). Sie werden über `data/asset_manifest.json` einzeln ersetzt – ohne Codeänderung, sobald `path` gesetzt ist.
-
-| Logischer Schlüssel | Platzhalter in | Ziel-Paket |
-|---|---|---|
-| `character.player` | `scripts/player/player_visual.gd` | Ultimate Protagonist |
-| `exterior.ground.tileset` | `scripts/world/ground_layer.gd` | Giant City Builder |
-| `exterior.building.*` (11 Typen) | `scripts/buildings/building.gd` | Isometric RPG Buildings / Giant City Builder |
-| `exterior.prop.*` (9 Typen) | `scripts/world/prop.gd` | Giant City Builder / Isometric RPG Buildings |
-| `ui.theme` | `scripts/ui/ui_theme.gd` | Basic GUI |
-| `interior.tileset.retro` | – (Innenräume nicht in Phase 1) | Top-Down-Retro-Interior |
-
-Der HUD-Hinweis „Platzhaltergrafik · Penzilla-Assets ausstehend“ verschwindet automatisch, sobald alle Einträge aufgelöst sind. Das Menü zeigt den Asset-Status.
-
-## 5. Art Direction
-
-### Außenbereiche – ausschließlich Penzilla [IMPLEMENTIERT als technische Regel]
-- `art_direction.exterior_allowed_vendors = ["penzilla"]` im Manifest.
-- `AssetRegistry` verweigert jede `exterior.*`-Datei eines anderen Herstellers (Test: „guard blocks non-Penzilla exterior asset“).
-- Es wurden **keine fremden Außen-Assets** verwendet; die Platzhalter sind stilneutral und als solche markiert.
-
-### Innenbereiche – freiere Wahl, Pixel Art erlaubt [GEPLANT]
-- `interior.*` darf andere, ordnungsgemäß lizenzierte Hersteller verwenden (Test vorhanden).
-- Übergänge Außen→Innen (Kamera-Schnitt mit Überblendung, einheitliches HUD, angeglichene Farbpalette/Beleuchtung, Pixel-Art mit Nearest-Filter in eigener Szene) werden mit dem ersten Innenraum umgesetzt.
-
-### Bekannte Lücken in der Außenwelt [OFFEN – nach Sichtung der Pakete]
-Erst nach Erhalt der Pakete feststellbar. Erwartete Kandidaten: Wasserwerk, Solarfeld/Energiestation, Notfallposten, Gewächshaus (passend zum „Wiederaufbau“-Setting). Lösungsweg: zuerst andere Penzilla-Pakete prüfen (z. B. *Free City Builder*, *Medieval City Builder*, die laut Hersteller kompatibel sind), Kauf nur nach Zustimmung; kein Fremdstil.
-
-## 6. Recherche: zusätzliche Interior-Assets
-
-Nur Recherche – **nichts gekauft, nichts heruntergeladen**. Lizenzen vor Verwendung auf der jeweiligen Seite verifizieren.
-
-| Paket | Quelle / Link | Stil | Inhalt | Technische Eignung | Lizenz | Preis | Empfehlung |
-|---|---|---|---|---|---|---|---|
-| **Top-Down-Retro-Interior** (bereits gekauft) | https://penzilla.itch.io/top-down-retro-interior | Pixel Art, Top-Down | Wohnräume, Möbel | Gut, gleicher Hersteller wie Außenwelt | Penzilla-Kauflizenz (Datei prüfen) | gekauft | **Erste Wahl** |
-| Penzilla Ultimate Interior Pack (isometrisch) | https://penzilla.itch.io/ultimate-interior-pack | Isometrisch, Penzilla | Innenraum-Kacheln & Requisiten | Sehr gut: gleiche Perspektive wie Außenwelt → nahtloser Übergang | Kommerziell (Penzilla) | ca. 10 USD (Shopangabe) | **Empfehlung für Kauf nach Zustimmung**, falls Retro-Interior perspektivisch nicht passt |
-| LimeZu Modern Interiors | https://limezu.itch.io/moderninteriors | Pixel Art 16×16, Top-Down | Sehr umfangreich: Wohnung, Küche, Bad, Büro, Läden, Krankenhaus, Schule … | Gut (PNG-Sheets, Godot-tauglich) | Kommerziell erlaubt, keine Weitergabe/Weiterverkauf (Entwickleraussage) | ab ca. 1,50 USD (Pay-what-you-want-Minimum, Shopangabe) | Starke Option für viele Raumtypen (Phase 7+) |
-| Kenney Furniture Kit | https://www.kenney.nl/assets/furniture-kit | 3D-Renders, isometrisch + Top-Down | ~140 Möbel (Küche, Bad, Wohnen) | Gut (PNG-Renders, 4 Winkel) | **CC0** | kostenlos | Kostenloser Lückenfüller / Prototyping |
-| Kenney Roguelike Indoor Pack | https://opengameart.org/content/roguelike-indoor-pack | Pixel Art, Top-Down | Innenraum-Tiles, Möbel | Gut | **CC0** | kostenlos | Prototyping |
-| Top-Down Interior 16×16 (OpenGameArt) | https://opengameart.org/node/114339 | Pixel Art 16×16 | Innenraum-Tiles | Gut | **CC0** (laut Seite) | kostenlos | Prototyping |
-| Bitglow Pixel Interior | https://bitglow.itch.io/pixel-interior | Pixel Art 16×16 | Möbel | Gut | Eigene Lizenz: kommerziell erlaubt, keine Weitergabe | kostenlos | Optional |
-| Pocket Witch Interior (Faultbox) | https://faultbox.itch.io/interior | Pixel Art | Innenraum | Gut | CC BY 4.0 (Namensnennung) | kostenlos | Nur mit Credits |
-| LPC House Interior | https://opengameart.org/content/lpc-house-interior-and-decorations | Pixel Art 32×32 | Wohnräume | Mittel (LPC-Stil) | CC-BY-SA / GPL (Share-alike!) | kostenlos | **Nicht empfohlen** (Share-alike-Pflichten) |
-
-**Empfehlung:** 1) gekauftes Top-Down-Retro-Interior sichten; 2) falls die Perspektive zur isometrischen Außenwelt zu stark bricht: Penzilla Ultimate Interior Pack (Kauf nur nach Zustimmung); 3) Kenney-CC0 für Prototypen.
+## 6. Selbst erstellte Dateien
+| Datei | Verwendung |
+|---|---|
+| `icon.svg`, `web/icons/*.png` | App-/PWA-Icons (projekt-eigen) |
+| Prozedurale Platzhalter (`IsoPainter`, `GroundLayer`, `Building`, `Prop`, `PlayerVisual`) | Fallback ohne Penzilla-Dateien |

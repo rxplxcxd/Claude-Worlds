@@ -24,7 +24,7 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 |---|---|---|
 | 1 | Projekt korrekt importierbar | ✅ lokal + CI |
 | 2 | Szene startet zuverlässig | ✅ Headless, Chromium (Desktop/iPhone-Emulation), keine Fehler |
-| 3 | Assets korrekt dargestellt | ⚠️ nur Platzhalter – Penzilla-Pakete nicht verfügbar |
+| 3 | Assets korrekt dargestellt | ✅ Penzilla-Assets integriert (Boden, Straßen, Gebäude, Pflanzen, Deko, Figur, HUD); im veröffentlichten Build erst nach Setzen des Secrets `MEGA_ASSETS_URL` |
 | 4 | Spielfigur steuerbar | ✅ Tastatur, Joystick, Tippen (automatisiert getestet) |
 | 5 | Kamera funktioniert | ✅ getestet |
 | 6 | Touch-Eingaben funktionieren | ✅ automatisiert + Chromium-Touch-Emulation; ⏳ echtes iPhone |
@@ -38,7 +38,7 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 | 14 | Bekannte Fehler dokumentiert | ✅ siehe unten |
 
 ### Bekannte Fehler / Einschränkungen Phase 1
-1. Penzilla-Assets fehlen → Platzhaltergrafik (Download durch Cloudflare-Prüfung blockiert).
+1. Veröffentlichter Build zeigt Platzhalter, bis das Secret `MEGA_ASSETS_URL` gesetzt ist (Lizenzschutz, siehe ASSET_INVENTORY).
 2. Tippen-zum-Gehen nutzt gerade Linien; hinter Hindernissen bleibt die Figur stehen (Pfadfindung = Phase 3).
 3. Y-Sortierung per Grundflächenmittelpunkt; bei sehr großen Gebäuden können später Sortierfehler auftreten.
 4. Innenräume noch nicht begehbar („Betreten“ zeigt Info).

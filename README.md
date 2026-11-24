@@ -13,7 +13,8 @@
 | Godot-Projekt | Godot 4.7.2, GL Compatibility Renderer, GDScript |
 | Leerer Planet | Planet startet ohne Siedlungen (`data/world/genesis.json`); Siedlungen entstehen nur durch Gründung eines Spielers (`WorldState`), keine NPC-only-Siedlungen |
 | Deine Siedlung „Lichtfeld“ | Beim ersten Start von dir gegründet aus der Vorlage `data/settlement_templates/founding_basic.json`, 28×28 Kacheln, 16 Gebäude, Platz, Brunnen, Straßen, Felder, Teich, Vegetation |
-| Darstellung | Isometrisch 2:1, Y-Sortierung, Kollisionen, Tag/Nacht-Tönung, Laternen-Licht bei Nacht |
+| Grafik | **Penzilla-Assets integriert**: Giant City Builder (Boden, Straßen mit Autotiling, Gebäude, Pflanzen, Deko), Ultimate Protagonist (Spielfigur, 8 Richtungen), Basic GUI (HUD) |
+| Darstellung | Isometrisch im Penzilla-Raster (512×292), Y-Sortierung, Kollisionen, Tag/Nacht-Tönung, Laternen an/aus mit Licht |
 | Spielfigur | Tastatur (WASD/Pfeile), virtueller Joystick, Tippen/Klicken = dorthin gehen, 8 Blickrichtungen |
 | Kamera | Folgen, Ziehen zum Verschieben, Pinch-/Mausrad-Zoom, Grenzen, Zentrieren |
 | Interaktion | Gebäude/Objekte ansehen, Schwarzes Brett, Ausruhen (Zeitsprung), Brunnen |
@@ -21,9 +22,9 @@
 | Web | Export ohne Threads (kompatibel mit GitHub Pages & iOS Safari), PWA (Manifest, Service Worker, Icons) |
 | CI/CD | GitHub Actions: Import → 55 automatische Tests → Web-Export → GitHub Pages (von `main`) |
 
-![Phase 1 – Chromium-iPhone-Emulation, Platzhaltergrafik](docs/screenshots/phase1-iphone-landscape-emulated.png)
+![Lichtfeld mit Penzilla-Grafik (Chromium, iPhone-Emulation)](docs/screenshots/phase1-iphone-landscape-emulated.png)
 
-**Wichtig – Grafik:** Die fünf gekauften Penzilla-Pakete konnten noch **nicht** heruntergeladen werden (siehe [docs/ASSET_INVENTORY.md](docs/ASSET_INVENTORY.md)). Alle Gebäude, Objekte und die Spielfigur sind deshalb **klar gekennzeichnete Platzhalter** (prozedural gezeichnet, Hinweis im HUD). Über `data/asset_manifest.json` werden die echten Penzilla-Grafiken später ohne Codeänderung eingesetzt.
+**Wichtig – Grafik & Lizenz:** Die gekauften Penzilla-Grafiken liegen **nicht** in diesem öffentlichen Repository. `tools/assets/` lädt sie aus dem privaten MEGA-Ordner (lokal oder in CI über das Secret `MEGA_ASSETS_URL`) und verarbeitet sie nach `assets/penzilla/` (git-ignoriert). Ohne diese Dateien startet das Spiel mit gekennzeichneten Platzhaltern. Details: [docs/ASSET_INVENTORY.md](docs/ASSET_INVENTORY.md). Freie Interior-Assets (CC0) liegen in `assets/interior/`.
 
 ## Starten
 
@@ -58,10 +59,10 @@ scenes/      main/, settlement/, player/          (schlanke Szenen)
 scripts/     core/ geography/ world/ settlement/ buildings/ player/
              camera/ interaction/ ui/ persistence/
 data/        asset_manifest.json, world/genesis.json, settlement_templates/founding_basic.json
-assets/      (Ziel für Penzilla-Assets, siehe ASSET_INVENTORY)
+assets/      penzilla/ (generiert, git-ignoriert) · interior/ (CC0-Innenraum-Assets)
 web/icons/   PWA-/Home-Screen-Icons
 tests/       Headless-Testsuite
-tools/       Icon-Rendering, lokaler Browser-Smoke-Test
+tools/       assets/ (MEGA-Download, Penzilla-Import), Icon-Rendering, Browser-Smoke-Test
 docs/        Design- und Technikdokumentation
 .github/workflows/web.yml
 ```

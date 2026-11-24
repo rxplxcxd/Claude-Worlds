@@ -61,7 +61,7 @@ Handgeschriebene Daten nutzen lesbare stabile IDs (`tpl_founding_basic`, `bld_to
 
 ## 6. Asset-Pipeline [IMPLEMENTIERT]
 
-Code fragt logische Schlüssel ab (`exterior.building.town_hall`). `data/asset_manifest.json` ordnet Schlüssel → Datei + Quelle zu. Fehlt die Datei → Platzhalter. **Art-Direction-Wächter:** Schlüssel der Domäne `exterior.*` werden nur aufgelöst, wenn der Hersteller der Quelle `penzilla` ist; Verstöße werden gemeldet und nicht geladen (getestet).
+Code fragt logische Schlüssel ab (`exterior.building.town_hall`). Dateien entstehen über `tools/assets/import_penzilla.py`; `AssetRegistry.get_sprite()` liefert Textur, Skalierung und Versatz anhand der Ankerpunkte (`canvas` = Penzilla-Rasterkonvention, `content` = Unterkante des sichtbaren Inhalts). `data/asset_manifest.json` ordnet Schlüssel → Datei + Quelle zu. Fehlt die Datei → Platzhalter. **Art-Direction-Wächter:** Schlüssel der Domäne `exterior.*` werden nur aufgelöst, wenn der Hersteller der Quelle `penzilla` ist; Verstöße werden gemeldet und nicht geladen (getestet).
 
 ## 7. Eingabe [IMPLEMENTIERT]
 
@@ -90,6 +90,11 @@ Code fragt logische Schlüssel ab (`exterior.building.town_hall`). `data/asset_m
 ### ADR-4: UI in Code statt `.tscn`
 - *Entscheidung:* HUD wird in `hud.gd` aufgebaut (kompakt, versionierbar, ein Theme-Token-File).
 - *Folgen:* Für größere Menüs (ab Phase 4) sollen Teile in eigene Szenen ausgelagert werden – dann mit dem Basic-GUI-Theme.
+
+### ADR-7: Gekaufte Assets über private Pipeline statt im Repository
+- *Problem:* Öffentliches Repo; Penzilla-Lizenz erlaubt Nutzung im Spiel, aber üblicherweise keine Weitergabe der Dateien.
+- *Entscheidung:* Auswahl (nur Dateinamen) + Import-Skript im Repo; Dateien kommen aus dem privaten MEGA-Ordner (Secret), werden verkleinert nach `assets/penzilla/` (git-ignoriert); Manifest-Schlüssel bleiben stabil; Platzhalter als Fallback.
+- *Folgen:* Builds ohne Secret zeigen Platzhalter; Asset-Änderungen = Auswahl-JSON anpassen. Projektion an Penzilla-Raster gekoppelt (`Iso.TILE_H = 73`).
 
 ### ADR-5: Firebase erst ab Bedarf
 - Phase 1 enthält keine Firebase-Anbindung (Anforderung: Singleplayer/lokal). Schema und Regeln sind in FIREBASE_SCHEMA.md vorbereitet. **[OFFEN]:** Godot-Firebase-Anbindung via REST/JS-Bridge (Web) – Entscheidung in Phase 3/12.

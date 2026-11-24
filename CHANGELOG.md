@@ -2,6 +2,21 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.1.2] – Penzilla-Assets integriert
+
+### Hinzugefügt
+- Asset-Pipeline: `tools/assets/fetch_mega_folder.py` (MEGA-Ordner, nur HTTPS) und `tools/assets/import_penzilla.py` (Auswahl, Verkleinerung, Ankerpunkte). Ergebnis `assets/penzilla/` (83 Dateien, 3,5 MB) ist git-ignoriert.
+- CI lädt die Assets über das Secret `MEGA_ASSETS_URL`, cached das Ergebnis, Platzhalter-Fallback ohne Secret.
+- Penzilla Giant City Builder: texturierter Boden, Straßen und Feldwege mit Autotiling (9 Varianten + Spiegelung), 18 Gebäude, Bäume, Büsche, Felder mit Pflanzen, Brunnen, Laternen (an/aus + Licht), Deko.
+- Penzilla Ultimate Protagonist (Character1): 8 Richtungen, Idle/Walk/Interact-Animation.
+- Penzilla Basic GUI: 9-Slice-Panels und Buttons, Icons, orange Aktionstaste; Credit im Menü.
+- CC0-Interior-Assets (Kenney Roguelike Indoors, Kenney Furniture Kit, OpenGameArt) inkl. Lizenzdateien in `assets/interior/`.
+
+### Geändert
+- Projektion an das Penzilla-Raster angepasst (128×73 Welt-Einheiten = 512×292 px).
+- Gründungsvorlage neu gestaltet (24×24 Kacheln, einspurige Straßen, Platz mit Brunnen, Gebäudefronten zur Straße, Freiflächen für Wachstum).
+- Mipmaps für verkleinerte Sprites; HUD-Layout im Hochformat korrigiert.
+
 ## [0.1.1] – Designänderung „Leerer Planet“
 
 ### Geändert

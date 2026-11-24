@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/settlement/settlement_scene.gd" id="1_settle"]
+[ext_resource type="Script" path="res://scripts/world/ground_layer.gd" id="2_ground"]
+
+[node name="Settlement" type="Node2D"]
+script = ExtResource("1_settle")
+
+[node name="DayNight" type="CanvasModulate" parent="."]
+
+[node name="Ground" type="Node2D" parent="."]
+script = ExtResource("2_ground")
+
+[node name="Objects" type="Node2D" parent="."]
+y_sort_enabled = true

@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "_comment": "Logical asset keys -> files. Empty 'path' = not integrated yet, the game draws a marked placeholder. See docs/ASSET_INVENTORY.md.",
+  "art_direction": {
+    "exterior_allowed_vendors": ["penzilla"],
+    "interior_note": "Interior assets may use other licensed vendors (pixel art allowed). Purchases only with owner approval."
+  },
+  "sources": {
+    "penzilla_ultimate_protagonist": {"vendor": "penzilla", "package": "Ultimate Protagonist", "provided_link": "https://storage.to/pfDPS1D0I", "store_page": "https://penzilla.itch.io/ultimate-protagonist", "status": "download_blocked"},
+    "penzilla_giant_city_builder": {"vendor": "penzilla", "package": "GiantCityBuilder", "provided_link": "https://storage.to/4DrGboO8h", "store_page": "https://penzilla.itch.io/giant-city-builder", "status": "download_blocked"},
+    "penzilla_isometric_rpg_buildings": {"vendor": "penzilla", "package": "Isometric RPG Buildings", "provided_link": "https://storage.to/lxRphdPEO", "store_page": "https://penzilla.itch.io/isometric-rpg-village", "status": "download_blocked"},
+    "penzilla_basic_gui": {"vendor": "penzilla", "package": "Basic GUI", "provided_link": "https://storage.to/KAzmtRSF0", "store_page": "", "status": "download_blocked"},
+    "penzilla_top_down_retro_interior": {"vendor": "penzilla", "package": "Top-Down-Retro-Interior", "provided_link": "https://storage.to/vw1xE9UNW", "store_page": "https://penzilla.itch.io/top-down-retro-interior", "status": "download_blocked"}
+  },
+  "entries": {
+    "character.player": {"source": "penzilla_ultimate_protagonist", "path": "", "kind": "SpriteFrames", "anchor": [0, 0], "scale": 1.0, "notes": "Expected animations: idle_<dir>, walk_<dir> with dir in e,ne,n,nw,w,sw,s,se"},
+
+    "exterior.ground.tileset": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D", "notes": "Grass/road/plaza/water tiles"},
+
+    "exterior.building.town_hall": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.trade_post": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.depot": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.water_works": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.greenhouse": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.house": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.player_home": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.clinic": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.energy_station": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.workshop": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+    "exterior.building.emergency_post": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D", "anchor": [0, 0], "scale": 1.0},
+
+    "exterior.prop.tree": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D"},
+    "exterior.prop.bush": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D"},
+    "exterior.prop.lamp": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D"},
+    "exterior.prop.bench": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D"},
+    "exterior.prop.well": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D"},
+    "exterior.prop.notice_board": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D"},
+    "exterior.prop.market_stall": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D"},
+    "exterior.prop.crates": {"source": "penzilla_isometric_rpg_buildings", "path": "", "kind": "Texture2D"},
+    "exterior.prop.solar_panel": {"source": "penzilla_giant_city_builder", "path": "", "kind": "Texture2D"},
+
+    "ui.theme": {"source": "penzilla_basic_gui", "path": "", "kind": "Theme", "notes": "Until available the HUD uses scripts/ui/ui_theme.gd"},
+
+    "interior.tileset.retro": {"source": "penzilla_top_down_retro_interior", "path": "", "kind": "Texture2D", "notes": "Interiors are not part of Phase 1 gameplay"}
+  }
+}

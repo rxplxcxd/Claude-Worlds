@@ -31,6 +31,8 @@ func _ready() -> void:
 	_update_content_scale()
 	hud.edit_character_requested.connect(func() -> void: open_character_editor("edit"))
 	hud.map_requested.connect(func() -> void: open_globe("browse"))
+	if _qa_gallery():
+		return
 	if _qa_quickstart():
 		pass
 	elif needs_character_creation():
@@ -41,6 +43,18 @@ func _ready() -> void:
 		open_start_choice()
 	else:
 		_start_world()
+
+
+## QA hook (web only): "?gallery=living" opens the Living-Assets test gallery
+## (technical check of state variants and VFX) instead of the game.
+func _qa_gallery() -> bool:
+	if not OS.has_feature("web") or not str(JavaScriptBridge.eval("location.search", true)).contains("gallery=living"):
+		return false
+	hud.visible = false
+	var g := LivingGallery.new()
+	g.name = "LivingGallery"
+	add_child(g)
+	return true
 
 
 ## QA hook (web only, for automated measurements): "?qa_quickstart=1" creates

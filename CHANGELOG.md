@@ -2,6 +2,19 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.4.1] – Living Assets & Environmental Storytelling (visuell, kein Gameplay)
+
+### Hinzugefügt
+- **Asset-Inventar** aller 7 901 Dateien der Penzilla-Pakete (+ CC0-Interior): `docs/living_assets/asset_inventory.csv` (Kategorie, Quelle, Maße, Perspektive, Animation, Verwendung, Godot-Kompatibilität, Lizenz, Zustandsgruppe), erzeugt von `tools/assets/inventory.py`.
+- **Zustandsmatrix** (12 Gebäudezustände, Gruppen für Vegetation, Böden, Stadtmöbel, Fahrzeuge, Innenräume) – `docs/living_assets/STATE_MATRIX.md`.
+- **Variantengenerator** `tools/assets/living_states.py` + `make_living_samples.py` (dreistufig: Shader / Overlay / Vollvariante); Ergebnisse privat in `assets/penzilla/states/` (git-ignoriert).
+- **Eigene VFX im Penzilla-Stil** `assets/vfx/` (Feuer, Rauch, Funken, Regen, Schnee, Staub, Blätter, Spritzer, Reparatur, Belohnung, Trümmer) und Verschleiß-Shader `shaders/living_wear.gdshader`.
+- **Test-Galerie** `?gallery=living` (nur Web, nur mit URL-Parameter) zur technischen Prüfung.
+- Dokumente: Produktionsstandard (Vorschlag), Qualitätsprüfung, VFX-Quellen/Lizenzen, technische Integration inkl. Qualitätsprofile und Performance, Prioritätenliste.
+
+### Nicht geändert
+- Spielmechanik und Darstellung im Spiel sind unverändert; Zustände werden noch nirgends im Spiel verwendet.
+
 ## [0.4.0] – Paket 2.1: Territorien, 20-km-Regel, Besiedelbarkeit, Diagnose
 
 ### Hinzugefügt

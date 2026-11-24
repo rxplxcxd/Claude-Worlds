@@ -21,6 +21,12 @@ node tools/serve_and_shoot.js build/web build/shots              # optional: Bro
 node tools/browser_editor_test.js build/web build/editor          # optional: Charakter-Editor im Browser
 TZ_ID=America/New_York node tools/world_shots.js build/web build/world "?preview=21:00"   # Welt, Zeitzone, Nachtvorschau
 node tools/perf_measure.js build/web build/perf desktop|iphone   # Diagnose-Messung (PERFORMANCE.md §7)
+
+# Living Assets (optional, docs/living_assets/README.md) – numpy, scipy, pillow
+python3 -I tools/assets/inventory.py /tmp/penzilla_src .            # Inventar-CSV
+python3 -I tools/assets/make_living_samples.py /tmp/penzilla_src .  # Beispielzustände (privat, assets/penzilla/states/)
+python3 -I tools/assets/make_vfx.py .                               # eigene VFX (assets/vfx/, wird committet)
+# Test-Galerie: build/web im Browser mit ?gallery=living öffnen
 ```
 `build/` ist in `.gitignore`.
 

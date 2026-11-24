@@ -30,6 +30,7 @@ var _measure_left := 0.0
 var _update_t := 0.0
 var _auto_after := -1.0
 var _measure_gpu := false
+var _split_after := -1.0
 
 
 func _ready() -> void:
@@ -74,6 +75,9 @@ func _read_url() -> void:
 	if not OS.has_feature("web"):
 		return
 	var q := str(JavaScriptBridge.eval("location.search", true))
+	var sp := q.find("perfsplit=")
+	if sp >= 0:
+		_split_after = float(q.substr(sp + 10).split("&")[0])
 	if q.contains("perf=1"):
 		overlay_visible = true
 	var m := q.find("perfauto=")
@@ -111,6 +115,11 @@ func _process(delta: float) -> void:
 		if _auto_after <= 0.0:
 			_auto_after = -1.0
 			start_measurement()
+	if _split_after > 0.0:
+		_split_after -= delta
+		if _split_after <= 0.0:
+			_split_after = -1.0
+			split_draw_calls()
 	if measuring:
 		_samples.append(_sample(delta))
 		_measure_left -= delta
@@ -184,10 +193,13 @@ func _live_text() -> String:
 		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
 		str(view.get("visible_objects", "–")), str(view.get("total_objects", "–")),
 		Performance.get_monitor(Performance.OBJECT_NODE_COUNT)])
-	lines.append("Speicher: Video %s · Texturen %s · statisch %s" % [
+	var stat := Performance.get_monitor(Performance.MEMORY_STATIC)
+	lines.append("Speicher: Video %s · Texturen %s · Puffer %s · Skript/statisch %s · Ressourcen %d" % [
 		_mb(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED)),
 		_mb(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED)),
-		_mb(Performance.get_monitor(Performance.MEMORY_STATIC))])
+		_mb(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_BUFFER_MEM_USED)),
+		_mb(stat) if stat > 0 else "n/v (Release-Build)",
+		Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)])
 	lines.append("Auflösung %s · Pixeldichte %s" % [str(get_window().size), _dpr()])
 	if not last_report.is_empty():
 		lines.append("— Letzte Messung (%s, %d s): Ø %.1f FPS · 1%%-Tief %.1f · Ø %.1f ms · p95 %.1f ms · Draw Calls Ø %d" % [
@@ -205,7 +217,68 @@ func _finish_measurement() -> void:
 	last_report["pixel_ratio"] = _dpr()
 	last_report["video_mem_mb"] = snappedf(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0, 0.1)
 	last_report["static_mem_mb"] = snappedf(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, 0.1)
+	last_report["texture_mem_mb"] = snappedf(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED) / 1048576.0, 0.1)
+	last_report["buffer_mem_mb"] = snappedf(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_BUFFER_MEM_USED) / 1048576.0, 0.1)
+	last_report["resources"] = Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)
+	last_report["nodes"] = Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
+	last_report["view_details"] = _view_stats()
 	print("PERF_REPORT " + JSON.stringify(last_report))
+
+
+## Diagnostic breakdown: hides each layer of the active view (and the HUD)
+## for a few frames and records how many draw calls disappear. Restores
+## everything afterwards. Result printed as PERF_SPLIT {...}.
+func split_draw_calls() -> void:
+	var view: Node = null
+	for n in get_tree().get_nodes_in_group("perf_view"):
+		if (n as Node).can_process():
+			view = n
+	if view == null:
+		return
+	var targets: Array = []
+	for c in view.get_children():
+		if c is CanvasItem and (c as CanvasItem).visible:
+			targets.append(c)
+	var hud := get_tree().root.get_node_or_null("Main/HUD")
+	if hud and hud.visible:
+		targets.append(hud)
+	var own := _panel.visible
+	_panel.visible = false
+	await _frames_wait(4)
+	var base := _draw_calls()
+	var out := {"view": _view_stats().get("view", "–"), "total": base}
+	for t in targets:
+		t.visible = false
+		await _frames_wait(4)
+		out[str(t.name)] = base - _draw_calls()
+		t.visible = true
+	# Objects layer: split by node class (buildings, props, lamps, NPCs, player).
+	var objects: Node = view.get_node_or_null("Objects")
+	if objects:
+		var groups := {}
+		for c in objects.get_children():
+			var key: String = c.get_script().get_global_name() if c.get_script() else c.get_class()
+			if not groups.has(key):
+				groups[key] = []
+			groups[key].append(c)
+		for key in groups.keys():
+			for c in groups[key]:
+				c.visible = false
+			await _frames_wait(4)
+			out["Objects/" + key + " (%d)" % groups[key].size()] = base - _draw_calls()
+			for c in groups[key]:
+				c.visible = true
+	_panel.visible = own
+	print("PERF_SPLIT " + JSON.stringify(out))
+
+
+func _draw_calls() -> int:
+	return RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
+
+
+func _frames_wait(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
 
 
 ## Aggregates raw samples (pure function, unit-tested).

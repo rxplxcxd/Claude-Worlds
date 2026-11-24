@@ -95,3 +95,69 @@ Ausgangslage: Der Projektinhaber hat in ersten Tests **~30 FPS** gemessen (Gerä
 4. Erst messen, dann optimieren – die Reihenfolge in 6.2 ist eine begründete Vermutung, kein Messergebnis.
 
 Hinweis: iOS-Safari liefert `requestAnimationFrame` typischerweise mit 60 Hz; 60 FPS ist damit die realistische Obergrenze im Browser.
+
+
+## 7. Messungen mit dem Diagnosewerkzeug (Paket 2.1, 24.11.2026)
+
+### 7.1 Werkzeug [IMPLEMENTIERT]
+- **Messanzeige** (`scripts/debug/perf_monitor.gd`, Autoload `PerfMonitor`): F3, Menü → „Leistungsanzeige“ oder URL `?perf=1`. Zeigt FPS, Frame-Zeit (Ø/Max), CPU-Zeit (Prozess, Physik, Render-Vorbereitung), GPU-Zeit (falls die Plattform sie liefert – im Browser meist „n/v“), Draw Calls, Primitive, sichtbare/gesamte Objekte der aktiven Ansicht, Knoten, Video-/Textur-/Puffer-Speicher, Ressourcen, Auflösung und Pixeldichte. Funktioniert in **Siedlung und Globus**.
+- **Messung (20 s):** Taste „Messung starten“ → Ø FPS, 1 %-Tief, Ø/p95/Max Frame-Zeit, Ø CPU, Ø/Max Draw Calls, Speicher. Ergebnis bleibt in der Anzeige stehen (für ein Bildschirmfoto auf dem iPhone) und wird als `PERF_REPORT {…}` in die Konsole geschrieben.
+- **Aufschlüsselung:** `?perfsplit=6` blendet nach 6 s jede Ebene kurz aus und misst, wie viele Draw Calls sie verursacht (`PERF_SPLIT {…}`).
+- **Automatisch:** `node tools/perf_measure.js build/web <ziel> desktop|iphone` (nutzt `?qa_quickstart=1` – QA-Parameter, erzeugt Standardfigur + Gründung am besten Ort; ohne Parameter nie aktiv).
+
+### 7.2 Ergebnisse (Chromium headless, Software-Rendering „SwiftShader“)
+> **Wichtig:** Software-Rendering läuft auf der CPU. **FPS und Frame-Zeiten sind hier nicht aussagekräftig** für ein iPhone. Aussagekräftig (plattformunabhängig, gleiche Szene) sind **Draw Calls, Primitive, Objekte und Speicher**. Rohdaten: `docs/perf/*.json`.
+
+| Ansicht | Profil | Draw Calls | Primitive | sichtbare Objekte | Textur-Speicher | Video gesamt |
+|---|---|---|---|---|---|---|
+| Siedlung | Desktop 1280×720 | **448** | 2 432 | 64 von ~210 | **384 MB** | 402 MB |
+| Siedlung | iPhone-15-Pro-Max-Emulation (1290×2217, 3×) | **444** | 2 602 | 59 | **377 MB** | 395 MB |
+| Globus (kontinental) | Desktop | 53 | 16 704 | 33 Regionen | 375 MB* | 398 MB |
+
+\* Die angehaltene Siedlung bleibt im Speicher; der Globus selbst braucht < 2 MB Texturen.
+
+**Aufschlüsselung der Draw Calls in der Siedlung** (`PERF_SPLIT`):
+
+| Ebene | Draw Calls | Anteil |
+|---|---|---|
+| **Boden** (ein Zeichenobjekt, wechselnde Kacheltexturen) | **357** | **80 %** |
+| NPCs (12) | 28 | 6 % |
+| HUD | 23 | 5 % |
+| Laternen (12) | 13 | 3 % |
+| Props (137) | 13 | 3 % |
+| Gebäude (21) | 11 | 2 % |
+| Spielfigur | 5 | 1 % |
+
+**Aufschlüsselung des Texturspeichers** (berechnet aus den importierten Dateien, RGBA + Mipmaps):
+
+| Gruppe | Dateien | Speicher (alle geladen) |
+|---|---|---|
+| **Figuren-Ebenen** (1024 × 800 je Blatt) | 150 | **≈ 497 MB** |
+| Fertige Figur (Rückfall) | 4 | 28 MB |
+| Gebäude | 19 | 19 MB |
+| Boden | 24 | 8 MB |
+| Props, GUI, UI | 50 | 5 MB |
+
+Davon sind in der Siedlung ~100 Ebenen geladen (Spieler + 12 NPCs + Editor-Vorschaukarten) plus die zusammengesetzten Figurentexturen → **~380 MB**. Auf iPhones mit begrenztem Safari-Speicher ist das das **größte Risiko** (Absturz/Neuladen des Tabs), noch vor der Bildrate.
+
+### 7.3 Konkrete Optimierungen mit erwarteter Wirkung (Vorschlag – **nicht umgesetzt**, wartet auf Freigabe)
+
+| # | Maßnahme | Begründung (Messwert) | Erwartete Wirkung | Qualität |
+|---|---|---|---|---|
+| O1 | **Boden-Atlas**: alle Bodenkacheln (Gras, Wege, Straßen, Gehwege, Platten) in **eine** Atlas-Textur; Boden in Chunks (16 × 16) | 357 von 448 Draw Calls | Siedlung **448 → ~90–100 Draw Calls (−78 %)**; Chunks zusätzlich mit Culling, wichtig für 1 km² (10 000 Kacheln) | unverändert |
+| O2 | **Figuren-Ebenen nach dem Zusammensetzen freigeben**; nur zusammengesetzte Texturen behalten; Animationen erst bei Bedarf laden | ~380 MB Textur | **−250 bis −300 MB** | unverändert |
+| O3 | **Keine Mipmaps für Figuren** (werden ~1:1 gezeichnet) | +33 % auf Figurentexturen | weitere **−25 %** des Figurenspeichers | unverändert bei normalem Zoom; beim Herauszoomen minimal flimmernder |
+| O4 | **Editor-Vorschaukarten** aus einer kleinen, einmal erzeugten Miniatur statt aus vollen Blättern | Editor lädt viele Ebenen | **−50 bis −100 MB** während des Editors | unverändert |
+| O5 | **Rückfall-Figur (Character1)** nur laden, wenn kein Baukasten vorhanden | 28 MB, heute ungenutzt geladen? (prüfen) | bis **−28 MB** | – |
+| O6 | **NPCs: 2 statt 3 Teile** (Gesicht nur in Nähe getrennt) | 28 Draw Calls für 12 NPCs | **−8 bis −10 Draw Calls** | Blinzeln nur nahe der Kamera |
+| O7 | **Laternenlicht über globalen Shader-Parameter** statt `_process` je Laterne | Skriptlast skaliert mit Laternen | CPU, nicht messbar am Software-Renderer → auf iPhone prüfen | unverändert |
+| O8 | **Dynamische Auflösung** (Welt in SubViewport mit 0,67–1,0) | iPhone 15 Pro Max rendert 1290 × 2217 Pixel (3×) | **−30 bis −55 % Pixel**; nur nach iPhone-Messung (GPU-gebunden?) | Welt minimal weicher, UI scharf |
+| O9 | **Globus**: Rendern drosseln, wenn sich nichts bewegt | 16 704 Primitive, teurer Shader | Akku/Wärme; FPS unverändert | unverändert |
+
+**Empfohlene Reihenfolge:** O2 + O3 (Speicher, Absturzrisiko) → O1 (Draw Calls) → iPhone-Messung → O8 nur bei nachgewiesener GPU-Last.
+
+### 7.4 Messung auf deinem iPhone (Anleitung)
+1. Spiel öffnen mit `…/index.html?perf=1` (oder Menü → „Leistungsanzeige“).
+2. In der Siedlung „Messung starten (20 s)“ tippen, nicht bewegen → Bildschirmfoto der Anzeige.
+3. Dasselbe nach 1 Minute Herumlaufen, danach im Globus („Karte“).
+4. Optional `?perf=1&perfsplit=6` für die Aufschlüsselung (Wert erscheint nur in der Konsole – Safari-Web-Inspector am Mac nötig).

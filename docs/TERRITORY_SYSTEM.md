@@ -1,6 +1,7 @@
 # TERRITORY_SYSTEM – Flächen, Territorien, Gründungsabstand
 
-**Status: [GEPLANT]** – Grundlage: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §1–4. In Phase 2 existiert nur eine Vorstufe (Territorium = ganze Region), die diese Anforderungen **nicht** erfüllt (siehe §10).
+**Status:** Gründung, Startterritorium, 20-km-Regel, Sperrzonen, Schwierigkeit, Index, Speicherung **[IMPLEMENTIERT – Paket 2.1, 0.4.0]** · Erweiterung, Erreichbarkeitsgarantie, Verfall von Erweiterungen **[GEPLANT, verbindliche Regeln §5]**.
+Grundlage: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §1–4 und die Entscheidungen des Projektinhabers vom 24.11.2026 (§11).
 
 ## 1. Vier Flächenbegriffe (technisch getrennt)
 
@@ -11,7 +12,7 @@
 | **Bebaute Fläche** (abgeleitet) | Was tatsächlich genutzt ist: Grundstücke mit Gebäuden, Straßen, Infrastruktur. | **Nicht** autoritativ gespeichert – aus Gebäuden/Straßen berechnet, als Statistik zwischengespeichert | Entsteht durch Bauen/Abreißen |
 | **Territoriale Erweiterung** (`ExpansionClaim`) | Antrag auf zusätzliches Gebiet mit Kosten, Fristen, Einspruch. | Antragsdatensatz mit Zielgeometrie und Zustand | Eigenes System (§5) |
 
-Beziehung: *bebaute Fläche ⊆ Siedlungsfläche ⊆ Territorium*. Zum Start gilt **Territorium = Siedlungsfläche** (1 × 1 km, Vorschlag – [OFFEN]: etwas Umland, z. B. 2 × 2 km?).
+Beziehung: *bebaute Fläche ⊆ Siedlungsfläche ⊆ Territorium*. **Entschieden:** Das Startterritorium ist **genau 1 × 1 km** (= Siedlungsfläche); die bebaute Fläche kann kleiner sein; das Territorium kann später dynamisch erweitert werden.
 
 ## 2. Geometrie auf der Kugel
 
@@ -56,13 +57,38 @@ Menschlich (dynamisch, gespeichert): Territorium ← Siedlung ← Stadt/Verbund 
 - Verwaltungseinheiten (Gemeinde, Kreis, „politische Region“, Staat, Land) sind `PoliticalEntity`s mit **Verweisen** auf Territorien – sie entstehen und ändern sich durch Spieler ([POLITICAL_SYSTEM.md](POLITICAL_SYSTEM.md)).
 - Jede Grenzänderung erzeugt eine neue `version` des Territoriums mit Historie (wer, wann, warum: Erweiterung, Vertrag, Fusion, Auflösung).
 
-## 5. Territoriale Erweiterung [GEPLANT, eigenes System – Entwurf]
-Bewusst getrennt von der Gründungsregel. Entwurf zur späteren Ausarbeitung (Phase 4/7/9):
-- **Antrag** auf angrenzende Fläche (zusammenhängend), Kosten (Vermessung, Verwaltung), Voraussetzungen (Einwohner, Nutzung der vorhandenen Fläche, Versorgung).
-- **Einspruchsfrist** für Nachbarn innerhalb einer Distanz (z. B. 50 km); bei Konkurrenz zweier Anträge: Verhandlung, sonst Mittellinie oder Schiedsverfahren (Rat).
-- **Nutzungspflicht:** beanspruchte, aber dauerhaft ungenutzte Erweiterungsflächen können nach Frist verfallen (nicht die Kernfläche).
-- **Annäherung:** Nach der Gründung dürfen Territorien sich durch Erweiterung bis zur gemeinsamen Grenze annähern (Verträge regeln das) – der 20-km-Abstand gilt nur für Neugründungen. [OFFEN]: Mindestpuffer auch bei Erweiterung?
-- **Verträge/Fusion/Abtretung** ändern Territorien direkt ([CONTRACT_SYSTEM.md](CONTRACT_SYSTEM.md), [POLITICAL_SYSTEM.md](POLITICAL_SYSTEM.md)).
+## 5. Territoriale Erweiterung [GEPLANT – verbindliche Regeln]
+Eigenes System, getrennt von der Gründungsregel (Umsetzung frühestens Phase 8).
+
+### 5.1 Grundregeln (entschieden 24.11.2026)
+- Die **20-km-Regel gilt nur für Neugründungen** unabhängiger Siedlungen – nicht dauerhaft für bestehende.
+- **Erweiterungen dürfen bis an die Grenze benachbarter Siedlungen heranwachsen**; zwei Siedlungen dürfen direkte Nachbarn werden.
+- **Territorien dürfen sich nie unberechtigt überlappen** (Prüfung `TerritoryGeometry.overlapping_pairs`, heute schon Teil der Invarianten). Berechtigte Überschneidungen gibt es nur durch Verträge (z. B. Abtretung, gemeinsame Verwaltung) – dann ändert sich die Geometrie, nicht die Regel.
+- **Kein automatisches Vorrecht älterer Siedlungen.** Konkurrierende Anträge werden nach denselben Regeln für alle entschieden (§5.3).
+
+### 5.2 Erreichbarkeitsgarantie (gegen Einkreisung und Blockaden)
+Jede Siedlung behält **immer** Zugang zum übergeordneten Wegenetz. Regel:
+1. **Zugangskorridor:** Von jeder Territoriumsgrenze muss es einen zusammenhängenden Weg mit **mindestens 1 km Breite** (Vorschlag) geben, der **nicht durch fremdes Territorium** führt und das **übergeordnete Netz** erreicht.
+2. **Übergeordnetes Netz** = Verbindungsstraßen/Schienen/Häfen zwischen Siedlungen (Phase 8). Solange es nicht existiert, gilt als Netz: **freies Land ab 50 km Entfernung** oder **offene Küste** (Seezugang).
+3. **Prüfung bei jeder Gebietsänderung** (Erweiterung, Vertrag, Fusion, Neugründung): Nach der Änderung müssen **alle** betroffenen Siedlungen im Umkreis (Vorschlag 100 km) noch einen Korridor haben. Eine Änderung, die eine Siedlung abschneiden würde, wird **abgelehnt** – egal ob die betroffene Siedlung älter oder jünger ist (symmetrisch).
+4. **Wegerecht statt Korridor:** Führt der einzige Zugang durch fremdes Gebiet, ist das nur zulässig mit einem **Wegerecht** (dauerhafte Dienstbarkeit, an das Land gebunden, durch Weltregeln geschützt; Kündigung nur mit Ersatzweg).
+5. **Neugründungen allein können nicht einkreisen:** Zwischen den Grenzen liegen stets ≥ 20 km > 1 km Korridorbreite. Die Regel greift daher vor allem bei Erweiterungen.
+6. **Algorithmus (serverseitig):** lokales Raster (1-km-Zellen) um die betroffene Siedlung, fremde Territorien als Hindernis, Korridorbreite durch Erosion der freien Fläche um ½ Breite, Flutfüllung von der eigenen Grenze bis zum Netz bzw. 50-km-Rand.
+
+### 5.3 Erweiterungsverfahren (Entwurf)
+- **Antrag** auf angrenzende, zusammenhängende Fläche mit Kosten (Vermessung, Verwaltung) und Voraussetzungen (Einwohner, Nutzung der vorhandenen Fläche, Versorgung).
+- **Einspruchsfrist** für Nachbarn im Umkreis (z. B. 50 km). Konkurrierende Anträge: Verhandlung → sonst **Mittellinie** zwischen den Grenzen oder Schiedsverfahren (Rat). Kriterien sind Nutzung und Bedarf, nicht das Alter der Siedlung.
+- Jede Erweiterung wird als eigener Eintrag in `expansions[]` mit Zustand, Fristen und Geometrie gespeichert; das Kerngebiet bleibt getrennt.
+
+### 5.4 Inaktivität und Gründungsschutz (entschieden 24.11.2026)
+- **Die Kernfläche (Startterritorium) verfällt nie** wegen Abwesenheit; **keine automatische Auflösung** einer Siedlung; **keine Bestrafung für normale Spielpausen**.
+- **Erweiterungsflächen** können unter klar definierten Bedingungen anders behandelt werden – **nur wenn alle** zutreffen (Vorschlag):
+  1. ungenutzt (keine Gebäude, Felder, Leitungen, Abbau, Bewohner),
+  2. Unterhalt seit mindestens 60 Tagen nicht bezahlt,
+  3. eine andere Partei beantragt die Fläche,
+  4. Ankündigung mit 14 Tagen Frist; Halten durch Zahlung oder Nutzung jederzeit möglich.
+  Flächen mit Gebäuden, Bewohnern oder Infrastruktur fallen **nie** zurück.
+- **Blockadegründungen unattraktiv machen** (statt Verfall): eine aktive Gründung je Konto (**implementiert**), Gründungskosten (mit der Wirtschaft, Phase 6), Abklingzeit nach Aufgabe einer Siedlung (Vorschlag 30 Tage), Mindest-Spielzeit neuer Konten vor einer Gründung (Vorschlag: nach dem Einstieg), Unterhalt für Erweiterungen (nicht für die Kernfläche).
 
 ## 6. Gründungsschwierigkeit statt geografischer Sperre
 Keine Breitengrad-Grenze, kein Biom-Verbot. Stattdessen wird jeder Standort in eine **Schwierigkeitsklasse** eingeordnet, die Startbedingungen und laufende Kosten bestimmt:
@@ -78,22 +104,22 @@ Keine Breitengrad-Grenze, kein Biom-Verbot. Stattdessen wird jeder Standort in e
 | Transport | Erreichbarkeit (Küste, Flüsse, Nähe zu Siedlungen) |
 | Technologie | benötigte Stufe (z. B. Polarausrüstung, Isolierbau, Entsalzung) |
 
-Klassen (Vorschlag): **leicht · mittel · schwer · extrem**. „Extrem“ (Eisschild, Hochgebirge, Wüsteninneres) ist **nicht verboten**, sondern verlangt nachgewiesene Voraussetzungen (Technologie, Startkapital, Versorgungsvertrag mit einer bestehenden Siedlung). Neue Spieler sehen dort eine klare Erklärung, was fehlt. Wasserflächen bleiben ungeeignet, weil dort kein Land ist (schwimmende Siedlungen: [OFFEN], späte Technologie).
+Klassen **leicht · mittel · schwer · extrem** – **implementiert** (`Geography.difficulty`): Härte = gewichtete Summe aus Kälte/Hitze 22 %, Nahrung 18 %, Gelände 16 %, Wasser 14 %, Energie 12 %, Transport 10 %, Rohstoffe 8 %; Grenzen 0,30 / 0,45 / 0,62. Der Globus zeigt Klasse und konkrete Anforderungen; ein **extremer** Standort verlangt eine ausdrückliche Bestätigung. **Ehrlich:** Die Anforderungen sind heute nur Information – sie werden erst mit Wirtschaft/Technologie (Phase 6) spielwirksam; bis dahin startet jede Siedlung mit dem Grundpaket. „Extrem“ (Eisschild, Hochgebirge, Wüsteninneres) ist **nicht verboten**, sondern verlangt nachgewiesene Voraussetzungen (Technologie, Startkapital, Versorgungsvertrag mit einer bestehenden Siedlung). Neue Spieler sehen dort eine klare Erklärung, was fehlt. Wasserflächen bleiben ungeeignet, weil dort kein Land ist (schwimmende Siedlungen: [OFFEN], späte Technologie).
 
 **Geringe Auflösung:** Die Planetendaten haben 49-km-Zellen; für die 1-km-Startfläche (Landanteil, Fluss, Küste, Hang) braucht es eine **deterministische Gelände-Verfeinerung** (§9).
 
 ## 7. Exploits und Gegenmaßnahmen
 
-| Exploit | Gegenmaßnahmen (Vorschlag) |
+| Exploit | Gegenmaßnahmen |
 |---|---|
-| **Mehrfachgründungen** (ein Spieler besetzt viele Orte) | Eine aktive Gründung pro Konto; zweite Gründung erst ab Entwicklungsstufe X der ersten oder nach Aufgabe + Abklingzeit; Gründungskosten (Startkapital, Material). |
-| **Zweitaccounts** | Konto-Bindung (verifizierte Anmeldung, Firebase App Check), Ratenbegrenzung pro Gerät/Netz, Mindest-Spielzeit vor Gründung, Auffälligkeitsprüfung (gleiche Geräte, synchrones Verhalten) – mit Vorsicht bei Haushalten. Vollständig verhindern lässt sich das nicht → **unrentabel machen** (Unterhalt, Verfall, s. u.). |
-| **Territoriale Blockade** (Gründung nur, um Gebiet zu sperren) | **Probezeit**: Gründung ist 7 Tage „vorläufig“ und verfällt ohne Mindestaktivität (z. B. erste Bauaufträge); 20-km-Puffer nur um die Kernfläche; Unterhalt pro km². Langfristig inaktive Siedlungen werden „ruhend“: Kernfläche bleibt (keine Bestrafung für Pausen), Erweiterungsflächen verfallen. |
-| **Einkreisung** (Gründungen exakt 20 km rund um eine Siedlung) | Erweiterungs-Vorrang für die ältere Siedlung im Zwischenraum (z. B. bis zur Mittellinie) oder „Wachstumsreserve“ proportional zur Einwohnerzahl; Einspruchsrecht in Erweiterungsverfahren. [OFFEN] |
-| **Strategisches Beanspruchen** (Rohstoffe, Pässe, Flussmündungen) | Rohstoffrechte getrennt vom Territorium (Konzessionen mit Nutzungspflicht); Erschließungsfrist; Durchgangs-/Transitrechte für Verkehrswege per Gesetz/Vertrag. |
-| **Gründungs-Spam an beliebten Orten** | Abklingzeit, Kosten, Moderationswerkzeuge, Meldefunktion. |
+| **Mehrfachgründungen** | **Eine aktive Gründung pro Konto (implementiert, getestet)**; zweite Gründung erst nach Aufgabe + Abklingzeit; Gründungskosten (Phase 6). |
+| **Zweitaccounts** | Konto-Bindung (verifizierte Anmeldung, Firebase App Check), Ratenbegrenzung pro Gerät/Netz, Mindest-Spielzeit vor Gründung, Auffälligkeitsprüfung (vorsichtig bei Haushalten). Nicht vollständig verhinderbar → **unrentabel machen** (Kosten, Unterhalt für Erweiterungen, Erreichbarkeitsgarantie). |
+| **Territoriale Blockade** | 20-km-Puffer nur um echte Territorien; Erweiterungen kosten Unterhalt und können unter §5.4 zurückfallen; die **Kernfläche** bleibt geschützt (keine Bestrafung für Pausen). |
+| **Einkreisung** | **Erreichbarkeitsgarantie §5.2** (symmetrisch, kein Altersvorrecht). |
+| **Strategisches Beanspruchen** (Rohstoffe, Pässe, Mündungen) | Rohstoffrechte getrennt vom Territorium (Konzessionen mit Nutzungspflicht); Korridor-/Wegerechte für Verkehrswege. |
+| **Gründungs-Spam an beliebten Orten** | Abklingzeit, Kosten, Moderation, Meldefunktion. |
 | **Zeit-/Client-Manipulation** | Alle Prüfungen serverseitig mit Serverzeit; der Client zeigt nur Vorschau. |
-| **Race Conditions** (zwei Gründungen gleichzeitig nebeneinander) | Server prüft in einer Transaktion über die betroffenen Index-Zellen; zweite Gründung wird abgelehnt. |
+| **Race Conditions** | Server prüft in einer Transaktion über die betroffenen Index-Zellen. |
 
 ## 8. Auswirkungen auf Mehrspieler
 - Gründung, Erweiterung, Grenzänderung = **Absichten an den Server**; der Server ist alleinige Instanz für Geometrieprüfungen (Transaktion über Index-Zellen).
@@ -102,8 +128,20 @@ Klassen (Vorschlag): **leicht · mittel · schwer · extrem**. „Extrem“ (Eis
 ## 9. Gelände-Verfeinerung [GEPLANT]
 Für 1-km-Flächen und lokale Karten wird aus den 49-km-Planetendaten deterministisch ein feineres Gelände abgeleitet (zusätzliche Rauschoktaven, Fluss-/Küstenverläufe als Linien). Damit Grenzfälle (Land/Wasser) auf allen Geräten gleich entschieden werden, entscheidet **der Server**; Clients berechnen nur die Darstellung. Alternative: höher aufgelöstes Backen (z. B. 4096 × 2048, 8 MB) – Abwägung in Phase 4.
 
-## 10. Stand im Code (0.3.0)
-- Territorium = `region_ids` (ganze natürliche Region) → muss durch Polygon-Territorien ersetzt werden; natürliche Regionen behalten nur Statistik/Namen.
-- Abstand 300 km zwischen Mittelpunkten, Sperren für ±62°, Eis, Hochgebirge → werden durch §3 und §6 ersetzt.
-- Globus-Overlay zeichnet Gebiete pro Region (LUT) → für kleine Polygone wird eine Mesh-Ebene benötigt.
-- Siedlungs-Datensatz hat bereits `position`, `region_id`, `territory_id` → Migration: `territory.geometry` = 1-km-Quadrat um `position`.
+## 10. Stand im Code (0.4.0, Paket 2.1) [IMPLEMENTIERT]
+| Baustein | Datei |
+|---|---|
+| Geodäsie auf der Kugel: Tangentialrahmen, Versatz, Punkt–Bogen-, Polygon-Abstand, Überlappung, Fläche; Breite per `atan2` (exakt an den Polen trotz einfacher Genauigkeit) | `scripts/geography/geo.gd` |
+| Räumlicher Index (Würfel-Kugel-Quadtree, Ebene 8 ≈ 24 km) | `scripts/geography/geo_index.gd` |
+| Startterritorium 1 × 1 km, nächste Grenze, Überlappungsprüfung | `scripts/geography/territory_geometry.gd` |
+| Standortprüfung ohne geografische Sperren, Landprüfung, 20 km Grenze-zu-Grenze, Schwierigkeitsklassen | `scripts/geography/geography.gd` |
+| Speicherung (Schema 3): Territorium mit Polygon, Kern, Index-Zellen, Version, Historie, Status; Siedlungsfläche; Schwierigkeit; eine Gründung je Spieler; Migration der Phase-2-Regionsansprüche | `scripts/world/world_state.gd` |
+| Globus: Territorien und Sperrzonen exakt im Shader (bis 32 nächste Territorien), Zoom bis ~120 km Höhe, Kamera bis 89° | `shaders/globe.gdshader`, `scripts/globe/*` |
+
+**Bekannte Grenzen:** Landprüfung auf 49-km-Zellen (Küsten unscharf bis zur Gelände-Verfeinerung); das 1-km-Quadrat ist auf dem Globus nur wenige Pixel groß (Markierung über die Stecknadel); Shader zeigt höchstens 32 Territorien gleichzeitig (für Tausende → Kachelung, §3); Erweiterungen und Erreichbarkeitsprüfung sind beschrieben, nicht umgesetzt.
+
+## 11. Entscheidungen des Projektinhabers (24.11.2026)
+1. Startterritorium **genau 1 × 1 km**; bebaute Fläche kann kleiner sein; später dynamisch erweiterbar.
+2. 20-km-Regel zwischen tatsächlichen Grenzen, **nur für Neugründungen**; Erweiterungen dürfen bis an Nachbargrenzen wachsen; **keine unberechtigten Überlappungen**.
+3. **Keine vollständige Einkreisung**; jede Siedlung behält Erreichbarkeit/Anbindung; **kein automatisches Altersvorrecht** → §5.2.
+4. **Kernfläche verfällt nie durch Abwesenheit**; keine Bestrafung für Pausen; Erweiterungen nur unter klaren Bedingungen; Kosten/Missbrauchsschutz gegen Blockadegründungen → §5.4.

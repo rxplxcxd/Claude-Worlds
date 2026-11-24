@@ -28,7 +28,7 @@ Main (scripts/core/main.gd)                 Ablauf: Figur erstellen → Globus (
 │  ├─ GlobeView (Node3D)                    Kugel, Atmosphäre, Sterne, Orbit-Kamera
 │  └─ CanvasLayer 20 ─ Gesten · GlobeLabels · Kopfzeile · Zoom · Infotafel
 └─ CanvasLayer 30 ─ CharacterEditor        nur bei Erstellung / „Figur bearbeiten“
-Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · Geography · WorldState · CharacterCatalog · CharacterComposer
+Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · PerfMonitor · Geography · WorldState · CharacterCatalog · CharacterComposer
 ```
 
 ## 3. Module
@@ -36,7 +36,8 @@ Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · Geography �
 | Ordner | Inhalt | Status |
 |---|---|---|
 | `scripts/core` | `event_bus`, `game_clock` (Echtzeit/Zeitzonen/Sonne), `asset_registry`, `ids`, `input_actions`, `main` | IMPLEMENTIERT |
-| `scripts/geography` | `Iso` (Raster↔Welt), `Geo` (Breite/Länge), `PlanetGenerator`, `PlanetData`, `PlanetTextures`, `planet_bake.gd`, Autoload `Geography` (Planet laden, Standortbewertung) | IMPLEMENTIERT – GEOGRAPHY_SYSTEM.md |
+| `scripts/geography` | `Iso` (Raster↔Welt), `Geo` (Breite/Länge, Geodäsie), `GeoIndex` (räumlicher Index), `TerritoryGeometry`, `PlanetGenerator`, `PlanetData`, `PlanetTextures`, `planet_bake.gd`, Autoload `Geography` (Planet laden, Standortbewertung, Schwierigkeit) | IMPLEMENTIERT – GEOGRAPHY_SYSTEM.md, TERRITORY_SYSTEM.md |
+| `scripts/debug` | Autoload `PerfMonitor` (Diagnose: Messanzeige, Messung, Aufschlüsselung) | IMPLEMENTIERT – PERFORMANCE.md §7 |
 | `scripts/globe` | `GlobeScreen` (Modi Gründen/Erkunden, Infotafel), `GlobeView` (3D, Kamera, Auswahl, Zoomstufen), `GlobeLabels` | IMPLEMENTIERT |
 | `scripts/settlement` | `SettlementData` (Vorlage + Gründungsdatensatz, Validierung), `SettlementScene`, `StreetPlanner` (Platzierungsregeln Straßenmobiliar) | IMPLEMENTIERT |
 | `scripts/world` | `WorldState` (Siedlungsregister, Gründungsregel), `GroundLayer`, `Prop`, `StreetLamp` (Auslegerlaterne + Licht), `IsoPainter` (Platzhalter) | IMPLEMENTIERT |
@@ -46,7 +47,7 @@ Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · Geography �
 | `scripts/player` | `Player`, `PlayerVisual` | IMPLEMENTIERT |
 | `scripts/camera` | `CameraRig` | IMPLEMENTIERT |
 | `scripts/interaction` | `Interactable`, `InteractionService` | IMPLEMENTIERT |
-| `scripts/ui` | `Hud`, `CharacterEditor`, `CharacterThumb`, `GestureSurface`, `TouchJoystick`, `TouchButton`, `UiTheme` | IMPLEMENTIERT |
+| `scripts/ui` | `Hud`, `CharacterEditor`, `CharacterThumb`, `StartChoice`, `GestureSurface`, `TouchJoystick`, `TouchButton`, `UiTheme` | IMPLEMENTIERT |
 | `scripts/persistence` | `LocalProfile` (inkl. Figur) | IMPLEMENTIERT (lokal) |
 | `shaders` | `occluder.gdshader` (Durchsicht-Loch), `globe.gdshader`, `atmosphere.gdshader`, `stars.gdshader` | IMPLEMENTIERT |
 | `data/world/planet` | gebackener Planet (`planet.json`, `planet_cells.bin`) | IMPLEMENTIERT (generiert) |
@@ -159,8 +160,8 @@ Code fragt logische Schlüssel ab (`exterior.building.town_hall`). Dateien entst
 ### Vorgeschlagene ADRs (24.11.2026, noch nicht umgesetzt – siehe TECHNICAL_ASSESSMENT.md)
 | ADR | Entscheidung (Vorschlag) |
 |---|---|
-| ADR-15 | **Territorien als sphärische Polygone** mit Version/Historie, entkoppelt von natürlichen Regionen; Gründungsprüfung geodätisch Grenze-zu-Grenze (20 km) |
-| ADR-16 | **Räumlicher Index** als Würfel-Kugel-Quadtree (Zell-Tokens, Ebene 8 ≈ 24 km) für Territorien, Siedlungen und Firestore-Abfragen |
+| ADR-15 ✅ (0.4.0) | **Territorien als sphärische Polygone** mit Version/Historie, entkoppelt von natürlichen Regionen; Gründungsprüfung geodätisch Grenze-zu-Grenze (20 km) |
+| ADR-16 ✅ (0.4.0, lokal) | **Räumlicher Index** als Würfel-Kugel-Quadtree (Zell-Tokens, Ebene 8 ≈ 24 km) für Territorien, Siedlungen und Firestore-Abfragen |
 | ADR-17 | **Siedlungszustand als Entitäten-Datenbank in Chunks**; Vorlage nur einmal beim Gründen kopiert; Änderungen ausschließlich über Befehle |
 | ADR-18 | **Berechtigungs-Pipeline + datengetriebene Gesetzes-Engine** (Weltregeln → Eigentum → Amt → Gesetze), ausgewertet serverseitig |
 | ADR-19 | **Simulationskern mit analytischer Fortschreibung** (`advance()` über Raten + Ereignisse) und Stufen S0–S3; Server autoritativ |

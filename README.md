@@ -3,7 +3,7 @@
 **Lebendige, persistente Gesellschafts-, Wirtschafts- und Zivilisationssimulation**
 2.5D-isometrische Lebens-, Aufbau- und Gesellschaftssimulation · Godot 4.7.2 · GDScript · Web / iOS Safari / PWA
 
-> **Projektstatus: Phase 2 – World Geography, Version 0.3.0** (zur Abnahme durch den Projektinhaber). Phase 1 ist freigegeben.
+> **Projektstatus: Phase 2 + Paket 2.1, Version 0.4.0** (zur Abnahme durch den Projektinhaber). Phase 3 ist **nicht** freigegeben.
 > Spätere Phasen sind dokumentiert, aber **nicht implementiert**.
 
 ## Was Phase 1 enthält (implementiert)
@@ -12,7 +12,9 @@
 |---|---|
 | Godot-Projekt | Godot 4.7.2, GL Compatibility Renderer, GDScript |
 | Leerer Planet | Planet startet ohne Siedlungen (`data/world/genesis.json`); Siedlungen entstehen nur durch Gründung eines Spielers (`WorldState`), keine NPC-only-Siedlungen |
-| **Planet & Globus (Phase 2)** | Planet Aurel mit 5 Kontinenten und 157 Regionen (Gelände, Klima, Wasser, Rohstoffe), 3D-Globus mit Zoomstufen, Standortwahl mit Bewertung bei der Gründung, Territorien – [GEOGRAPHY_SYSTEM](docs/GEOGRAPHY_SYSTEM.md) |
+| **Planet & Globus (Phase 2)** | Planet Aurel mit 5 Kontinenten und 157 Regionen (Gelände, Klima, Wasser, Rohstoffe), 3D-Globus mit Zoomstufen, Standortwahl mit Bewertung bei der Gründung – [GEOGRAPHY_SYSTEM](docs/GEOGRAPHY_SYSTEM.md) |
+| **Territorien (Paket 2.1)** | Startterritorium 1 × 1 km, 20 km zwischen Gebietsgrenzen (geodätisch), Sperrzonen auf dem Globus, ganzer Planet besiedelbar mit Schwierigkeitsklassen, Auswahl „Beitreten/Gründen“ – [TERRITORY_SYSTEM](docs/TERRITORY_SYSTEM.md) |
+| Diagnose | Leistungsanzeige mit 20-s-Messung (F3 / Menü / `?perf=1`) – [PERFORMANCE §7](docs/PERFORMANCE.md) |
 | Deine Siedlung „Lichtfeld“ | Beim ersten Start von dir gegründet aus der Vorlage `data/settlement_templates/founding_basic.json`, 26×26 Kacheln, 21 Gebäude (inkl. Marktzeile), Dorfplatz mit Brunnen, Straßen mit Gehwegen, Felder, Teich, Gründerzelt, Vegetation |
 | Charakter-Editor | Modulare Penzilla-Figur (Körper, Gesicht, Frisur/Hüte, Oberteile, Hosen/Overalls, Schuhe, Extras, Farben, Outfits), lebendige Vorschau (Atmen, Blinzeln, Drehen, Gehen, Benutzen), Zufall/Rückgängig, Speicherung – [CHARACTER_SYSTEM](docs/CHARACTER_SYSTEM.md) |
 | NPCs | Gründungsgemeinschaft (12) mit dauerhaften Namen, Rollen, Arbeitsplätzen und rollentypischer Kleidung; tagsüber am Arbeitsplatz, abends zu Hause, nachts drinnen – [NPC_SYSTEM](docs/NPC_SYSTEM.md) |
@@ -25,7 +27,7 @@
 | Interaktion | Gebäude/Objekte ansehen, NPCs ansprechen (Name, Rolle, Arbeitsplatz), Schwarzes Brett, Ausruhen, Brunnen |
 | HUD | Siedlungsname, Region, Uhrzeit & Datum (Ortszeit), Kamera-Buttons, Interaktions-Taste, Menü (Figur bearbeiten, Tageszeit-Vorschau, Zeitzone, Sonnenauf-/-untergang), Hinweise, FPS-Anzeige |
 | Web | Export ohne Threads (kompatibel mit GitHub Pages & iOS Safari), PWA (Manifest, Service Worker, Icons) |
-| CI/CD | GitHub Actions: Asset-Import → 118 automatische Tests → Web-Export → GitHub Pages (von `main`) |
+| CI/CD | GitHub Actions: Asset-Import → 149 automatische Tests → Web-Export → GitHub Pages (von `main`) |
 
 ![Lichtfeld mit Penzilla-Grafik (Chromium, iPhone-Emulation)](docs/screenshots/phase1-iphone-landscape-emulated.png)
 

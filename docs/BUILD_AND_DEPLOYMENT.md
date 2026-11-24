@@ -20,6 +20,7 @@ godot --headless --path . --export-release "Web" build/web/index.html
 node tools/serve_and_shoot.js build/web build/shots              # optional: Browser-Smoke-Test (Playwright)
 node tools/browser_editor_test.js build/web build/editor          # optional: Charakter-Editor im Browser
 TZ_ID=America/New_York node tools/world_shots.js build/web build/world "?preview=21:00"   # Welt, Zeitzone, Nachtvorschau
+node tools/perf_measure.js build/web build/perf desktop|iphone   # Diagnose-Messung (PERFORMANCE.md §7)
 ```
 `build/` ist in `.gitignore`.
 

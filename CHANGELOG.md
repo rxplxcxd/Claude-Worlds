@@ -2,6 +2,27 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.4.0] – Paket 2.1: Territorien, 20-km-Regel, Besiedelbarkeit, Diagnose
+
+### Hinzugefügt
+- **Eigene Territorien** statt ganzer Regionen: Startterritorium genau 1 × 1 km (sphärisches Polygon, Ost/Nord ausgerichtet, auch an den Polen), mit Index-Zellen, Version, Historie, Status; Siedlungsfläche (`settlement_area`) getrennt gespeichert.
+- **20 km zwischen Territoriumsgrenzen**, geodätisch (Punkt–Bogen-/Polygonabstand auf der Kugel, korrekt über Datumsgrenze und Pole); Überlappungsprüfung als Invariante.
+- **Räumlicher Index** (Würfel-Kugel-Quadtree, Ebene 8 ≈ 24 km).
+- **Sperrzonen** und Territorien exakt im Globus-Shader; Zoom bis ~120 km Höhe; Kamera bis 89°.
+- **Ganzer Planet besiedelbar**: keine Breiten-/Biom-Sperren mehr; Schwierigkeitsklassen leicht/mittel/schwer/extrem mit Anforderungen; extrem nur mit Bestätigung.
+- **Auswahl „Beitreten / Gründen“** nach dem Editor; Beitreten sichtbar als „Mehrspieler – noch nicht verfügbar“.
+- **Eine aktive Gründung pro Spieler.**
+- **Polartag/Polarnacht** im Sonnenmodell und im Menü.
+- **Diagnose (`PerfMonitor`)**: Live-Werte, 20-s-Messung, Aufschlüsselung der Draw Calls, `tools/perf_measure.js`, QA-Parameter `?qa_quickstart=1`.
+- Tests: 149 Prüfungen.
+
+### Geändert
+- Spielstände: Schema 3; Phase-2-Regionsansprüche werden einmalig in 1-km²-Territorien umgewandelt (gleiche ID, Historie).
+- Breitengrad-Berechnung über `atan2` (exakt nahe den Polen); Planet neu gebacken (eine Regionsmitte um 0,001° verschoben, Zellen identisch).
+
+### Gemessen
+- Siedlung: 448 Draw Calls, davon 357 Boden; ~380 MB Texturspeicher, überwiegend Figuren-Ebenen → Optimierungsvorschläge O1–O9 (PERFORMANCE.md §7.3).
+
 ## [0.3.1] – Designvorgaben und technische Bewertung (nur Dokumentation)
 
 ### Hinzugefügt

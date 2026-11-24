@@ -31,7 +31,9 @@ func _ready() -> void:
 	_update_content_scale()
 	hud.edit_character_requested.connect(func() -> void: open_character_editor("edit"))
 	hud.map_requested.connect(func() -> void: open_globe("browse"))
-	if needs_character_creation():
+	if _qa_quickstart():
+		pass
+	elif needs_character_creation():
 		hud.visible = false
 		open_character_editor("create")
 	elif needs_founding():
@@ -39,6 +41,24 @@ func _ready() -> void:
 		open_start_choice()
 	else:
 		_start_world()
+
+
+## QA hook (web only, for automated measurements): "?qa_quickstart=1" creates
+## the default character if none exists and founds at the best free site.
+## Never active without the URL parameter.
+func _qa_quickstart() -> bool:
+	if not OS.has_feature("web") or not str(JavaScriptBridge.eval("location.search", true)).contains("qa_quickstart=1"):
+		return false
+	if not LocalProfile.has_character() and CharacterCatalog.is_available():
+		LocalProfile.set_character(CharacterCatalog.default_appearance(), "")
+	if needs_founding():
+		var record := WorldState.found_settlement(SettlementScene.DEFAULT_TEMPLATE, LocalProfile.player_id, "")
+		if record.is_empty():
+			return false
+		_start_world(true)
+	else:
+		_start_world()
+	return true
 
 
 ## The player has no settlement yet: they must found one (empty planet rule).

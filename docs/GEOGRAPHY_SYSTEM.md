@@ -60,8 +60,9 @@ Ergebnis `data/world/planet/planet.json` (Metadaten, Kontinente, Regionen, 129 K
 
 **Regel:** Änderungen an Seed oder Generator ⇒ `generator_version` erhöhen, neu backen **und** gespeicherte Positionen/Regions-IDs migrieren.
 
-## 4. Standortwahl und Standortbewertung [IMPLEMENTIERT in Phase 2 – **Regeln überholt seit 24.11.2026**]
+## 4. Standortwahl und Standortbewertung [IMPLEMENTIERT – Regeln seit Paket 2.1 (0.4.0) nach TERRITORY_SYSTEM.md]
 
+> **Seit Paket 2.1 umgesetzt:** keine Sperren nach Breite/Biom, 20 km Grenze-zu-Grenze, Schwierigkeitsklassen, Startterritorium 1 × 1 km. Die nachfolgende Tabelle beschreibt den **alten** Phase-2-Stand und dient nur der Nachvollziehbarkeit.
 > Die folgenden Phase-2-Regeln (±62°, Eis/Hochgebirge gesperrt, 300 km zwischen Mittelpunkten, fremde **Region** gesperrt) widersprechen den verbindlichen Vorgaben ([DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §2–3) und werden ersetzt durch: 20 km zwischen Territoriumsgrenzen (geodätisch) und ein Schwierigkeitsmodell ohne geografische Sperren ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §3, §6). Die Faktorbewertung bleibt als Grundlage erhalten.
 
 `Geography.rate_site(lat, lon, settlements, territories)` liefert `valid`, `score` (0–100), Faktoren und Gründe.

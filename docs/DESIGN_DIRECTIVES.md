@@ -62,16 +62,18 @@
 - **Das echte iPhone bleibt Zielgerät**; Desktop-Emulation ist kein Leistungsnachweis.
 → [PERFORMANCE.md](PERFORMANCE.md) §6
 
-## 10. Abweichungen des aktuellen Codes (Stand 0.3.0) von diesen Vorgaben
+## 10. Umsetzungsstand
 
-| Vorgabe | Aktueller Code (Phase 2) | Anpassung |
-|---|---|---|
-| Keine Breitengrad-Sperre | `Geography.MAX_FOUNDING_LATITUDE = 62°` lehnt Polargebiete ab | Entfernen → Schwierigkeitsmodell |
-| Polar-/Extremgebiete möglich | Eis und Hochgebirge sind harte Ausschlüsse | Ersetzen durch Voraussetzungen/Aufwand |
-| 20 km zwischen **Grenzen** | 300 km zwischen **Mittelpunkten** | Neue Geometrie-Prüfung |
-| Viele Siedlungen je Region | Territorium = ganze Region (Ø ~440 000 km²); fremde Region gesperrt | Territorium als eigene Fläche (Polygon) |
-| Siedlung ≤ 1 × 1 km, frei umbaubar | Feste Vorlage 26 × 26 Kacheln (~260 m), Layout wird bei jedem Start aus der Vorlage geladen, Änderungen nicht speicherbar | Siedlungszustand als veränderbare, gespeicherte Entitäten |
-| Beitreten **oder** Gründen | Nur Gründen | Auswahlbildschirm (Beitreten benötigt Mehrspieler) |
-| Sonne auch an den Polen | Sonnenbreite auf ±60° begrenzt | Begrenzung entfernen, Polartag/-nacht gestalten |
-
-Diese Anpassungen sind **noch nicht umgesetzt** – Vorschlag: als kleines „Phase 2.1“-Paket vor Phase 3 (siehe [ROADMAP.md](ROADMAP.md)).
+| Vorgabe | Stand 0.4.0 (Paket 2.1) |
+|---|---|
+| Keine Breitengrad-Sperre, Polargebiete besiedelbar | ✅ umgesetzt (getestet: Polarland 77,7° und Eis gründbar) |
+| Schwierigkeit statt Sperre | ✅ Klassen leicht–extrem mit Anforderungen; extrem mit Bestätigung; Anforderungen spielwirksam erst ab Phase 6 |
+| 20 km zwischen Territoriumsgrenzen, geodätisch | ✅ umgesetzt (Grenze-zu-Grenze, Datumsgrenze, Pole getestet) |
+| Sperrzonen auf dem Globus | ✅ exakt im Shader |
+| Viele Siedlungen je Region | ✅ Territorium = eigenes 1 × 1-km-Polygon, Region nur noch Natur |
+| Startterritorium 1 × 1 km | ✅ umgesetzt, Phase-2-Spielstände migriert |
+| Siedlungsfläche, Territorium, bebaute Fläche, Erweiterung getrennt | ✅ Datenmodell getrennt (`settlement_area`, `territory`, `expansions[]`); bebaute Fläche/Erweiterungen noch ohne Funktion |
+| Beitreten oder Gründen | ✅ Auswahl vorhanden; Beitreten ehrlich als „noch nicht verfügbar“ gekennzeichnet |
+| Sonne auch an den Polen | ✅ Polartag/-nacht |
+| Freies Bauen, Eigentum, Gesetze, Simulation | ⏳ geplant (Phasen 3–13) |
+| 60 FPS | ⏳ Diagnose umgesetzt, Optimierungen vorgeschlagen ([PERFORMANCE.md](PERFORMANCE.md) §7) |

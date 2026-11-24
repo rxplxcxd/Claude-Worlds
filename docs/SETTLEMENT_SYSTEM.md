@@ -70,13 +70,14 @@ Implementiert: eigenes Haus des Gründers, Gründungsmeldung, Orientierung (Schw
 Rastergröße wachsender Städte (Chunks à 32×32 Kacheln vorgeschlagen), Stadtteile als eigene Szenen?
 
 
-## 8. Ausgangszustand einer neuen Siedlung [VERBINDLICH seit 24.11.2026 · GEPLANT, Phase 4]
+## 8. Ausgangszustand einer neuen Siedlung [VERBINDLICH seit 24.11.2026 · Territorium/Fläche IMPLEMENTIERT (0.4.0) · Gründungspaket GEPLANT, Phase 4]
 Vorgabe: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §4.
 - **Siedlungsfläche höchstens 1 × 1 km** (Vorschlag: 100 × 100 Kacheln à 10 m, in Chunks à 16 × 16 Kacheln). Die heutige Vorlage (26 × 26 Kacheln ≈ 260 m) wird zum **Kern** dieser Fläche; der Rest ist freies Bauland, Feld, Wald – abgeleitet aus dem Gelände der Region.
 - **Gründungspaket:** kleine Verwaltung, wenige Wohngebäude, ein paar Straßen, Grundversorgung (Wasser, Energie, Lager, Lebensmittel) – **funktionsfähig, aber klein und ineffizient**: z. B. Behelfsbauten (Zelte, Baracken), geringe Kapazität, umständliche Wege, hoher Unterhalt, wenig Komfort. Jede Schwäche ist ein sichtbares Ausbauziel („Wasserwerk ausbauen“, „Straße pflastern“).
 - Der Start hängt von der **Gründungsschwierigkeit** ab ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §6): im Polargebiet z. B. beheizte Unterkünfte, Energie- und Lebensmittelvorräte statt Feldern.
 - **Beitreten oder Gründen** bei der Charaktererstellung: siehe [PLAYER_SYSTEM.md](PLAYER_SYSTEM.md) §3a.
-- **Gründungsregel:** 20 km Abstand zwischen Territoriumsgrenzen, geodätisch ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §3). Die Phase-2-Regeln (300 km Mittelpunktabstand, ±62°, Eis/Gebirge gesperrt, Region als Gebiet) gelten als überholt und werden ersetzt.
+- **Gründungsregel:** 20 km Abstand zwischen Territoriumsgrenzen, geodätisch ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §3) – **umgesetzt in 0.4.0**; die Phase-2-Regeln sind entfernt.
+- **Gespeichert (0.4.0):** `settlement_area` (Ursprung, Rahmen Ost/Nord, 1 000 m, Kacheln à 10 m), `territory_id`, `difficulty`, `difficulty_requirements`. Die lokale Karte nutzt weiterhin die ~260-m-Vorlage als Kern (Ausbau auf 1 km in Phase 4).
 
 ## 9. Vollständige Gestaltungsfreiheit [VERBINDLICH seit 24.11.2026 · GEPLANT, Phase 7]
 Vorgabe: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §5–6. Es gibt **keine dauerhaft vorgegebene Straßen- oder Gebäudestruktur**.

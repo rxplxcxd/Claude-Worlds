@@ -22,6 +22,9 @@ var camera: CameraRig
 var interactions: InteractionService
 ## Generated street furniture (for tests / validation).
 var street_items: Array = []
+## Founding community (Npc nodes).
+var npcs: Array[Npc] = []
+var _presence_timer := 0.0
 
 @onready var ground: GroundLayer = $Ground
 @onready var objects: Node2D = $Objects
@@ -54,6 +57,7 @@ func _ready() -> void:
 	_build_buildings()
 	_build_props()
 	_build_player()
+	_build_npcs()
 
 	interactions = InteractionService.new()
 	interactions.name = "InteractionService"
@@ -207,6 +211,33 @@ func _scatter_vegetation() -> void:
 			placed += 1
 
 
+## The founding community: stored in the settlement record (persistent
+## identities and appearances), generated once at founding. Older saves
+## without NPCs get them on first load.
+func _build_npcs() -> void:
+	if not CharacterCatalog.is_available():
+		return # NPCs need the character art; no placeholder crowd.
+	var roster: Array = record.get("npcs", [])
+	if roster.is_empty():
+		roster = NpcRoster.generate(record.get("settlement_id", ""), data.buildings)
+		record["npcs"] = roster
+		WorldState.save_world()
+	var spawn_cell := Vector2i(int(floor(data.spawn.x)), int(floor(data.spawn.y)))
+	var reserved: Array = [spawn_cell]
+	for it in street_items:
+		var g: Vector2 = it["grid_v"]
+		reserved.append(Vector2i(int(floor(g.x)), int(floor(g.y))))
+	var spots := NpcRoster.plan_spots(data, roster, reserved)
+	var names := {}
+	for b in data.buildings:
+		names[b.get("id", "")] = b.get("name", "")
+	for r in roster:
+		var n := Npc.new()
+		n.setup(r, spots.get(r.get("npc_id", ""), {}), names)
+		objects.add_child(n)
+		npcs.append(n)
+
+
 func _build_player() -> void:
 	player = PLAYER_SCENE.instantiate()
 	player.player_id = LocalProfile.player_id
@@ -263,6 +294,11 @@ func _process(delta: float) -> void:
 	# Cheap; keeps the time-of-day preview and dawn/dusk transitions fluid.
 	day_night.color = GameClock.get_ambient_color()
 	_update_occlusion(delta)
+	_presence_timer -= delta
+	if _presence_timer <= 0.0:
+		_presence_timer = 0.5 # also follows the time-of-day preview
+		for n in npcs:
+			n.update_presence()
 
 
 # --- occlusion: keep the player visible behind buildings and trees ---------

@@ -213,6 +213,10 @@ func random_appearance(rng: RandomNumberGenerator) -> Dictionary:
 
 ## Appearance for an NPC role. Deterministic for a given seed, so the same
 ## NPC always looks the same (also on other clients later).
+## Headwear reserved as a role signifier (farmer, builder).
+const ROLE_SIGNIFIER_HEADS := ["straw_hat", "beanie"]
+
+
 func role_appearance(role: String, seed: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
@@ -238,6 +242,10 @@ func role_appearance(role: String, seed: int) -> Dictionary:
 		for slot in ["necklace", "head_acc", "scarf"]:
 			if not (role_def.get("outfit", {}) as Dictionary).has(slot):
 				app[slot] = {"option": "none"}
+	if not (role_def.get("outfit", {}) as Dictionary).has("head") and str(app.get("head", {}).get("option", "")) in ROLE_SIGNIFIER_HEADS:
+		# Straw hat and beanie identify farmers and builders; others wear hair.
+		var hair: String = _pick(rng, ["short", "long", "curly", "waves", "ponytail", "bun"])
+		app["head"] = {"option": hair, "color": _pick(rng, palette(option("head", hair).get("palette", "hair")).keys())}
 	if not (role_def.get("outfit", {}) as Dictionary).has("tool"):
 		app["tool"] = {"option": "none"}
 	return normalize(app)

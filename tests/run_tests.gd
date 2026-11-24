@@ -103,6 +103,9 @@ func _run() -> void:
 	profile.character = {}
 	if root_has_character_assets():
 		profile.set_character(get_tree().root.get_node("CharacterCatalog").default_appearance(), "Test")
+	# Midday: NPCs stand at their workplaces, so the movement tests below also
+	# prove that they do not block the town's paths.
+	clock.preview_minute_of_day = 12 * 60.0
 	_main = load("res://scenes/main/main.tscn").instantiate()
 	get_tree().root.add_child(_main)
 	await frames(5)
@@ -140,6 +143,68 @@ func _run() -> void:
 	check(kinds.has("bus_stop") and kinds.has("street_sign"), "bus stop and street sign placed")
 	var bad := [{"kind": "hydrant", "grid_v": Vector2(12.5, 5.5)}, {"kind": "street_lamp", "grid_v": Vector2(11.8, 5.5), "road_dir": Vector2i(-1, 0)}]
 	check(planner.validate(bad).size() >= 2, "validator rejects a hydrant on the road and a lamp facing away")
+
+	print("[npcs]")
+	if root_has_character_assets():
+		var roster: Array = founded[0].get("npcs", [])
+		check(roster.size() == 12, "founding community of 12 NPCs stored in the settlement record (%d)" % roster.size())
+		var roles := {}
+		var names := {}
+		var looks := {}
+		var catalog: Node = get_tree().root.get_node("CharacterCatalog")
+		for r in roster:
+			roles[r["role"]] = true
+			names[str(r["name"]).get_slice(" ", 0)] = true
+			looks[catalog.appearance_key(r["appearance"], "idle")] = true
+		check(roles.size() == 8, "all 8 roles are represented")
+		check(names.size() == roster.size() and looks.size() == roster.size(), "first names and appearances are unique")
+		var role_ok := true
+		for r in roster:
+			var a: Dictionary = r["appearance"]
+			match r["role"]:
+				"builder":
+					role_ok = role_ok and a["head"]["option"] == "beanie" and a["suit"]["option"] == "suit" and a["tool"]["option"] == "hammer"
+				"farmer":
+					role_ok = role_ok and a["head"]["option"] == "straw_hat" and a["tool"]["option"] in ["shovel", "watercan"]
+				"medic":
+					role_ok = role_ok and a["top"].get("color", "") == "sky"
+				"admin":
+					role_ok = role_ok and a["bowtie"]["option"] == "bowtie"
+				"merchant":
+					role_ok = role_ok and a["bag"]["option"] == "bag"
+			if not r["role"] in ["farmer", "builder"] and a["head"]["option"] in ["straw_hat", "beanie"]:
+				role_ok = false # role signifiers are reserved
+			if r["role"] != "resident" and r["workplace_id"] == "":
+				role_ok = false
+		check(role_ok, "every NPC wears its role's clothing and has a workplace")
+		check(settlement.npcs.size() == roster.size(), "NPCs are instantiated in the world")
+		var present := settlement.npcs.filter(func(n): return n.is_present()).size()
+		check(present == roster.size(), "at noon all NPCs are out (%d)" % present)
+		var spot_ok := true
+		var used := {}
+		for n in settlement.npcs:
+			var g := Iso.world_to_grid(n.position)
+			var c := Vector2i(int(floor(g.x)), int(floor(g.y)))
+			var t := settlement.data.get_tile(c.x, c.y)
+			if t in ["road", "water", ""] or used.has(c):
+				spot_ok = false
+				print("       bad NPC spot ", n.npc_id, " ", c, " ", t)
+			used[c] = true
+			for b in settlement.data.buildings:
+				if c in settlement.data.get_building_cells(b) or c in StreetPlanner.entrance_cells(b):
+					spot_ok = false
+					print("       NPC on building/entrance ", n.npc_id, " ", c)
+		check(spot_ok, "NPCs stand on free cells, never on roads or in doorways")
+		check(Npc.place_for_hour(20.0) == "home" and Npc.place_for_hour(2.0) == "", "evening at home, night indoors")
+		clock.preview_minute_of_day = 2 * 60.0
+		for n in settlement.npcs:
+			n.update_presence()
+		check(settlement.npcs.all(func(n): return not n.visible), "at 02:00 nobody is outside")
+		clock.preview_minute_of_day = 12 * 60.0
+		for n in settlement.npcs:
+			n.update_presence()
+	else:
+		check(settlement.npcs.is_empty(), "no NPCs without character art")
 
 	print("[movement]")
 	var start := player.global_position
@@ -220,6 +285,22 @@ func _run() -> void:
 	check(toasts.size() > 0, "rest action responds without skipping real time")
 	hud.close_panel()
 
+	if not settlement.npcs.is_empty():
+		# Tap on an NPC -> walk over, it turns to the player, its card opens.
+		opened.clear()
+		var npc: Npc = settlement.npcs[0]
+		player.global_position = npc.position + Vector2(0, 70)
+		await frames(2)
+		settlement.camera.snap_to_target()
+		await frames(1)
+		settlement.handle_tap(_world_to_screen(settlement.camera, npc.position + Vector2(0, -25)))
+		await frames(120)
+		check(opened.size() == 1 and opened[0].get("kind", "") == "npc" and opened[0].get("title", "") == npc.record["name"] \
+				and String(opened[0].get("subtitle", "")) == CharacterCatalog.role_label(npc.record["role"]), "tapping an NPC opens its name and role")
+		var to_player := player.global_position - npc.position
+		check(npc.rig.facing == Iso.facing_index(to_player), "NPC looks at the player")
+		hud.close_panel()
+
 	print("[camera]")
 	var cam := settlement.camera
 	var z := cam.zoom.x
@@ -299,6 +380,7 @@ func _run() -> void:
 	check(stick_vectors.back() == Vector2.ZERO, "joystick resets on release")
 
 	print("[relaunch]")
+	var settlement_npc_keys: Array = settlement.npcs.map(func(n): return "%s|%s|%s" % [n.record["name"], n.record["role"], CharacterCatalog.appearance_key(CharacterCatalog.normalize(n.record["appearance"]), "idle")])
 	_main.queue_free()
 	await get_tree().process_frame
 	world.load_world()
@@ -308,6 +390,16 @@ func _run() -> void:
 	var again: SettlementScene = _main.get_node("Settlement")
 	check(not again.just_founded and world.get_settlements().size() == 1, "relaunch reuses the founded settlement")
 	check(again.data.ids.get("settlement_id") == founded[0]["settlement_id"], "settlement ID is persistent")
+	if root_has_character_assets():
+		var same := again.npcs.size() == settlement_npc_keys.size()
+		for i in again.npcs.size():
+			var n2: Npc = again.npcs[i]
+			var k2 := "%s|%s|%s" % [n2.record["name"], n2.record["role"], CharacterCatalog.appearance_key(CharacterCatalog.normalize(n2.record["appearance"]), "idle")]
+			if k2 != settlement_npc_keys[i]:
+				print("       ", k2, " != ", settlement_npc_keys[i])
+			same = same and k2 == settlement_npc_keys[i]
+		check(same, "NPCs keep name, role and appearance across relaunches")
+	clock.preview_minute_of_day = -1.0
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])

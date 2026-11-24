@@ -1,5 +1,5 @@
 {
-  "_comment": "FOUNDING TEMPLATE (not a settlement). A settlement only comes into existence when a human player founds it from a template (WorldState.found_settlement). Phase 1 founds it automatically on first launch; location choice on the globe follows in Phase 2. Text tokens: {settlement}. Grid coordinates (x, y) in tiles, see scripts/geography/iso.gd.",
+  "_comment": "FOUNDING TEMPLATE (not a settlement). A settlement only comes into existence when a human player founds it from a template (WorldState.found_settlement). Phase 1 founds it automatically on first launch; location choice on the globe follows in Phase 2. Text tokens: {settlement}. Street furniture (lamps, hydrants, signs, bus stop, mailboxes) is NOT listed here: StreetPlanner derives it from the road network. Grid coordinates (x, y) in tiles, see scripts/geography/iso.gd.",
   "template_id": "tpl_founding_basic",
   "default_name": "Lichtfeld",
   "schema_version": 1,
@@ -13,8 +13,8 @@
   "stage": "founding_settlement",
   "development_status": "Gründungssiedlung",
   "size": [
-    24,
-    24
+    26,
+    26
   ],
   "spawn": [
     11.2,
@@ -26,36 +26,90 @@
       {
         "tile": "sand",
         "rect": [
-          5,
-          2,
-          5,
+          4,
+          1,
+          4,
           5
         ]
       },
       {
         "tile": "water",
         "rect": [
-          6,
-          3,
-          3,
+          5,
+          2,
+          2,
           3
         ]
       },
       {
         "tile": "field",
         "rect": [
-          14,
-          2,
+          16,
+          1,
           6,
           3
         ]
       },
       {
+        "tile": "sidewalk",
+        "rect": [
+          1,
+          11,
+          24,
+          1
+        ]
+      },
+      {
+        "tile": "sidewalk",
+        "rect": [
+          1,
+          13,
+          24,
+          1
+        ]
+      },
+      {
+        "tile": "sidewalk",
+        "rect": [
+          11,
+          1,
+          1,
+          24
+        ]
+      },
+      {
+        "tile": "sidewalk",
+        "rect": [
+          13,
+          1,
+          1,
+          24
+        ]
+      },
+      {
+        "tile": "sidewalk",
+        "rect": [
+          14,
+          17,
+          9,
+          1
+        ]
+      },
+      {
+        "tile": "sidewalk",
+        "rect": [
+          14,
+          19,
+          9,
+          1
+        ]
+      },
+      {
         "tile": "road",
         "rect": [
-          2,
+          1,
           12,
-          20,
+          24,
           1
         ]
       },
@@ -63,17 +117,17 @@
         "tile": "road",
         "rect": [
           12,
-          2,
           1,
-          20
+          1,
+          24
         ]
       },
       {
         "tile": "road",
         "rect": [
           13,
-          17,
-          8,
+          18,
+          10,
           1
         ]
       },
@@ -89,8 +143,8 @@
       {
         "tile": "path",
         "rect": [
-          9,
-          13,
+          8,
+          14,
           1,
           8
         ]
@@ -98,18 +152,18 @@
       {
         "tile": "path",
         "rect": [
-          21,
-          7,
+          22,
+          5,
           1,
-          5
+          6
         ]
       },
       {
         "tile": "path",
         "rect": [
-          13,
-          6,
-          2,
+          14,
+          5,
+          1,
           1
         ]
       }
@@ -121,8 +175,8 @@
       "type": "town_hall",
       "name": "Gemeindehaus",
       "grid": [
-        10,
-        7
+        9,
+        6
       ],
       "footprint": [
         2,
@@ -141,8 +195,8 @@
       "type": "trade_post",
       "name": "Handelsposten",
       "grid": [
-        7,
-        10
+        6,
+        9
       ],
       "footprint": [
         2,
@@ -161,8 +215,8 @@
       "type": "clinic",
       "name": "Sanitätsstation",
       "grid": [
-        3,
-        10
+        2,
+        9
       ],
       "footprint": [
         2,
@@ -181,8 +235,8 @@
       "type": "water_works",
       "name": "Wasserwerk",
       "grid": [
-        10,
-        3
+        9,
+        2
       ],
       "footprint": [
         2,
@@ -201,8 +255,8 @@
       "type": "emergency_post",
       "name": "Notfall- & Brandschutzposten",
       "grid": [
-        16,
-        10
+        15,
+        9
       ],
       "footprint": [
         2,
@@ -221,8 +275,8 @@
       "type": "energy_station",
       "name": "Energiestation",
       "grid": [
-        19,
-        6
+        20,
+        5
       ],
       "footprint": [
         2,
@@ -242,7 +296,7 @@
       "name": "Werkstatt & Bauhof",
       "grid": [
         19,
-        11
+        10
       ],
       "footprint": [
         1,
@@ -261,8 +315,8 @@
       "type": "depot",
       "name": "Lager & Wertstoffhof",
       "grid": [
-        19,
-        9
+        21,
+        10
       ],
       "footprint": [
         1,
@@ -282,7 +336,7 @@
       "name": "Gemüsehof",
       "grid": [
         15,
-        6
+        5
       ],
       "footprint": [
         1,
@@ -301,7 +355,7 @@
       "type": "player_home",
       "name": "Dein Haus",
       "grid": [
-        11,
+        10,
         15
       ],
       "footprint": [
@@ -318,7 +372,7 @@
       "actions": [
         {
           "id": "rest",
-          "label": "Bis zum Morgen ausruhen"
+          "label": "Ausruhen"
         }
       ]
     },
@@ -327,7 +381,7 @@
       "type": "house",
       "name": "Wohnhaus Birkenweg 1",
       "grid": [
-        11,
+        10,
         17
       ],
       "footprint": [
@@ -348,7 +402,7 @@
       "type": "house",
       "name": "Wohnhaus Birkenweg 2",
       "grid": [
-        11,
+        10,
         19
       ],
       "footprint": [
@@ -367,10 +421,10 @@
     {
       "id": "bld_house_3",
       "type": "house",
-      "name": "Wohnhaus Am Pfad 1",
+      "name": "Wohnhaus Birkenweg 3",
       "grid": [
-        8,
-        15
+        10,
+        21
       ],
       "footprint": [
         1,
@@ -388,10 +442,10 @@
     {
       "id": "bld_house_4",
       "type": "house",
-      "name": "Wohnhaus Am Pfad 2",
+      "name": "Wohnhaus Am Pfad 1",
       "grid": [
-        8,
-        17
+        7,
+        15
       ],
       "footprint": [
         1,
@@ -409,10 +463,10 @@
     {
       "id": "bld_house_5",
       "type": "house",
-      "name": "Wohnhaus Am Pfad 3",
+      "name": "Wohnhaus Am Pfad 2",
       "grid": [
-        8,
-        19
+        7,
+        17
       ],
       "footprint": [
         1,
@@ -430,10 +484,10 @@
     {
       "id": "bld_house_6",
       "type": "house",
-      "name": "Wohnhaus Sonnenstraße 1",
+      "name": "Wohnhaus Am Pfad 3",
       "grid": [
-        14,
-        16
+        7,
+        19
       ],
       "footprint": [
         1,
@@ -451,9 +505,9 @@
     {
       "id": "bld_house_7",
       "type": "house",
-      "name": "Wohnhaus Sonnenstraße 2",
+      "name": "Wohnhaus Sonnenstraße 1",
       "grid": [
-        16,
+        15,
         16
       ],
       "footprint": [
@@ -472,9 +526,9 @@
     {
       "id": "bld_house_8",
       "type": "house",
-      "name": "Wohnhaus Sonnenstraße 3",
+      "name": "Wohnhaus Sonnenstraße 2",
       "grid": [
-        18,
+        17,
         16
       ],
       "footprint": [
@@ -523,7 +577,7 @@
     {
       "kind": "garden",
       "grid": [
-        10.5,
+        9.5,
         15.5
       ],
       "footprint": [
@@ -546,59 +600,17 @@
       ]
     },
     {
-      "kind": "lamp",
+      "kind": "trash_small",
       "grid": [
-        10.15,
-        10.15
+        10.35,
+        13.85
       ]
     },
     {
-      "kind": "lamp",
+      "kind": "trash_small",
       "grid": [
-        14.85,
-        10.15
-      ]
-    },
-    {
-      "kind": "lamp",
-      "grid": [
-        10.15,
-        14.85
-      ]
-    },
-    {
-      "kind": "lamp",
-      "grid": [
-        14.85,
-        14.85
-      ]
-    },
-    {
-      "kind": "lamp",
-      "grid": [
-        12.9,
-        7.5
-      ]
-    },
-    {
-      "kind": "lamp",
-      "grid": [
-        7.5,
-        12.9
-      ]
-    },
-    {
-      "kind": "lamp",
-      "grid": [
-        12.9,
-        17.9
-      ]
-    },
-    {
-      "kind": "lamp",
-      "grid": [
-        17.5,
-        12.9
+        13.85,
+        10.35
       ]
     },
     {
@@ -614,77 +626,49 @@
       "kind": "cart",
       "grid": [
         14.5,
-        13.2
+        13.4
       ]
     },
     {
       "kind": "crates",
       "grid": [
-        9.5,
-        11.4
+        5.5,
+        10.6
       ]
     },
     {
       "kind": "wheelbarrow",
       "grid": [
         18.6,
-        11.7
+        10.6
       ]
     },
     {
       "kind": "electrical_box",
       "grid": [
-        18.6,
-        8.4
+        19.4,
+        7.6
       ]
     },
     {
       "kind": "electrical_box",
-      "grid": [
-        21.6,
-        6.4
-      ]
-    },
-    {
-      "kind": "electrical_tower",
       "grid": [
         22.5,
         4.5
       ]
     },
     {
+      "kind": "electrical_tower",
+      "grid": [
+        23.5,
+        2.5
+      ]
+    },
+    {
       "kind": "water_tower",
       "grid": [
-        9.6,
-        2.4
-      ]
-    },
-    {
-      "kind": "hydrant",
-      "grid": [
-        15.6,
-        12.9
-      ]
-    },
-    {
-      "kind": "mailbox",
-      "grid": [
-        10.6,
-        16.7
-      ]
-    },
-    {
-      "kind": "mailbox",
-      "grid": [
-        13.6,
-        16.7
-      ]
-    },
-    {
-      "kind": "trash_can",
-      "grid": [
-        9.4,
-        14.6
+        8.4,
+        1.5
       ]
     }
   ],

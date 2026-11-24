@@ -343,6 +343,31 @@
     "ui.editor_backdrop": {
       "source": "stylized_grass_and_dirt",
       "path": "res://assets/penzilla/ui/editor_backdrop.jpg"
+    },
+    "exterior.prop.street_sign": {
+      "source": "penzilla_giant_city_builder",
+      "path": "res://assets/penzilla/props/street_sign.png"
+    },
+    "exterior.prop.traffic_sign": {
+      "source": "penzilla_giant_city_builder",
+      "path": "res://assets/penzilla/props/traffic_sign.png"
+    },
+    "exterior.prop.trash_small": {
+      "source": "penzilla_giant_city_builder",
+      "path": "res://assets/penzilla/props/trash_small.png"
+    },
+    "exterior.prop.bus_stop": {
+      "source": "penzilla_giant_city_builder",
+      "path": "res://assets/penzilla/props/bus_stop.png"
+    },
+    "exterior.prop.lamp_arm": {
+      "source": "penzilla_giant_city_builder",
+      "path": "res://assets/penzilla/props/lamp_arm.png"
+    },
+    "exterior.tile.sidewalk": {
+      "source": "penzilla_giant_city_builder",
+      "path": "res://assets/penzilla/tiles/sidewalk.png",
+      "anchor_mode": "canvas"
     }
   }
 }

@@ -75,12 +75,28 @@ func _run() -> void:
 	check(Iso.facing_index(Vector2(1, 0)) == 0 and Iso.facing_index(Vector2(0, -1)) == 2 and Iso.facing_index(Vector2(-1, 1)) == 5, "8-way facing")
 
 	print("[clock]")
-	clock.set_total_minutes(clock.START_MINUTES)
-	check(clock.get_day() == 1 and clock.get_hour() == 8, "clock starts day 1 08:00")
-	clock.skip_to_hour(7)
-	check(clock.get_day() == 2 and clock.get_hour() == 7, "skip_to_hour wraps to next day")
-	check(clock.get_night_factor() < 1.0, "night factor at 07:00 below full night")
-	clock.set_total_minutes(clock.START_MINUTES)
+	# 2026-06-21 12:00 UTC, offset +120 min (Berlin summer time).
+	clock.fixed_utc_unix = float(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 6, "day": 21, "hour": 12, "minute": 0, "second": 0}))
+	clock.utc_offset_minutes = 120
+	clock.is_dst = true
+	check(clock.format_time() == "14:00", "local time = UTC + zone offset (14:00 CEST)")
+	check(clock.get_night_factor() < 0.05, "midsummer afternoon is daylight")
+	var times: Vector2 = clock.get_sun_times()
+	check(times.x > 4.5 and times.x < 5.6 and times.y > 21.0 and times.y < 22.0, "midsummer sunrise/sunset plausible (%.2f / %.2f)" % [times.x, times.y])
+	clock.fixed_utc_unix = float(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 12, "day": 21, "hour": 22, "minute": 0, "second": 0}))
+	clock.utc_offset_minutes = 60
+	clock.is_dst = false
+	check(clock.format_time() == "23:00" and clock.get_night_factor() > 0.95, "winter night 23:00 CET is dark")
+	var wt: Vector2 = clock.get_sun_times()
+	check(wt.x > 7.8 and wt.x < 8.9, "winter sunrise around 08:20 (%.2f)" % wt.x)
+	clock.utc_offset_minutes = -300
+	check(clock.format_time() == "17:00", "other time zone (UTC-5) shows its own local time")
+	clock.preview_minute_of_day = 2 * 60.0
+	check(clock.get_hour() == 2 and clock.get_night_factor() > 0.9, "time-of-day preview overrides visuals")
+	clock.preview_minute_of_day = -1.0
+	clock.fixed_utc_unix = -1.0
+	clock.detect_timezone()
+	check(absf(clock.get_utc_unix() - Time.get_unix_time_from_system()) < 2.0, "real clock follows system UTC")
 
 	print("[scene]")
 	# Tests use a ready-made character so the game starts in the world.
@@ -109,6 +125,22 @@ func _run() -> void:
 	check(not settlement.data.notice_board.get("text", "").contains("{settlement}"), "template tokens are filled in")
 	check(world.validate().is_empty(), "no NPC-only settlements exist")
 
+	print("[street planning]")
+	var planner := StreetPlanner.new(settlement.data)
+	var items: Array = settlement.street_items
+	var kinds := {}
+	for it in items:
+		kinds[it["kind"]] = int(kinds.get(it["kind"], 0)) + 1
+	print("       ", kinds)
+	var plan_problems := planner.validate(items)
+	for p in plan_problems:
+		print("       ", p)
+	check(plan_problems.is_empty(), "street furniture follows placement rules")
+	check(int(kinds.get("street_lamp", 0)) >= 8 and int(kinds.get("hydrant", 0)) >= 3, "town has lamps and hydrants")
+	check(kinds.has("bus_stop") and kinds.has("street_sign"), "bus stop and street sign placed")
+	var bad := [{"kind": "hydrant", "grid_v": Vector2(12.5, 5.5)}, {"kind": "street_lamp", "grid_v": Vector2(11.8, 5.5), "road_dir": Vector2i(-1, 0)}]
+	check(planner.validate(bad).size() >= 2, "validator rejects a hydrant on the road and a lamp facing away")
+
 	print("[movement]")
 	var start := player.global_position
 	Input.action_press("move_right")
@@ -126,11 +158,11 @@ func _run() -> void:
 	check(player.global_position.distance_to(start) < 0.5, "player stops without input")
 
 	print("[tap to move]")
-	player.global_position = Iso.grid_to_world(Vector2(12.5, 18.5))
+	player.global_position = Iso.grid_to_world(Vector2(12.5, 19.5))
 	await frames(2)
 	settlement.camera.snap_to_target()
 	await frames(1)
-	var goal := Iso.grid_to_world(Vector2(12.5, 21.4))
+	var goal := Iso.grid_to_world(Vector2(12.5, 22.5))
 	var screen := _world_to_screen(settlement.camera, goal)
 	settlement.handle_tap(screen)
 	var d0 := player.global_position.distance_to(goal)
@@ -139,13 +171,22 @@ func _run() -> void:
 
 	print("[collision]")
 	# Walk into the town hall from the south; must not end inside it.
-	player.global_position = Iso.grid_to_world(Vector2(11.5, 9.8))
+	player.global_position = Iso.grid_to_world(Vector2(10.5, 8.8))
 	await frames(2)
 	Input.action_press("move_up")
 	await frames(60)
 	Input.action_release("move_up")
 	var g := Iso.world_to_grid(player.global_position)
-	check(not (g.x > 10.1 and g.x < 11.9 and g.y > 7.1 and g.y < 8.9), "building blocks the player")
+	check(not (g.x > 9.1 and g.x < 10.9 and g.y > 6.1 and g.y < 7.9), "building blocks the player")
+
+	print("[occlusion]")
+	var town_hall: Node2D = settlement.objects.get_node("bld_town_hall")
+	player.global_position = Iso.grid_to_world(Vector2(9.6, 5.5))
+	await frames(40)
+	check(settlement.is_occluding(town_hall) and settlement.occlusion_strength(town_hall) > 0.95, "building in front of the player fades (x-ray hole)")
+	player.global_position = Iso.grid_to_world(Vector2(10.5, 8.7))
+	await frames(40)
+	check(not settlement.is_occluding(town_hall) and settlement.occlusion_strength(town_hall) < 0.05, "building behind the player stays opaque")
 
 	print("[interaction]")
 	var opened: Array = []
@@ -165,16 +206,18 @@ func _run() -> void:
 
 	# Tap on a building -> walk there and open it.
 	opened.clear()
-	player.global_position = Iso.grid_to_world(Vector2(10.4, 16.8))
+	player.global_position = Iso.grid_to_world(Vector2(9.5, 17.5))
 	await frames(2)
 	settlement.camera.snap_to_target()
 	await frames(1)
-	var home_pos := Iso.grid_to_world(Vector2(11.5, 15.5)) + Vector2(0, -20)
+	var home_pos := Iso.grid_to_world(Vector2(10.5, 15.5)) + Vector2(0, -20)
 	settlement.handle_tap(_world_to_screen(settlement.camera, home_pos))
 	await frames(150)
 	check(opened.size() == 1 and opened[0].get("id", "") == "bld_player_home", "tapping a building walks there and opens it")
+	var toasts: Array = []
+	bus.toast_requested.connect(func(t: String) -> void: toasts.append(t))
 	bus.interaction_action.emit("bld_player_home", "rest")
-	check(clock.get_hour() == 7, "rest action skips to 07:00")
+	check(toasts.size() > 0, "rest action responds without skipping real time")
 	hud.close_panel()
 
 	print("[camera]")

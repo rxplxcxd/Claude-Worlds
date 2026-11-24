@@ -20,9 +20,12 @@ var just_founded := false
 var player: Player
 var camera: CameraRig
 var interactions: InteractionService
+## Generated street furniture (for tests / validation).
+var street_items: Array = []
 
 @onready var ground: GroundLayer = $Ground
 @onready var objects: Node2D = $Objects
+@onready var ground_lights: Node2D = $GroundLights
 @onready var day_night: CanvasModulate = $DayNight
 
 
@@ -67,6 +70,7 @@ func _ready() -> void:
 	camera.snap_to_target()
 	player.moved_by_input.connect(camera.recenter)
 
+	_setup_occlusion()
 	GameClock.minute_changed.connect(_on_minute)
 	_on_minute(0)
 	# Deferred: sibling nodes (HUD) are ready by then.
@@ -125,8 +129,30 @@ func _build_props() -> void:
 		var p := Prop.new()
 		p.setup(data.props[i], GroundLayer._hash(i, 99))
 		objects.add_child(p)
+	_build_street_furniture()
 	_plant_crops()
 	_scatter_vegetation()
+
+
+## Lamps, hydrants, signs, bus stop, mailboxes: derived from the road network
+## by placement rules (StreetPlanner), not hand-placed.
+func _build_street_furniture() -> void:
+	var planner := StreetPlanner.new(data)
+	street_items = planner.plan()
+	for it in street_items:
+		if it["kind"] == "street_lamp":
+			var lamp := StreetLamp.new()
+			lamp.setup(it["grid_v"], it["road_dir"])
+			objects.add_child(lamp)
+			ground_lights.add_child(lamp.make_ground_light())
+		else:
+			var entry: Dictionary = it.duplicate()
+			if entry.has("text"):
+				entry["text"] = str(entry["text"]).replace("{settlement}", data.settlement_name)
+			var p := Prop.new()
+			p.setup(entry, 0.0)
+			objects.add_child(p)
+		data.props.append({"kind": it["kind"], "grid_v": it["grid_v"]})
 
 
 ## One crop plant per field tile (only with the real Penzilla plants; the
@@ -184,8 +210,18 @@ func _scatter_vegetation() -> void:
 func _build_player() -> void:
 	player = PLAYER_SCENE.instantiate()
 	player.player_id = LocalProfile.player_id
-	player.position = Iso.grid_to_world(data.spawn)
+	player.position = Iso.grid_to_world(_qa_spawn(data.spawn))
 	objects.add_child(player)
+
+
+## QA helper: "?spawn=9.6,5.5" in the page URL overrides the start position.
+func _qa_spawn(default_pos: Vector2) -> Vector2:
+	if not OS.has_feature("web"):
+		return default_pos
+	var v := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('spawn')||''", true)).split(",")
+	if v.size() == 2 and v[0].is_valid_float() and v[1].is_valid_float():
+		return Vector2(float(v[0]), float(v[1]))
+	return default_pos
 
 
 ## Invisible walls along the settlement edge and around water.
@@ -220,5 +256,62 @@ func _world_bounds() -> Rect2:
 
 
 func _on_minute(_m: int) -> void:
-	var night := GameClock.get_night_factor()
-	day_night.color = Color(1, 1, 1).lerp(Color(0.48, 0.55, 0.82), night)
+	day_night.color = GameClock.get_ambient_color()
+
+
+func _process(delta: float) -> void:
+	# Cheap; keeps the time-of-day preview and dawn/dusk transitions fluid.
+	day_night.color = GameClock.get_ambient_color()
+	_update_occlusion(delta)
+
+
+# --- occlusion: keep the player visible behind buildings and trees ---------
+
+const OCCLUDER_SHADER := preload("res://shaders/occluder.gdshader")
+const OCCLUSION_FADE_SPEED := 6.0
+var _occluder_material: ShaderMaterial
+## [node, current strength]
+var _occluders: Array = []
+
+
+func _setup_occlusion() -> void:
+	_occluder_material = ShaderMaterial.new()
+	_occluder_material.shader = OCCLUDER_SHADER
+	for n in objects.get_children():
+		if n is Building or (n is Prop and (n as Prop).is_occluder()):
+			n.occluder_item().material = _occluder_material
+			_occluders.append([n, 0.0])
+
+
+## An object hides the player when it is drawn after the player (its sort
+## position is further front) and its picture overlaps the player's body.
+func is_occluding(n: Node2D) -> bool:
+	if player == null:
+		return false
+	if n.global_position.y <= player.global_position.y:
+		return false
+	var body := Rect2(player.global_position + Vector2(-12, -58), Vector2(24, 58))
+	return n.occluder_rect().grow(-4.0).intersects(body)
+
+
+func _update_occlusion(delta: float) -> void:
+	if player == null or _occluder_material == null:
+		return
+	_occluder_material.set_shader_parameter("player_pos", player.global_position + Vector2(0, -26))
+	for entry in _occluders:
+		var n: Node2D = entry[0]
+		var target := 1.0 if is_occluding(n) else 0.0
+		var s: float = entry[1]
+		if is_equal_approx(s, target):
+			continue
+		s = move_toward(s, target, delta * OCCLUSION_FADE_SPEED)
+		entry[1] = s
+		var item: CanvasItem = n.occluder_item()
+		item.modulate.a = 1.0 - 0.5 * s
+
+
+func occlusion_strength(n: Node2D) -> float:
+	for entry in _occluders:
+		if entry[0] == n:
+			return entry[1]
+	return 0.0

@@ -14,8 +14,6 @@ signal modal_changed(open: bool)
 ## The player wants to change their character (menu).
 signal edit_character_requested
 
-const SPEEDS := [1.0, 4.0, 0.0]
-const SPEED_LABELS := ["1×", "4×", "II"]
 
 var root: Control
 var gesture: GestureSurface
@@ -25,7 +23,7 @@ var interact_button: TouchButton
 var _name_label: Label
 var _status_label: Label
 var _clock_label: Label
-var _speed_button: Button
+var _preview_label: Label
 var _toast_box: VBoxContainer
 var _panel: PanelContainer
 var _panel_title: Label
@@ -38,7 +36,6 @@ var _debug_label: Label
 var _hint_label: Label
 var _info_panel: PanelContainer
 var _open_info: Dictionary = {}
-var _speed_index := 0
 var _focused: Node = null
 
 
@@ -75,7 +72,6 @@ func _ready() -> void:
 	_set_debug_visible(bool(LocalProfile.get_setting("show_debug", false)))
 	get_viewport().size_changed.connect(_layout_hud)
 	_layout_hud.call_deferred()
-	_apply_speed(SPEEDS.find(float(LocalProfile.get_setting("time_speed", 1.0))))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -151,12 +147,12 @@ func _build_top_right() -> void:
 	row.add_theme_constant_override("separation", 10)
 	clock.add_child(row)
 	_clock_label = Label.new()
-	_clock_label.custom_minimum_size = Vector2(118, 0)
+	_clock_label.name = "Clock"
+	_clock_label.custom_minimum_size = Vector2(150, 40)
 	_clock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_clock_label.tooltip_text = "Echtzeit in deiner Zeitzone"
 	row.add_child(_clock_label)
-	_speed_button = _make_button("1×", "Spielgeschwindigkeit")
-	_speed_button.pressed.connect(func() -> void: _apply_speed((_speed_index + 1) % SPEEDS.size()))
-	row.add_child(_speed_button)
 
 	var buttons := VBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 8)
@@ -297,6 +293,28 @@ func _build_menu() -> void:
 			_toggle_menu()
 			edit_character_requested.emit())
 		box.add_child(edit_char)
+	_preview_label = Label.new()
+	_preview_label.text = "Vorschau: aus (Echtzeit)"
+	_preview_label.add_theme_font_size_override("font_size", 14)
+	box.add_child(_preview_label)
+	var preview_row := HBoxContainer.new()
+	preview_row.add_theme_constant_override("separation", 8)
+	box.add_child(preview_row)
+	var slider := HSlider.new()
+	slider.min_value = 0
+	slider.max_value = 1439
+	slider.step = 15
+	slider.value = 12 * 60
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.custom_minimum_size = Vector2(0, 40)
+	slider.focus_mode = Control.FOCUS_NONE
+	slider.value_changed.connect(func(v: float) -> void: _set_preview(v))
+	preview_row.add_child(slider)
+	var live := Button.new()
+	live.text = "Echtzeit"
+	live.focus_mode = Control.FOCUS_NONE
+	live.pressed.connect(func() -> void: _set_preview(-1.0))
+	preview_row.add_child(live)
 	var joy_toggle := CheckButton.new()
 	joy_toggle.text = "Virtueller Joystick"
 	joy_toggle.button_pressed = DisplayServer.is_touchscreen_available()
@@ -335,6 +353,12 @@ func _make_button(text: String, tooltip: String, icon_key: String = "") -> Butto
 
 
 ## Keeps the info panel clear of the clock column on narrow screens.
+static func _fmt_hours(h: float) -> String:
+	if h < 0.0:
+		return "–"
+	return "%02d:%02d" % [int(h), int(fmod(h * 60.0, 60.0))]
+
+
 func _layout_hud() -> void:
 	if _info_panel == null:
 		return
@@ -453,6 +477,10 @@ func _toggle_menu() -> void:
 		+ "Touch: Joystick unten links · Tippen = dorthin gehen · Ziehen = Kamera · zwei Finger = Zoom · gelbe Taste = benutzen\n"
 		+ "Tastatur: WASD/Pfeile · Klick = gehen · Maus ziehen = Kamera · Mausrad/+/− = Zoom · E = benutzen · C = zentrieren · F3 = FPS\n\n"
 		+ "[b]Asset-Status[/b]\n%d von %d Asset-Einträgen integriert · %d Platzhalter · %d Art-Direction-Verstöße\n\n" % [s["resolved"], s["total"], s["placeholders"], s["violations"]]
+		+ "[b]Zeit[/b]\nEchtzeit · Zeitzone %s (%s, UTC%+d:%02d%s) · Sonnenaufgang %s, Sonnenuntergang %s (Näherung für 51° N)\n\n" % [
+			GameClock.timezone_name if GameClock.timezone_name != "" else "unbekannt", GameClock.timezone_abbr,
+			GameClock.utc_offset_minutes / 60, absi(GameClock.utc_offset_minutes) % 60, ", Sommerzeit" if GameClock.is_dst else "",
+			_fmt_hours(GameClock.get_sun_times().x), _fmt_hours(GameClock.get_sun_times().y)]
 		+ "[b]Grafik[/b]\nAußenwelt, Figur & Oberfläche: Penzilla (penzilla.itch.io) – lizenziert\n\n"
 		+ "[b]Projekt[/b]\nVersion %s · Phase 1 (World Foundation) · Godot %s\nSpieler-ID (lokal): %s" % [
 			ProjectSettings.get_setting("application/config/version", "?"),
@@ -479,14 +507,17 @@ func _layout_modal(panel: Control, text: RichTextLabel) -> void:
 
 
 func _update_clock() -> void:
-	_clock_label.text = "Tag %d · %s" % [GameClock.get_day(), GameClock.format_time()]
+	var preview := " (Vorschau)" if GameClock.preview_minute_of_day >= 0.0 else ""
+	_clock_label.text = "%s%s\n%s" % [GameClock.format_time(), preview, GameClock.format_date()]
+	_clock_label.add_theme_font_size_override("font_size", 16)
 
 
-func _apply_speed(index: int) -> void:
-	_speed_index = clampi(index, 0, SPEEDS.size() - 1)
-	GameClock.speed = SPEEDS[_speed_index]
-	_speed_button.text = SPEED_LABELS[_speed_index]
-	LocalProfile.set_setting("time_speed", SPEEDS[_speed_index])
+## Time-of-day preview (menu) – visuals only, real time continues.
+func _set_preview(minute_of_day: float) -> void:
+	GameClock.preview_minute_of_day = minute_of_day
+	if _preview_label:
+		_preview_label.text = "Vorschau: " + ("aus (Echtzeit)" if minute_of_day < 0.0 else "%02d:%02d Uhr" % [int(minute_of_day / 60.0), int(fmod(minute_of_day, 60.0))])
+	_update_clock()
 
 
 func _set_debug_visible(on: bool) -> void:

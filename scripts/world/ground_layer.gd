@@ -17,6 +17,7 @@ const COLORS := {
 	"water": Color("4f8fb5"),
 	"sand": Color("dbc994"),
 	"field": Color("8a6a3f"),
+	"sidewalk": Color("b9b3a8"),
 }
 const EDGE_DEPTH := 26.0
 
@@ -27,6 +28,7 @@ const TILE_KEYS := {
 	"field": "exterior.tile.low_dirt",
 	"water": "exterior.tile.water",
 	"plaza": "exterior.tile.concrete",
+	"sidewalk": "exterior.tile.concrete",
 	"road": "exterior.tile.road",
 	"path": "exterior.tile.path",
 }
@@ -39,7 +41,7 @@ const AUTOTILE := {
 }
 const CONNECTS := {
 	"road": ["road", "plaza"],
-	"path": ["path", "road", "plaza", "building"],
+	"path": ["path", "road", "plaza", "sidewalk", "building"],
 }
 
 var data: SettlementData
@@ -101,6 +103,12 @@ func _draw_textured_tile(x: int, y: int, tile: String) -> void:
 		draw_set_transform(Vector2.ZERO)
 	else:
 		draw_texture_rect(tex, Rect2(bottom + sprite["offset"], size), false)
+	if tile == "sidewalk":
+		# Penzilla paving slabs on top of the concrete block.
+		var slabs := AssetRegistry.get_sprite("exterior.tile.sidewalk")
+		if not slabs.is_empty():
+			var st: Texture2D = slabs["texture"]
+			draw_texture_rect(st, Rect2(bottom + slabs["offset"], Vector2(st.get_width(), st.get_height()) * float(slabs["scale"])), false)
 
 
 ## Bit mask of neighbours a road/path connects to (1 -y, 2 +x, 4 +y, 8 -x).

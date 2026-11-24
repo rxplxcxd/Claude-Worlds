@@ -12,6 +12,7 @@ const SOLID_RADIUS := {
 	"fountain": 70.0, "cart": 16.0, "wheelbarrow": 12.0, "electrical_box": 16.0,
 	"electrical_tower": 14.0, "mailbox": 8.0, "trash_can": 8.0, "hydrant": 6.0,
 	"water_tower": 22.0, "garden": 0.0, "crop": 0.0,
+	"street_sign": 5.0, "traffic_sign": 5.0, "trash_small": 6.0, "bus_stop": 22.0,
 }
 
 var kind: String = "tree"
@@ -154,6 +155,21 @@ func _ready() -> void:
 	set_process(kind == "lamp")
 
 
+## Only tall props hide the player.
+func is_occluder() -> bool:
+	return kind in ["tree", "electrical_tower", "water_tower", "bus_stop"]
+
+
+func occluder_item() -> CanvasItem:
+	return _sprite if _sprite else self
+
+
+func occluder_rect() -> Rect2:
+	if _sprite:
+		return Rect2(_sprite.global_position, _sprite.texture.get_size() * _sprite.scale)
+	return Rect2(global_position + Vector2(-30, -90), Vector2(60, 92))
+
+
 func _draw() -> void:
 	if _sprite:
 		return
@@ -170,7 +186,8 @@ func _draw() -> void:
 		"fountain": _draw_well()
 		"crop": _draw_bush()
 		"electrical_tower", "water_tower": _draw_lamp()
-		"cart", "wheelbarrow", "electrical_box", "mailbox", "trash_can", "hydrant": _draw_crates()
+		"cart", "wheelbarrow", "electrical_box", "mailbox", "trash_can", "hydrant", "trash_small", "bus_stop": _draw_crates()
+		"street_sign", "traffic_sign": _draw_lamp()
 
 
 func _shadow(rx: float) -> void:

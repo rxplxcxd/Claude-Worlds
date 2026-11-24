@@ -18,8 +18,6 @@ var _editor_layer: CanvasLayer
 
 func _enter_tree() -> void:
 	InputActions.ensure_registered()
-	if LocalProfile.saved_game_minutes >= 0.0:
-		GameClock.set_total_minutes(LocalProfile.saved_game_minutes)
 
 
 func _ready() -> void:

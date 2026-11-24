@@ -76,6 +76,23 @@ func is_placeholder() -> bool:
 	return _sprite == null
 
 
+## Canvas item that fades when the player is behind this building.
+func occluder_item() -> CanvasItem:
+	return _sprite if _sprite else self
+
+
+## Screen-space (canvas) rectangle covered by the building's visual.
+func occluder_rect() -> Rect2:
+	if _sprite:
+		var size := _sprite.texture.get_size() * _sprite.scale
+		return Rect2(_sprite.global_position, size)
+	var r := Rect2(global_position + _corners[0], Vector2.ZERO)
+	for c in _corners:
+		r = r.expand(global_position + c)
+	r = r.expand(global_position + _corners[0] + Vector2(0, -height - 40.0))
+	return r
+
+
 func _draw() -> void:
 	if _sprite:
 		return

@@ -368,6 +368,30 @@
       "grass",
       "JPEG/Stylized_HandpaintedGrass_01/Stylized_HandpaintedGrass_01_basecolor.jpg",
       0.125
+    ],
+    "tiles/sidewalk.png": [
+      "gcb",
+      "Tiles/Sidewalk_Tile9.png"
+    ],
+    "props/lamp_arm.png": [
+      "gcb",
+      "DecorItems/WallPole.png"
+    ],
+    "props/bus_stop.png": [
+      "gcb",
+      "Public/BusStop.png"
+    ],
+    "props/street_sign.png": [
+      "gcb",
+      "DecorItems/StreetSign.png"
+    ],
+    "props/traffic_sign.png": [
+      "gcb",
+      "DecorItems/TraficSign2.png"
+    ],
+    "props/trash_small.png": [
+      "gcb",
+      "DecorItems/TrashCanSmall.png"
     ]
   }
 }

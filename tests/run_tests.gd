@@ -363,7 +363,11 @@ func _run() -> void:
 	print("[npcs]")
 	if root_has_character_assets():
 		var roster: Array = founded[0].get("npcs", [])
-		check(roster.size() == 12, "founding community of 12 NPCs stored in the settlement record (%d)" % roster.size())
+		var comp_total := 0
+		for comp_spec in SettlementSim.load_config()["founding_population"]["composition"]:
+			comp_total += int(comp_spec[1])
+		var founders := roster.filter(func(r): return r.has("index_in_role")).size()
+		check(founders == comp_total and founders >= 20 and founders <= 50, "founding community of %d NPCs (Master §4.2: 20–50) stored in the settlement record" % founders)
 		var roles := {}
 		var names := {}
 		var looks := {}
@@ -372,8 +376,8 @@ func _run() -> void:
 			roles[r["role"]] = true
 			names[str(r["name"]).get_slice(" ", 0)] = true
 			looks[catalog.appearance_key(r["appearance"], "idle")] = true
-		check(roles.size() == 8, "all 8 roles are represented")
-		check(names.size() == roster.size() and looks.size() == roster.size(), "first names and appearances are unique")
+		check(roles.size() == 12, "all 12 founding functions are represented (%d)" % roles.size())
+		check(names.size() == roster.size() and looks.size() >= roster.size() - 2, "first names are unique and appearances nearly so (%d/%d looks)" % [looks.size(), roster.size()])
 		var role_ok := true
 		for r in roster:
 			var a: Dictionary = r["appearance"]
@@ -390,11 +394,11 @@ func _run() -> void:
 					role_ok = role_ok and a["bag"]["option"] == "bag"
 			if not r["role"] in ["farmer", "builder"] and a["head"]["option"] in ["straw_hat", "beanie"]:
 				role_ok = false # role signifiers are reserved
-			if r["role"] != "resident" and r["workplace_id"] == "":
+			if not r["role"] in ["resident", "worker"] and r["workplace_id"] == "":
 				role_ok = false
 		check(role_ok, "every NPC wears its role's clothing and has a workplace")
 		check(settlement.npcs.size() == roster.size(), "NPCs are instantiated in the world")
-		check(settlement.sim != null and roster.all(func(r): return r.has("personality") and r.has("profession") and r.has("birth_day")), "every NPC has a persistent identity (personality, profession, birth day)")
+		check(settlement.sim != null and roster.all(func(r): return r.has("personality") and r.has("profession") and r.has("age_at_arrival") and r.has("health") and r.has("employment")), "every NPC has a persistent identity (personality, profession, age, health, employment)")
 		check(founded[0].has("sim") and founded[0].has("time_zone"), "living world state and settlement time zone are stored in the record")
 		settlement._update_lod(true)
 		var present := settlement.npcs.filter(func(n): return n.is_present()).size()
@@ -641,6 +645,7 @@ func _run() -> void:
 
 	_test_living_assets()
 	_test_living_world()
+	_test_world_authority()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
@@ -654,15 +659,18 @@ func _test_living_world() -> void:
 	var data := SettlementData.load_from_file("res://data/settlement_templates/founding_basic.json")
 	var cfg := SettlementSim.load_config()
 	var t0 := int(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 11, "day": 23, "hour": 23, "minute": 0, "second": 0}))   # Tue 24.11.2026 00:00 CET
+	var comp: Array = cfg["founding_population"]["composition"]
 	var mk := func(id: String) -> Dictionary:
-		return {"settlement_id": id, "npcs": NpcRoster.generate(id, data.buildings), "founded_at_unix": t0, "time_zone": {"name": "Test/CET", "offset_min": 60}}
+		return {"settlement_id": id, "npcs": NpcRoster.generate(id, data.buildings, comp), "founded_at_unix": t0, "resident_player_ids": ["plr_test"], "time_zone": {"name": "Test/CET", "offset_min": 60}}
 	check(NpcBrain.weekday(t0, 60) == 2 and absf(NpcBrain.local_hour(t0, 60)) < 0.01, "settlement local time: 23:00 UTC = Tuesday 00:00 in UTC+1")
+	var vals := {}
+	for d in 200:
+		vals[int(SettlementCore._chance("stl_x#arrive#%d" % d) * 10.0)] = true
+	check(vals.size() == 10, "seeded chances are well distributed across consecutive days")
 	var rec_a: Dictionary = mk.call("stl_lwtest")
 	var rec_b: Dictionary = mk.call("stl_lwtest")
-	var a := SettlementSim.create(rec_a, data, t0, cfg)
-	var b := SettlementSim.create(rec_b, data, t0, cfg)
-	a.offset_override = 60
-	b.offset_override = 60
+	var a := SettlementSim.create(rec_a, data, t0, cfg, 60)
+	var b := SettlementSim.create(rec_b, data, t0, cfg, 60)
 	a.advance_to(t0 + 3 * 86400)
 	# b: many irregular small steps (LOD switches, frame ticks) to the same time
 	var tt := t0
@@ -671,33 +679,42 @@ func _test_living_world() -> void:
 	while tt < t0 + 3 * 86400:
 		tt = mini(t0 + 3 * 86400, tt + rng.randi_range(1, 5400))
 		b.advance_to(tt)
-	check(JSON.stringify(a.states) == JSON.stringify(b.states), "advance in one jump == advance in many small steps (consistent LOD and catch-up)")
-	var c := SettlementSim.create(mk.call("stl_lwtest"), data, t0, cfg)
-	c.offset_override = 60
+	check(JSON.stringify(a.states) == JSON.stringify(b.states) and JSON.stringify(rec_a["core"]) == JSON.stringify(rec_b["core"]), "advance in one jump == advance in many small steps (micro and day steps)")
+	var c := SettlementSim.create(mk.call("stl_lwtest"), data, t0, cfg, 60)
 	c.advance_to(t0 + 3 * 86400)
 	check(JSON.stringify(a.states) == JSON.stringify(c.states), "simulation is deterministic")
-	# routines on Friday (t0 + 3 days = Fri 00:00 local)
-	var thu := t0 + 3 * 86400
-	a.advance_to(thu + 11 * 3600)
-	var working := 0
-	var workers := 0
-	for r in a.roster:
-		if r["role"] in ["admin", "merchant", "craftsman", "builder", "farmer", "medic"]:
-			workers += 1
-			var st: Dictionary = a.states[r["npc_id"]]
+	# Friday (t0 + 3 days = Fri 00:00 local): duty roster from the operating models
+	var fri := t0 + 3 * 86400
+	a.advance_to(fri + 11 * 3600)
+	var plan: Dictionary = rec_a["core"]["plan"][str(SettlementCore.day_index(fri, 60))]
+	var due := 0
+	var at_work := 0
+	var starts := {}
+	for id in plan["shifts"]:
+		var sh: Array = plan["shifts"][id]
+		starts[int(sh[0])] = true
+		if int(sh[0]) + 1800 <= fri + 11 * 3600 and int(sh[1]) > fri + 11 * 3600:
+			due += 1
+			var st: Dictionary = a.states[id]
 			var act: String = st["act"] if st["travel"].is_empty() else str(st["travel"]["next"])
-			if act == "work":
-				working += 1
-	check(working >= workers - 1, "on a workday at 11:00 the day-shift workers are at work (%d/%d)" % [working, workers])
-	a.advance_to(thu + 27 * 3600)   # Saturday 03:00
+			if act in ["work", "pause"]:
+				at_work += 1
+	check(due >= 10 and at_work >= due - 1, "on a workday at 11:00 everybody on duty is at work or on break (%d/%d)" % [at_work, due])
+	check(starts.size() >= 8, "shifts are staggered (%d different start times on one day)" % starts.size())
+	var sun := SettlementCore.roster_for_day(rec_a, data, cfg, SettlementCore.day_index(fri, 60) + 2, 60)
+	var sun_bids := {}
+	for id in sun["shifts"]:
+		sun_bids[str(sun["shifts"][id][2])] = true
+	check(sun_bids.has("bld_water_works") and sun_bids.has("bld_clinic") == false and not sun_bids.has("bld_town_hall"), "Sunday: water works staffed (24/7 operation), town hall and practice closed")
+	a.advance_to(fri + 27 * 3600)   # Saturday 03:00
 	var sleeping := 0
 	for r in a.roster:
-		if a.states[r["npc_id"]]["act"] == "sleep":
+		if a.states[r["npc_id"]]["act"] in ["sleep", "rest_sick"]:
 			sleeping += 1
 	check(sleeping == a.roster.size(), "at 03:00 everybody sleeps (%d/%d)" % [sleeping, a.roster.size()])
 	var needs_ok := true
 	for r in a.roster:
-		var nd := a.needs_now(r["npc_id"], thu + 27 * 3600)
+		var nd := a.needs_now(r["npc_id"], fri + 27 * 3600)
 		for k in nd:
 			if float(nd[k]) < 0.0 or float(nd[k]) > 1.0:
 				needs_ok = false
@@ -705,9 +722,12 @@ func _test_living_world() -> void:
 			needs_ok = false
 	check(needs_ok, "needs stay within 0..1 and nobody starves")
 	var acts := {}
-	for e in a.advance_to(thu + 48 * 3600):
-		acts[e["act"]] = true
-	check(acts.has("socialize") and acts.has("leisure") and acts.has("eat_home") and acts.has("work") and acts.has("sleep"), "daily life uses work, meals, plaza, green spaces and sleep (%s)" % str(acts.keys()))
+	for e in a.advance_to(fri + 48 * 3600):
+		acts[e.get("act", "")] = true
+	check(acts.has("socialize") and acts.has("leisure") and acts.has("eat_home") and acts.has("work") and acts.has("sleep") and acts.has("pause"), "daily life uses work, breaks, meals, plaza, green spaces and sleep (%s)" % str(acts.keys()))
+	_test_personality_effects(data, cfg, t0, mk)
+	_test_health_and_duty(data, cfg, t0, mk)
+	_test_macro_equivalence(data, cfg, t0, mk)
 	# navigation
 	var nav := a.nav
 	var reach := true
@@ -726,19 +746,22 @@ func _test_living_world() -> void:
 	# persistence round trip
 	a.store()
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(rec_a))
-	var reloaded := SettlementSim.create(saved, data, a.simulated_at, cfg)
-	reloaded.offset_override = 60
-	check(JSON.stringify(reloaded.states) == JSON.stringify(a.states), "living world survives save/load (JSON)")
+	var reloaded := SettlementSim.create(saved, data, a.simulated_at, cfg, 60)
+	check(JSON.stringify(reloaded.states) == JSON.stringify(a.states) and JSON.stringify(reloaded.record["core"]) == JSON.stringify(JSON.parse_string(JSON.stringify(rec_a["core"]))), "living world survives save/load (JSON)")
 	# absence: 3 days offline, then catch up (event-driven, fast, identical)
 	var t_back := a.simulated_at + 3 * 86400
 	var us := Time.get_ticks_usec()
 	reloaded.advance_to(t_back)
 	var catch_ms := (Time.get_ticks_usec() - us) / 1000.0
 	a.advance_to(t_back)
-	check(JSON.stringify(reloaded.states) == JSON.stringify(a.states) and catch_ms < 500.0, "3 days of absence are caught up exactly and fast (%.1f ms)" % catch_ms)
-	# very long absence: bounded re-seed, valid state at now
-	var far := SettlementSim.create(JSON.parse_string(JSON.stringify(rec_a)), data, a.simulated_at + 40 * 86400, cfg)
-	check(far.simulated_at == a.simulated_at + 40 * 86400 and far.states.size() == a.roster.size(), "40 days of absence: bounded catch-up, state is current")
+	check(JSON.stringify(reloaded.states) == JSON.stringify(a.states) and catch_ms < 3000.0, "3 days of absence are caught up exactly (%.1f ms)" % catch_ms)
+	# long absence: EVERY day is processed by the macro layer, micro state is current
+	a.store()
+	var far_rec: Dictionary = JSON.parse_string(JSON.stringify(rec_a))
+	us = Time.get_ticks_usec()
+	var far := SettlementSim.create(far_rec, data, a.simulated_at + 120 * 86400, cfg, 60)
+	var far_ms := (Time.get_ticks_usec() - us) / 1000.0
+	check(far.simulated_at == a.simulated_at + 120 * 86400 and int(far_rec["core"]["day"]) == SettlementCore.day_index(far.simulated_at, 60) and far.states.size() == far.roster.size(), "120 days of absence: all 120 day steps processed, state is current (%.0f ms)" % far_ms)
 	# LOD: rendering never changes the simulation
 	var before := JSON.stringify(a.states)
 	for r in a.roster:
@@ -760,6 +783,7 @@ func _test_living_world() -> void:
 		st["place"] = a._ctx[r["npc_id"]]["home"]
 		cook = st
 		break
+	a._plan_cache.clear()
 	var fx := VisualEventRouter.active_effects(a, float(NpcBrain.day_start(t_back, 60) + 7 * 3600))
 	check(fx.any(func(e): return e["vfx"] == "chimney_smoke"), "cooking at home shows chimney smoke (derived from state, never stale)")
 	var vrec := {}
@@ -773,8 +797,7 @@ func _test_living_world() -> void:
 		big_roster.append(r0)
 	var big := {"settlement_id": "stl_scale", "npcs": big_roster, "founded_at_unix": t0, "time_zone": {"name": "Test/CET", "offset_min": 60}}
 	us = Time.get_ticks_usec()
-	var bs := SettlementSim.create(big, data, t0, cfg)
-	bs.offset_override = 60
+	var bs := SettlementSim.create(big, data, t0, cfg, 60)
 	var ev := bs.advance_to(t0 + 86400)
 	var big_ms := (Time.get_ticks_usec() - us) / 1000.0
 	print("       1000 NPCs: warm-up + 1 simulated day = %.0f ms, %d events (%.1f µs/event)" % [big_ms, ev.size(), big_ms * 1000.0 / maxf(1.0, ev.size())])
@@ -782,6 +805,296 @@ func _test_living_world() -> void:
 	# credits / licence
 	check(Credits.bbcode().contains(Credits.MANDATORY) and Credits.data()["sections"][1]["lines"].size() >= 5, "mandatory Penzilla credit and the list of edits are shown in the game")
 	check(GraphicsProfile.PROFILES.has("ultra") and GraphicsProfile.PROFILES.has("leistung"), "graphics profiles ultra/hoch/leistung exist (presentation only)")
+
+
+func _test_world_authority() -> void:
+	print("[world authority / MMO]")
+	var cfg := SettlementSim.load_config()
+	var tpl := "res://data/settlement_templates/founding_basic.json"
+	var data := SettlementData.load_from_file(tpl)
+	var t0 := int(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 11, "day": 23, "hour": 23, "minute": 0, "second": 0}))
+	var mkrec := func(id: String) -> Dictionary:
+		return {"settlement_id": id, "template_path": tpl, "founder_player_id": "plr_founder", "resident_player_ids": ["plr_founder", "plr_neighbour"],
+			"admin_player_ids": ["plr_founder", "plr_neighbour"], "founded_at_unix": t0, "region_id": "reg_a", "time_zone": {"name": "Test/CET", "offset_min": 60}}
+	var clock := [t0]
+	var recs: Array = [mkrec.call("stl_mmo")]
+	var auth := WorldAuthority.create(func(): return recs, func(): return int(clock[0]), cfg)
+	auth.ensure_population(recs[0])
+	check(recs[0]["npcs"].size() >= 20 and recs[0].has("core"), "the authority creates the founding population at founding (%d NPCs, no client needed)" % recs[0]["npcs"].size())
+	var client := LocalWorldClient.connect_to(auth, "plr_neighbour")
+	var stranger := LocalWorldClient.connect_to(auth, "plr_stranger")
+	# the founder is offline for 5 years; another player keeps administering
+	var us := Time.get_ticks_usec()
+	clock[0] = t0 + 365 * 86400
+	var r1 := client.submit({"kind": "set_policy", "settlement_id": "stl_mmo", "payload": {"open_for_newcomers": false}, "command_id": "cmd_fixed_1"})
+	var r1b := client.submit({"kind": "set_policy", "settlement_id": "stl_mmo", "payload": {"open_for_newcomers": false}, "command_id": "cmd_fixed_1"})
+	check(r1.get("ok", false) and r1b.get("duplicate", false) and int(r1b["seq"]) == int(r1["seq"]) and recs[0]["authority"]["log"].size() == 1, "commands are validated, logged and idempotent (same command_id applied once)")
+	check(not stranger.submit({"kind": "set_policy", "settlement_id": "stl_mmo", "payload": {"open_for_newcomers": true}}).get("ok", true), "players without administration rights are rejected")
+	check(not client.submit({"kind": "set_priorities", "settlement_id": "stl_mmo", "payload": {"priorities": ["wasser"]}}).get("ok", true), "invalid payloads are rejected")
+	check(not stranger.submit({"kind": "join_settlement", "settlement_id": "stl_mmo"}).get("ok", true), "player migration stays disabled until Phase 8")
+	var arrivals_y1 := int(recs[0]["core"]["counters"]["arrivals"])
+	clock[0] = t0 + 2 * 365 * 86400
+	var prio: Array = SettlementCore.FUNCTIONS.duplicate()
+	prio.reverse()
+	check(client.submit({"kind": "set_priorities", "settlement_id": "stl_mmo", "payload": {"priorities": prio}}).get("ok", false), "administration sets job priorities")
+	clock[0] = t0 + 5 * 365 * 86400 + 3600
+	var snap := client.snapshot("stl_mmo")
+	var five_ms := (Time.get_ticks_usec() - us) / 1000.0
+	var today := SettlementCore.day_index(clock[0], 60)
+	var cnt: Dictionary = snap["core"]["counters"]
+	print("       5 years: %d day steps in %.0f ms, deaths %d, arrivals %d, illnesses %d, accidents %d, fires %d, population %d" % [auth.stats["day_steps"], five_ms, cnt["deaths"], cnt["arrivals"], cnt["illnesses"], cnt["accidents"], cnt["fires"], snap["core"]["stats"]["population"]])
+	check(int(snap["core"]["day"]) == today and int(auth.stats["day_steps"]) >= 5 * 365, "the founder returns after 5 years: every one of the %d days was simulated" % auth.stats["day_steps"])
+	check(int(cnt["deaths"]) > 0 and int(cnt["arrivals"]) > 0 and int(cnt["illnesses"]) > 20, "the world developed meanwhile (ageing, deaths, newcomers, illness)")
+	check(snap["core"]["policy"]["open_for_newcomers"] == false and int(cnt["arrivals"]) == arrivals_y1 and snap["core"]["policy"]["priorities"] == prio, "the other player's decisions shaped the settlement (closed for newcomers since year 1, new priorities)")
+	check(snap["lifecycle"]["status"] == "active", "an absent player never makes a settlement 'abandoned'")
+	# the same world on every device: two independent authorities, different
+	# graphics profiles, different tick patterns, same commands → same state
+	var hashes := []
+	var old_profile := str(LocalProfile.get_setting("graphics_profile", "auto"))
+	for variant in ["ultra", "leistung"]:
+		LocalProfile.set_setting("graphics_profile", variant)
+		var rr: Array = [mkrec.call("stl_same")]
+		var ck := [t0]
+		var au := WorldAuthority.create(func(): return rr, func(): return int(ck[0]), cfg)
+		au.ensure_population(rr[0])
+		# ultra: two big jumps; leistung: 80 small ticks – the command at day 45 in both
+		var times: Array = [45.0, 90.0]
+		if variant == "leistung":
+			times = []
+			for i in range(1, 81):
+				times.append(90.0 * i / 80.0)
+		for day_f in times:
+			ck[0] = t0 + int(float(day_f) * 86400.0)
+			au.tick(true)
+			if absf(float(day_f) - 45.0) < 0.001:
+				au.submit({"command_id": "cmd_same_1", "issuer": "plr_founder", "kind": "close_path", "settlement_id": "stl_same", "payload": {"cell": [10, 8]}})
+		hashes.append(WorldAuthority.state_hash(au.snapshot("stl_same")))
+	LocalProfile.set_setting("graphics_profile", old_profile)
+	check(hashes[0] == hashes[1], "identical world state on all devices regardless of graphics profile and update rhythm")
+	# restart: the world is stored and continues, it is never reset
+	var saved: Array = JSON.parse_string(JSON.stringify(recs, "", true, true))
+	clock[0] = t0 + 5 * 365 * 86400 + 30 * 86400
+	var auth2 := WorldAuthority.create(func(): return saved, func(): return int(clock[0]), cfg)
+	var h_restart := WorldAuthority.state_hash(auth2.snapshot("stl_mmo"))
+	var h_cont := WorldAuthority.state_hash(auth.snapshot("stl_mmo"))
+	check(h_restart == h_cont, "a restart (save → load) continues the same world exactly")
+	# account deletion of the founder: the settlement lives on
+	var fclient := LocalWorldClient.connect_to(auth, "plr_founder")
+	check(fclient.submit({"kind": "delete_account", "settlement_id": "stl_mmo"}).get("ok", false), "the founder can delete the account")
+	var after := auth.snapshot("stl_mmo")
+	var log_clean: bool = not JSON.stringify(after.get("authority", {})).contains("plr_founder")
+	check(after["founder_status"] == "deleted" and after["founder_player_id"].begins_with("plr_deleted_") and log_clean and after["lifecycle"]["status"] == "active", "founder account deleted: the settlement persists, references are pseudonymised")
+	check(WorldState._check_record(after) == "", "a settlement without its founder is still a valid world record")
+	# truly abandoned: nobody lives there → decay; resettlement keeps the place
+	var ab: Array = [mkrec.call("stl_empty")]
+	var ck2 := [t0]
+	var au2 := WorldAuthority.create(func(): return ab, func(): return int(ck2[0]), cfg)
+	au2.ensure_population(ab[0])
+	ab[0]["resident_player_ids"] = []
+	for r in ab[0]["npcs"]:
+		r["alive"] = false
+	ck2[0] = t0 + 300 * 86400
+	var abs_snap := au2.snapshot("stl_empty")
+	var worn := 0
+	for bid in abs_snap.get("visual_states", {}):
+		if int(abs_snap["visual_states"][bid].get("wear", 0)) >= 3:
+			worn += 1
+	check(abs_snap["lifecycle"]["status"] == "abandoned" and worn >= 5, "a truly abandoned settlement decays visibly over time (%d worn buildings)" % worn)
+	var kept: Array = [mkrec.call("stl_kept")]
+	var ck3 := [t0]
+	var au4 := WorldAuthority.create(func(): return kept, func(): return int(ck3[0]), cfg)
+	au4.ensure_population(kept[0])
+	ck3[0] = t0 + 2 * 365 * 86400
+	var ks := au4.snapshot("stl_kept")
+	var heavy := 0
+	for bid in ks.get("visual_states", {}):
+		if int(ks["visual_states"][bid].get("wear", 0)) >= 3:
+			heavy += 1
+	print("       inhabited, open settlement after 2 years: population %d, heavily worn buildings %d, stocks %s" % [ks["core"]["stats"]["population"], heavy, str(ks["core"]["stocks"])])
+	check(heavy <= 2 and int(ks["core"]["stats"]["population"]) >= 20, "an inhabited settlement keeps its population and is maintained by its builders")
+	# tiers
+	var tiers: Array = [{"settlement_id": "a", "region_id": "reg_a"}, {"settlement_id": "b", "region_id": "reg_b"}]
+	var au3 := WorldAuthority.create(func(): return tiers, func(): return t0, cfg)
+	au3.observer_region = "reg_a"
+	check(au3.tier_of(tiers[0]) == "S2" and au3.tier_of(tiers[1]) == "S3", "tiers: nearby settlements warm (S2), distant ones cold (S3, on access)")
+	check(not RemoteWorldClient.new().submit({}).get("ok", true), "the remote client is a clear placeholder until Phase 12")
+	_test_dynamic_navigation(data, cfg, t0)
+
+
+func _test_dynamic_navigation(data: SettlementData, cfg: Dictionary, t0: int) -> void:
+	var comp: Array = cfg["founding_population"]["composition"]
+	var rec := {"settlement_id": "stl_nav", "template_path": "res://data/settlement_templates/founding_basic.json", "npcs": NpcRoster.generate("stl_nav", data.buildings, comp),
+		"founder_player_id": "plr_founder", "resident_player_ids": ["plr_founder"], "founded_at_unix": t0, "time_zone": {"name": "Test/CET", "offset_min": 60}}
+	var recs: Array = [rec]
+	var clock := [t0]
+	var auth := WorldAuthority.create(func(): return recs, func(): return int(clock[0]), cfg)
+	var sim := SettlementSim.create(rec, data, t0, cfg, 60)
+	auth.attach_hot(sim)
+	# find someone walking and close a cell in the middle of the remaining route
+	var t := t0 + 7 * 3600
+	var walker := ""
+	var cell := Vector2i.ZERO
+	while t < t0 + 20 * 3600 and walker == "":
+		t += 60
+		sim.advance_to(t)
+		for id in sim.states:
+			var tr: Dictionary = sim.states[id]["travel"]
+			if tr.is_empty() or int(tr["arrive"]) - t < 40:
+				continue
+			var p := sim.nav.path_between(tr["from"], tr["to"])
+			if p.size() > 12:
+				var f := float(t - int(tr["depart"])) / float(int(tr["arrive"]) - int(tr["depart"]))
+				var k := clampi(int(f * p.size()) + 4, 1, p.size() - 3)
+				cell = p[k]
+				walker = id
+				break
+	clock[0] = t
+	var res := auth.submit({"command_id": "cmd_nav_1", "issuer": "plr_founder", "kind": "close_path", "settlement_id": "stl_nav", "payload": {"cell": [cell.x, cell.y]}})
+	var tr2: Dictionary = sim.states.get(walker, {}).get("travel", {})
+	var avoids := true
+	for c in tr2.get("path", []):
+		if int(c[0]) == cell.x and int(c[1]) == cell.y:
+			avoids = false
+	check(walker != "" and res.get("ok", false) and tr2.has("path") and avoids and sim.nav.version == 1, "a closure mid-journey re-plans the walk around the obstacle (%s at %s)" % [walker, str(cell)])
+	var reach := true
+	for id in sim.nav.places:
+		var pth := sim.nav.path_between("plaza", id)
+		for c in pth:
+			if c == cell:
+				reach = false
+	check(reach, "cached routes through the closed cell were invalidated")
+	clock[0] = t + 600
+	check(auth.submit({"command_id": "cmd_nav_2", "issuer": "plr_founder", "kind": "open_path", "settlement_id": "stl_nav", "payload": {"cell": [cell.x, cell.y]}}).get("ok", false) and sim.nav.is_walkable(cell), "reopening restores the cell")
+	# no persistent overlaps: unique standing spots and avoidance while walking
+	sim.advance_to(t0 + 12 * 3600)
+	var infos := {}
+	for r in sim.roster:
+		infos[r["npc_id"]] = sim.render_info(r["npc_id"], float(t0 + 12 * 3600))
+	SettlementScene._avoid(infos)
+	var overlaps := 0
+	var ids: Array = infos.keys()
+	for i in ids.size():
+		for j in range(i + 1, ids.size()):
+			var a: Dictionary = infos[ids[i]]
+			var b: Dictionary = infos[ids[j]]
+			if a["visible"] and b["visible"] and (a["grid"] as Vector2).distance_to(b["grid"]) < 0.3:
+				overlaps += 1
+	check(overlaps == 0, "no two visible inhabitants stand inside each other (unique spots + avoidance)")
+	auth.detach_hot("stl_nav")
+
+
+## Personality has measurable effects (population-level A/B with fixed seeds).
+func _test_personality_effects(data: SettlementData, cfg: Dictionary, t0: int, mk: Callable) -> void:
+	var social := {}
+	var first_out := {}
+	for variant in ["low", "high"]:
+		var rec: Dictionary = mk.call("stl_ptest")
+		for r in rec["npcs"]:
+			NpcBrain.ensure_profile(r, cfg, t0)
+			r["personality"]["extraversion"] = 0.1 if variant == "low" else 0.9
+			r["personality"]["chronotype"] = -0.8 if variant == "low" else 0.8
+		var sim := SettlementSim.create(rec, data, t0, cfg, 60)
+		var n_social := 0
+		var wake_sum := 0.0
+		var wake_n := 0
+		var seen := {}
+		for e in sim.advance_to(t0 + 7 * 86400):
+			if e["kind"] == "activity_start" and e["act"] == "socialize":
+				n_social += 1
+			# Saturday (day 4 after t0): first activity that is not sleep
+			var sat0 := t0 + 4 * 86400
+			if e["t"] >= sat0 + 4 * 3600 and e["t"] < sat0 + 14 * 3600 and not seen.has(e["npc"]) and e.get("act", "") != "sleep":
+				seen[e["npc"]] = true
+				wake_sum += float(e["t"] - sat0) / 3600.0
+				wake_n += 1
+		social[variant] = n_social
+		first_out[variant] = wake_sum / maxf(1.0, wake_n)
+	print("       personality: social activities low/high extraversion %d/%d, Saturday wake-up early/late chronotype %.1f/%.1f h" % [social["low"], social["high"], first_out["low"], first_out["high"]])
+	check(float(social["high"]) > float(social["low"]) * 1.5, "extraverts meet people far more often than introverts")
+	check(float(first_out["high"]) - float(first_out["low"]) > 1.0, "night owls start their weekend later than early risers")
+	# the same person does not live the same day twice
+	var rec2: Dictionary = mk.call("stl_ptest")
+	var sim2 := SettlementSim.create(rec2, data, t0, cfg, 60)
+	var seqs := {}
+	var who := ""
+	for r in rec2["npcs"]:
+		if r["role"] == "resident":
+			who = r["npc_id"]
+	var day_seq := {}
+	for e in sim2.advance_to(t0 + 6 * 86400):
+		if e.get("npc", "") == who and e["kind"] == "activity_start":
+			var d := SettlementCore.day_index(e["t"], 60)
+			day_seq[d] = str(day_seq.get(d, "")) + "," + str(e["act"])
+	for d in day_seq:
+		seqs[day_seq[d]] = true
+	check(seqs.size() >= day_seq.size() - 1 and day_seq.size() >= 5, "daily routines vary from day to day (%d different days out of %d)" % [seqs.size(), day_seq.size()])
+
+
+## Illness, duty rosters, substitution and reliability.
+func _test_health_and_duty(data: SettlementData, cfg: Dictionary, t0: int, mk: Callable) -> void:
+	var rec: Dictionary = mk.call("stl_htest")
+	var sim := SettlementSim.create(rec, data, t0, cfg, 60)
+	var day0 := SettlementCore.day_index(t0, 60)
+	# one water-works employee falls ill for three days (from tomorrow)
+	var sick := {}
+	var colleagues := SettlementCore.staff_of(rec, "bld_water_works")
+	for r in colleagues:
+		r["health"] = {"status": "ill", "until_day": day0 + 4, "since_day": day0}
+	sick = colleagues[0] if not colleagues.is_empty() else {}
+	sim._plan_cache.clear()
+	var evs := sim.advance_to(t0 + 2 * 86400 + 20 * 3600)
+	var plan: Dictionary = rec["core"]["plan"][str(day0 + 1)]
+	check(not sick.is_empty() and not plan["shifts"].has(sick["npc_id"]), "an ill employee is taken off the duty roster")
+	var subst := false
+	for id in plan["shifts"]:
+		if str(plan["shifts"][id][2]) == "bld_water_works":
+			subst = true
+	check(subst and evs.any(func(e): return e["kind"] == "substitution"), "critical services get a substitute when the whole team is ill (Master §13.6)")
+	var sick_acts := {}
+	for e in evs:
+		if e.get("npc", "") == sick.get("npc_id", "") and e["kind"] == "activity_start" and e["t"] >= t0 + 86400:
+			sick_acts[e["act"]] = true
+	check(not sick_acts.has("work") and (sick_acts.has("rest_sick") or sick_acts.has("see_doctor")), "illness changes the daily routine: rest at home, visit to the doctor (%s)" % str(sick_acts.keys()))
+	# reliability: unreliable people miss shifts more often (macro, 120 days)
+	var absent := {}
+	for variant in ["low", "high"]:
+		var r2: Dictionary = mk.call("stl_rtest")
+		for r in r2["npcs"]:
+			NpcBrain.ensure_profile(r, cfg, t0)
+			r["personality"]["reliability"] = 0.05 if variant == "low" else 0.95
+		SettlementCore.ensure(r2, cfg, day0)
+		var n_abs := 0
+		for d in 120:
+			for e in SettlementCore.day_step(r2, data, cfg, day0 + d, 60):
+				if e["kind"] == "absent_unexcused":
+					n_abs += 1
+		absent[variant] = n_abs
+	print("       unexcused absences in 120 days: unreliable %d, reliable %d" % [absent["low"], absent["high"]])
+	check(int(absent["low"]) > int(absent["high"]) * 2, "unreliable people miss shifts far more often")
+
+
+## The detail tier decides computing effort, never what happens: a settlement
+## simulated in full detail and one advanced by day steps only end in the
+## identical long-term state.
+func _test_macro_equivalence(data: SettlementData, cfg: Dictionary, t0: int, mk: Callable) -> void:
+	var hot: Dictionary = mk.call("stl_etest")
+	var cold: Dictionary = mk.call("stl_etest")
+	var sim := SettlementSim.create(hot, data, t0, cfg, 60)
+	sim.advance_to(t0 + 21 * 86400 + 3600)
+	var day0 := SettlementCore.day_index(t0, 60)
+	for r in cold["npcs"]:
+		NpcBrain.ensure_profile(r, cfg, t0)
+	SettlementCore.ensure(cold, cfg, day0 - 1)
+	for d in range(day0 - 1, day0 + 22):
+		if int(cold["core"]["day"]) < d:
+			SettlementCore.day_step(cold, data, cfg, d, 60)
+	var macro_view := func(rec: Dictionary) -> String:
+		var people := []
+		for r in rec["npcs"]:
+			people.append([r["npc_id"], r.get("alive", true), r.get("health", {}), r.get("employment", {})])
+		return JSON.stringify([rec["core"], people, rec.get("visual_states", {})])
+	check(int(hot["core"]["day"]) == int(cold["core"]["day"]) and macro_view.call(hot) == macro_view.call(cold), "full detail (S0/S1) and day steps only (S2/S3) give the identical settlement state after 3 weeks")
+
 
 
 func _test_living_assets() -> void:

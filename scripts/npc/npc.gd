@@ -143,8 +143,11 @@ func describe(sim: SettlementSim, t: int, building_names: Dictionary) -> String:
 	var lines := PackedStringArray()
 	var info := sim.render_info(npc_id, t)
 	var prof: Dictionary = record.get("profession", {})
-	var age := NpcBrain.age_years(record, t)
+	var age := int(SettlementCore.age_years(record, SettlementCore.day_index(t, sim.offset_min()), sim.config))
 	lines.append("%s, %d Jahre · %s" % [record.get("name", ""), age, prof.get("title", CharacterCatalog.role_label(record.get("role", "")))])
+	var health := str(record.get("health", {}).get("status", "healthy"))
+	if health != "healthy":
+		lines.append("[i]%s[/i]" % ("krank" if health == "ill" else "verletzt – erholt sich"))
 	var target_name: String = building_names.get(sim.nav.places.get(info.get("target", ""), {}).get("building_id", ""), "")
 	var doing := sim.activity_label(str(info.get("act", "")))
 	if info.get("walking", false):
@@ -161,22 +164,30 @@ func describe(sim: SettlementSim, t: int, building_names: Dictionary) -> String:
 			hints.append(labels[k])
 	if not hints.is_empty():
 		lines.append("[i]%s[/i]" % ", ".join(hints))
-	var work: String = building_names.get(record.get("workplace_id", ""), "")
+	var work: String = building_names.get(record.get("employment", {}).get("workplace_id", record.get("workplace_id", "")), "")
 	var home: String = building_names.get(record.get("home_id", ""), "")
 	if work != "":
-		lines.append("Arbeitet in: %s · %s" % [work, sim.schedule_text(record)])
+		lines.append("Arbeitet in: %s · %s" % [work, sim.schedule_text(record, t)])
+	elif record.get("employment", {}).get("status", "") in ["retired", "unemployed"]:
+		lines.append(sim.schedule_text(record, t).capitalize())
 	if home != "":
 		lines.append("Wohnt in: %s" % home)
 	var p: Dictionary = record.get("personality", {})
 	var traits := PackedStringArray()
-	if float(p.get("sociability", 0.5)) > 0.62:
-		traits.append("gesellig")
-	elif float(p.get("sociability", 0.5)) < 0.38:
-		traits.append("zurückhaltend")
-	if float(p.get("diligence", 0.5)) > 0.62:
-		traits.append("fleißig")
-	if float(p.get("openness", 0.5)) > 0.62:
-		traits.append("neugierig")
+	var words := {"extraversion": ["kontaktfreudig", "introvertiert"], "confidence": ["selbstbewusst", "schüchtern"],
+		"conscientiousness": ["pflichtbewusst", "locker"], "reliability": ["zuverlässig", "unzuverlässig"],
+		"curiosity": ["neugierig", "gewohnheitsliebend"], "ambition": ["ehrgeizig", ""], "impulsivity": ["spontan", "bedächtig"], "risk": ["wagemutig", "vorsichtig"]}
+	for k in words:
+		var v := float(p.get(k, 0.5))
+		if v > 0.68 and words[k][0] != "":
+			traits.append(words[k][0])
+		elif v < 0.32 and words[k][1] != "":
+			traits.append(words[k][1])
+	if float(p.get("chronotype", 0.0)) > 0.5:
+		traits.append("Nachteule")
+	elif float(p.get("chronotype", 0.0)) < -0.5:
+		traits.append("Frühaufsteher:in")
+	traits = traits.slice(0, 4)
 	if not traits.is_empty():
 		lines.append("Wesen: " + ", ".join(traits))
 	return "\n".join(lines)

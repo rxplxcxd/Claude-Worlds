@@ -19,3 +19,4 @@ __pycache__/
 
 # third-party assets whose licenses forbid redistribution (Cooked FX)
 assets/thirdparty/cooked_fx/
+tests/tmp/

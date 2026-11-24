@@ -50,8 +50,31 @@ var migrated_settlement_ids: Array[String] = []
 var migrated_territory_ids: Array[String] = []
 
 
+## The world authority (in-process development adapter, server-capable) and
+## the client interface all game code uses to read/change the shared world.
+var authority: WorldAuthority
+var client: WorldClient
+var _tick_left := 300.0
+const TICK_SECONDS := 300.0   # S2 sweep interval while the game runs
+
+
 func _ready() -> void:
 	load_world()
+	_start_authority()
+
+
+func _start_authority() -> void:
+	authority = WorldAuthority.create(func(): return _settlements, func(): return int(GameClock.get_utc_unix()))
+	client = LocalWorldClient.connect_to(authority, LocalProfile.player_id)
+	var mine := get_settlement_of(LocalProfile.player_id)
+	authority.observer_region = str(mine.get("region_id", ""))
+
+
+func _process(delta: float) -> void:
+	_tick_left -= delta
+	if _tick_left <= 0.0 and authority:
+		_tick_left = TICK_SECONDS
+		authority.tick(false)
 
 
 ## Loads the genesis state and applies locally saved changes (foundings).
@@ -165,8 +188,12 @@ func found_settlement(template_path: String, founder_player_id: String, settleme
 		"order_on_planet": _settlements.size() + 1,
 	}
 	_apply_site(record, site)
+	record["time_zone"] = {"name": GameClock.timezone_name, "offset_min": GameClock.utc_offset_minutes}
 	_settlements.append(record)
 	_claim_territory(record)
+	if authority and CharacterCatalog.is_available():
+		authority.ensure_population(record)   # founding population (Master §4.2)
+		authority.observer_region = str(record.get("region_id", ""))
 	save_world()
 	settlement_founded.emit(record)
 	return record
@@ -268,7 +295,7 @@ func save_world() -> void:
 	if f == null:
 		push_warning("WorldState: could not save (%s)" % error_string(FileAccess.get_open_error()))
 		return
-	f.store_string(JSON.stringify({"schema_version": SCHEMA_VERSION, "world_id": world_id, "settlements": _settlements, "territories": _territories}, "  "))
+	f.store_string(JSON.stringify({"schema_version": SCHEMA_VERSION, "world_id": world_id, "settlements": _settlements, "territories": _territories}, "  ", true, true))
 
 
 ## Switches storage (used by tests so the real local world is untouched).
@@ -283,9 +310,10 @@ func _check_record(s: Dictionary) -> String:
 	var id: String = s.get("settlement_id", "?")
 	if not Ids.has_prefix(s.get("founder_player_id", ""), "plr"):
 		return "%s has no human founder" % id
-	var residents: Array = s.get("resident_player_ids", [])
-	if residents.is_empty():
-		return "%s has no human resident (NPC-only settlements are not allowed)" % id
+	# Founded by a human – later the settlement may lose all human residents
+	# (accounts deleted, players moved away): it persists and lives on with
+	# its NPCs; it is abandoned only when nobody lives there any more
+	# (docs/ARCHITECTURE_AUDIT.md A10, SETTLEMENT_SYSTEM.md).
 	return ""
 
 

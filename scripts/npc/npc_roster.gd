@@ -9,55 +9,67 @@ extends RefCounted
 ## founded by humans (empty-planet rule, docs/WORLD_DESIGN.md §1).
 ## Needs, daily routines and AI follow in Phase 3.
 
-## role -> how many, in the order they are created.
+## Fallback composition (Phase 1); the founding population of Phase 4 comes
+## from data/sim/living_world.json → founding_population (see SettlementSim).
 const COMPOSITION := [
 	["admin", 1], ["merchant", 2], ["medic", 1], ["security", 1], ["builder", 2],
 	["craftsman", 1], ["farmer", 2], ["resident", 2],
 ]
 const FIRST_NAMES := ["Mara", "Jonas", "Lea", "Emil", "Ida", "Finn", "Nora", "Paul", "Greta", "Ole", "Lina", "Theo",
-	"Mila", "Karl", "Frieda", "Anton", "Ella", "Henry", "Romy", "Jakob", "Alma", "Levi", "Clara", "Milan"]
+	"Mila", "Karl", "Frieda", "Anton", "Ella", "Henry", "Romy", "Jakob", "Alma", "Levi", "Clara", "Milan",
+	"Hanna", "Moritz", "Lotte", "Felix", "Martha", "Jan", "Edda", "Luis", "Ronja", "Bruno", "Thea", "Vincent",
+	"Smilla", "Oskar", "Pia", "Elias", "Juna", "Konrad", "Wilma", "Arne", "Selma", "Kian", "Liv", "Mats",
+	"Ava", "Noah", "Zoe", "Samuel", "Merle", "Ben", "Nele", "Hugo", "Ylva", "Tom", "Enna", "Lasse"]
 const LAST_NAMES := ["Hoffmann", "Becker", "Wagner", "Schulz", "Krüger", "Lange", "Brandt", "Vogel", "Seidel", "Hahn",
-	"Arnold", "Keller", "Roth", "Winter", "Sommer", "Berg", "Jäger", "Franke"]
+	"Arnold", "Keller", "Roth", "Winter", "Sommer", "Berg", "Jäger", "Franke", "Busch", "Lorenz", "Ziegler", "Kuhn",
+	"Pohl", "Engel", "Horn", "Graf", "Peters", "Martens", "Fuchs", "Brock"]
 
 
-## Creates the roster for a settlement. `buildings` = SettlementData.buildings.
-static func generate(settlement_id: String, buildings: Array) -> Array:
+## Creates the founding population. `composition` = [[role, count], …]
+## (default: Phase-1 fallback). Workplaces are filled by role in building
+## order; homes round-robin over the houses.
+static func generate(settlement_id: String, buildings: Array, composition: Array = []) -> Array:
+	var comp: Array = composition if not composition.is_empty() else COMPOSITION
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(settlement_id + "#npcs")
 	var homes: Array = buildings.filter(func(b): return b.get("type", "") == "house").map(func(b): return b.get("id", ""))
-	# First names are drawn without repetition (shuffled), surnames freely.
-	var first: Array = FIRST_NAMES.duplicate()
-	for i in range(first.size() - 1, 0, -1):
-		var k := rng.randi_range(0, i)
-		var tmp: Variant = first[i]
-		first[i] = first[k]
-		first[k] = tmp
 	var out: Array = []
 	var n := 0
-	for spec in COMPOSITION:
+	var used_names := {}
+	for spec in comp:
+		var role: String = spec[0]
+		var places: Array = []
+		for t in CharacterCatalog.data.get("roles", {}).get(role, {}).get("workplace", []):
+			for b in buildings:
+				if b.get("type", "") == t:
+					places.append(b.get("id", ""))
 		for i in int(spec[1]):
-			var role: String = spec[0]
-			var name := "%s %s" % [first[n % first.size()], LAST_NAMES[rng.randi_range(0, LAST_NAMES.size() - 1)]]
-			var seed := rng.randi()
-			# Workplaces of the role's types, distributed round-robin (e.g. the
-			# first merchant runs the trade post, the second a shop).
-			var places: Array = []
-			for t in CharacterCatalog.data.get("roles", {}).get(role, {}).get("workplace", []):
-				for b in buildings:
-					if b.get("type", "") == t:
-						places.append(b.get("id", ""))
 			var workplace: String = places[i % places.size()] if not places.is_empty() else ""
-			out.append({
-				"npc_id": "npc_%s_%02d" % [settlement_id.trim_prefix("stl_"), n],
-				"name": name,
-				"role": role,
-				"workplace_id": workplace,
-				"home_id": homes[n % homes.size()] if not homes.is_empty() else "",
-				"appearance": CharacterCatalog.role_appearance(role, seed),
-				"index_in_role": i,
-			})
+			var home: String = homes[n % homes.size()] if not homes.is_empty() else ""
+			var rec := make_identity(settlement_id, n, role, workplace, home, rng, used_names)
+			rec["index_in_role"] = i
+			out.append(rec)
 			n += 1
 	return out
+
+
+## One persistent identity (name, appearance, role, workplace, home).
+static func make_identity(settlement_id: String, n: int, role: String, workplace: String, home: String, rng: RandomNumberGenerator, used_names: Dictionary = {}) -> Dictionary:
+	var name := ""
+	for attempt in 40:
+		name = "%s %s" % [FIRST_NAMES[rng.randi_range(0, FIRST_NAMES.size() - 1)], LAST_NAMES[rng.randi_range(0, LAST_NAMES.size() - 1)]]
+		if not used_names.has(name.get_slice(" ", 0)) or attempt > 30:
+			break
+	used_names[name.get_slice(" ", 0)] = true
+	var seed := rng.randi()
+	return {
+		"npc_id": ("npc_%s_%02d" if n < 100 else "npc_%s_%03d") % [settlement_id.trim_prefix("stl_"), n],
+		"name": name,
+		"role": role,
+		"workplace_id": workplace,
+		"home_id": home,
+		"appearance": CharacterCatalog.role_appearance(role, seed),
+	}
 
 
 ## Tiles NPCs may stand on.

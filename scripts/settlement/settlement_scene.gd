@@ -257,24 +257,43 @@ func _scatter_vegetation() -> void:
 func _build_npcs() -> void:
 	if not CharacterCatalog.is_available():
 		return # NPCs need the character art; no placeholder crowd.
+	if WorldState.authority:
+		WorldState.authority.ensure_population(record)
 	var roster: Array = record.get("npcs", [])
 	if roster.is_empty():
-		roster = NpcRoster.generate(record.get("settlement_id", ""), data.buildings)
+		roster = NpcRoster.generate(record.get("settlement_id", ""), data.buildings, SettlementSim.load_config().get("founding_population", {}).get("composition", []))
 		record["npcs"] = roster
 	for b in data.buildings:
 		_names[b.get("id", "")] = b.get("name", "")
 	# Phase 3: bring the living world to NOW before anything is shown
 	# (catch-up after absence is event-driven and invisible), then persist.
 	sim = SettlementSim.create(record, data, int(GameClock.get_utc_unix()))
+	if WorldState.authority:
+		WorldState.authority.attach_hot(sim)   # tier S0/S1 while the scene is open
 	sim.store()
 	WorldState.save_world()
-	for r in roster:
-		var n := Npc.new()
-		n.setup(r, _names)
-		objects.add_child(n)
-		npcs.append(n)
-		_npc_by_id[r["npc_id"]] = n
+	_sync_npc_nodes()
 	_update_lod(true)
+
+
+## One node per LIVING inhabitant: newcomers appear, the deceased leave.
+func _sync_npc_nodes() -> void:
+	var alive := {}
+	for r in sim.roster:
+		alive[r["npc_id"]] = true
+		if not _npc_by_id.has(r["npc_id"]):
+			var n := Npc.new()
+			n.setup(r, _names)
+			objects.add_child(n)
+			npcs.append(n)
+			_npc_by_id[r["npc_id"]] = n
+	for id in _npc_by_id.keys():
+		if not alive.has(id):
+			var n: Npc = _npc_by_id[id]
+			npcs.erase(n)
+			_npc_by_id.erase(id)
+			_detail.erase(id)
+			n.queue_free()
 
 
 func _build_player() -> void:
@@ -338,7 +357,10 @@ func _process(delta: float) -> void:
 	_lod_timer -= delta
 	if _lod_timer <= 0.0:
 		_lod_timer = 0.25
+		var n_before := sim.roster.size()
 		sim.advance_to(int(GameClock.get_utc_unix()))
+		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived"]):
+			_sync_npc_nodes()
 		_update_lod(false)
 	_render_npcs(false)
 	_save_timer -= delta
@@ -352,6 +374,12 @@ func persist() -> void:
 	if sim:
 		sim.store()
 		WorldState.save_world()
+
+
+func _exit_tree() -> void:
+	persist()
+	if sim and WorldState.authority:
+		WorldState.authority.detach_hot(record.get("settlement_id", ""))
 
 
 func _notification(what: int) -> void:
@@ -418,6 +446,7 @@ func _render_npcs(all: bool) -> void:
 	var s := render_sim()
 	var t := render_time()
 	var bubbles: bool = GraphicsProfile.params()["chat_bubbles"]
+	var infos := {}
 	for n in npcs:
 		var id := n.npc_id
 		if not _detail.has(id):
@@ -426,7 +455,13 @@ func _render_npcs(all: bool) -> void:
 			n.set_process(false)
 			continue
 		n.set_process(true)
-		var info := s.render_info(id, t)
+		infos[id] = s.render_info(id, t)
+	_avoid(infos)
+	for n in npcs:
+		var id := n.npc_id
+		if not infos.has(id):
+			continue
+		var info: Dictionary = infos[id]
 		var w := Iso.grid_to_world(info.get("grid", Vector2.ZERO))
 		var wd := Iso.grid_to_world(info.get("grid", Vector2.ZERO) + info.get("dir", Vector2.ZERO)) - w
 		var partner := Vector2.INF
@@ -435,9 +470,45 @@ func _render_npcs(all: bool) -> void:
 		if grp.size() > 1 and grp.has(id) and not info.get("walking", false):
 			var i := grp.find(id)
 			var other: String = grp[(i + 1) % grp.size()]
-			partner = Iso.grid_to_world(s.render_info(other, t).get("grid", Vector2.ZERO))
+			partner = Iso.grid_to_world(infos[other].get("grid", Vector2.ZERO) if infos.has(other) else s.render_info(other, t).get("grid", Vector2.ZERO))
 			talking = bubbles and grp[int(t / 4.0) % grp.size()] == id
 		n.apply_render(info, w, wd, partner, talking)
+
+
+## Local avoidance (presentation only – never changes the simulation):
+## walkers keep to the right of their direction, so oncoming people pass
+## each other, and anybody closer than a body width is pushed apart.
+static func _avoid(infos: Dictionary) -> void:
+	const LANE := 0.2
+	const MIN_DIST := 0.42
+	var ids: Array = infos.keys()
+	ids.sort()
+	for id in ids:
+		var info: Dictionary = infos[id]
+		if info.get("visible", false) and info.get("walking", false):
+			var d: Vector2 = info.get("dir", Vector2.ZERO)
+			if d.length_squared() > 0.000001:
+				info["grid"] = info["grid"] + Vector2(-d.y, d.x).normalized() * LANE
+	for iter in 2:
+		for i in ids.size():
+			var a: Dictionary = infos[ids[i]]
+			if not a.get("visible", false):
+				continue
+			for j in range(i + 1, ids.size()):
+				var b: Dictionary = infos[ids[j]]
+				if not b.get("visible", false):
+					continue
+				var delta: Vector2 = b["grid"] - a["grid"]
+				var dist := delta.length()
+				if dist < MIN_DIST:
+					var push := (delta.normalized() if dist > 0.0001 else Vector2(1, 0).rotated(float(i))) * (MIN_DIST - dist) * 0.5
+					# standing people hold their spot, walkers step aside
+					var a_moves: bool = a.get("walking", false) or not b.get("walking", false)
+					var b_moves: bool = b.get("walking", false) or not a.get("walking", false)
+					if a_moves:
+						a["grid"] = a["grid"] - push * (1.0 if b_moves else 2.0)
+					if b_moves:
+						b["grid"] = b["grid"] + push * (1.0 if a_moves else 2.0)
 
 
 ## Effects derived from the simulation state (VisualEventRouter): appear and

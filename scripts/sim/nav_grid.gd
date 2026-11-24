@@ -19,6 +19,10 @@ var walk_tiles_per_second := 0.3
 var places: Dictionary = {}
 var _path_cache: Dictionary = {}
 var _time_cache: Dictionary = {}
+var version := 0                  # map version (record.nav_changes.version)
+var closed: Dictionary = {}        # Vector2i -> true: temporary closures (construction sites, …)
+var _base_solid: Dictionary = {}   # Vector2i -> true: solid by the map itself
+var stats := {"paths": 0, "cache_hits": 0, "invalidated": 0}
 
 
 static func build(p_data: SettlementData, config: Dictionary) -> NavGrid:
@@ -28,7 +32,86 @@ static func build(p_data: SettlementData, config: Dictionary) -> NavGrid:
 	g.walk_tiles_per_second = float(config.get("walk_tiles_per_second", 0.3))
 	g._build_grid()
 	g._build_places(config.get("places", {}))
+	for y in p_data.size.y:
+		for x in p_data.size.x:
+			if g.astar.is_point_solid(Vector2i(x, y)):
+				g._base_solid[Vector2i(x, y)] = true
 	return g
+
+
+## Dynamic map changes: the set of closed cells (cells that are solid by the
+## map stay solid). Cached paths are invalidated selectively: a closure only
+## drops the cached routes that cross it; an opening may shorten any route,
+## so all are recomputed lazily. Returns the cells whose state changed.
+func set_closed(cells: Array, p_version: int) -> Array[Vector2i]:
+	var want := {}
+	for c in cells:
+		var v := Vector2i(int(c[0]), int(c[1]))
+		if data.in_bounds(v.x, v.y) and not _base_solid.has(v):
+			want[v] = true
+	var changed: Array[Vector2i] = []
+	var opened := false
+	for v in closed.keys():
+		if not want.has(v):
+			astar.set_point_solid(v, false)
+			changed.append(v)
+			opened = true
+	for v in want:
+		if not closed.has(v):
+			astar.set_point_solid(v, true)
+			changed.append(v)
+	closed = want
+	version = p_version
+	if opened:
+		stats["invalidated"] = int(stats["invalidated"]) + _path_cache.size()
+		_path_cache.clear()
+		_time_cache.clear()
+	elif not changed.is_empty():
+		var hit := {}
+		for v in changed:
+			hit[v] = true
+		for key in _path_cache.keys():
+			for cell in _path_cache[key]:
+				if hit.has(cell):
+					_path_cache.erase(key)
+					_time_cache.erase(key)
+					stats["invalidated"] = int(stats["invalidated"]) + 1
+					break
+	return changed
+
+
+## Path from an arbitrary cell to a place (rerouting during a journey).
+func path_from_cell(c: Vector2i, b: String) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if places.has(b) and data.in_bounds(c.x, c.y):
+		var start := c
+		if astar.is_point_solid(start):
+			start = nearest_walkable(c)
+		out = astar.get_id_path(start, places[b]["cell"])
+	return out
+
+
+func nearest_walkable(c: Vector2i) -> Vector2i:
+	for r in range(1, 6):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var v := c + Vector2i(dx, dy)
+				if is_walkable(v):
+					return v
+	return c
+
+
+## Walking time of an explicit cell path.
+func seconds_of(p: Array) -> int:
+	if p.size() < 2:
+		return 1
+	var cost := 0.0
+	for i in range(1, p.size()):
+		var a := Vector2i(p[i - 1][0], p[i - 1][1]) if p[i - 1] is Array else Vector2i(p[i - 1])
+		var b := Vector2i(p[i][0], p[i][1]) if p[i] is Array else Vector2i(p[i])
+		var step := SQRT2 if (b - a).abs() == Vector2i.ONE else 1.0
+		cost += step * astar.get_point_weight_scale(b)
+	return maxi(1, int(ceil(cost / walk_tiles_per_second)))
 
 
 func _build_grid() -> void:
@@ -157,10 +240,12 @@ func _spots_around(b: Dictionary, door: Vector2i) -> Array[Vector2i]:
 func path_between(a: String, b: String) -> Array[Vector2i]:
 	var key := a + "|" + b
 	if _path_cache.has(key):
+		stats["cache_hits"] = int(stats["cache_hits"]) + 1
 		return _path_cache[key]
 	var out: Array[Vector2i] = []
 	if places.has(a) and places.has(b):
 		out = astar.get_id_path(places[a]["cell"], places[b]["cell"])
+		stats["paths"] = int(stats["paths"]) + 1
 	_path_cache[key] = out
 	return out
 
@@ -194,6 +279,16 @@ func position_on_path(a: String, b: String, frac: float) -> Vector2:
 	var p := path_between(a, b)
 	if p.is_empty():
 		return Vector2(places.get(b, places.get(a, {"cell": Vector2i.ZERO}))["cell"]) + Vector2(0.5, 0.5)
+	return position_on_cells(p, frac)
+
+
+## Position along an explicit cell path ([Vector2i] or [[x, y]]).
+func position_on_cells(path: Array, frac: float) -> Vector2:
+	var p: Array[Vector2i] = []
+	for c in path:
+		p.append(Vector2i(int(c[0]), int(c[1])) if c is Array else Vector2i(c))
+	if p.is_empty():
+		return Vector2.ZERO
 	if p.size() == 1 or frac <= 0.0:
 		return Vector2(p[0]) + Vector2(0.5, 0.5)
 	if frac >= 1.0:

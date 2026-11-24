@@ -3,6 +3,9 @@
 ## 1. Leitfrage
 > Macht diese Mechanik die Welt interessanter und das Spielerlebnis besser – oder erzeugt sie nur Arbeit und Frust?
 
+## 1a. Die Welt wächst mit den Spielern [VERBINDLICH]
+Der Planet ist anfangs leer; jede Siedlung stammt von einem Menschen. Je mehr Spieler, desto voller und interessanter die Welt – das ist ein zentrales Spielerlebnis (WORLD_DESIGN.md §1).
+
 ## 2. Säulen
 1. **Lebendige Welt** – passiert auch ohne den Spieler.
 2. **Mitgestalten statt Verwalten** – Delegation, Automatisierung, klare Entscheidungen.
@@ -11,7 +14,7 @@
 5. **Kein Pay-to-Win.**
 
 ## 3. Phase 1 – erlebbar [IMPLEMENTIERT]
-- Ankunft in Lichtfeld (Willkommens-Toast), Orientierung am Schwarzen Brett.
+- Erster Start: Du **gründest** Lichtfeld – die erste Siedlung auf dem bis dahin leeren Planeten (Toast); Orientierung am Schwarzen Brett; bei weiteren Starts „Willkommen zurück“.
 - Freies Erkunden: Platz, Brunnen, Markt, Gemeindehaus, Wasserwerk am Teich, Felder, Solarfeld.
 - Interaktionen: jedes Gebäude erklärt seine Rolle und die Phase, in der es lebendig wird; eigene Unterkunft „Bis zum Morgen ausruhen“; Brunnen „Wasser trinken“.
 - Tag/Nacht mit Laternenlicht, Zeitbeschleunigung.

@@ -5,6 +5,9 @@
 - **Isometrische Projektion** `Iso` (2:1, 128×64 Weltpixel pro Kachel), Raster ↔ Welt, 8 Blickrichtungen.
 - Hierarchische IDs in den Siedlungsdaten: `world_id, planet_id, continent_id, region_id, settlement_id`.
 
+## 1a. Planet-Genese [VERBINDLICH]
+Der Planet wird **nur mit Natur** erzeugt (Kontinente, Meere, Seen, Flüsse, Gebirge, Wälder, Klima, Rohstoffe). Alle Regionen beginnen mit `development: wild`, ohne `territory_id`, ohne Straßen. Siedlungsmarker, Grenzen und Routen erscheinen auf der Karte erst durch Spielergründungen (WORLD_DESIGN.md §1). Phase-1-Startzustand: `data/world/genesis.json`.
+
 ## 2. Datenmodell [GEPLANT, Phase 2]
 
 ```

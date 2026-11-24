@@ -23,7 +23,7 @@ Main (scripts/core/main.gd)                 Orientierung, Verdrahtung
 │  └─ Camera (CameraRig)
 └─ HUD (CanvasLayer, Hud)
    └─ Root ─ GestureSurface (hinten) · Info · Uhr/Buttons · Joystick · Interact · Panels
-Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile
+Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile · WorldState
 ```
 
 ## 3. Module
@@ -32,8 +32,8 @@ Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile
 |---|---|---|
 | `scripts/core` | `event_bus`, `game_clock`, `asset_registry`, `ids`, `input_actions`, `main` | IMPLEMENTIERT |
 | `scripts/geography` | `Iso` – Projektion Raster↔Welt, Facing | IMPLEMENTIERT (Planet/Kontinente GEPLANT Phase 2) |
-| `scripts/settlement` | `SettlementData` (Daten+Validierung), `SettlementScene` | IMPLEMENTIERT |
-| `scripts/world` | `GroundLayer`, `Prop`, `IsoPainter` (Platzhalter-Zeichnung) | IMPLEMENTIERT |
+| `scripts/settlement` | `SettlementData` (Vorlage + Gründungsdatensatz, Validierung), `SettlementScene` | IMPLEMENTIERT |
+| `scripts/world` | `WorldState` (Siedlungsregister, Gründungsregel), `GroundLayer`, `Prop`, `IsoPainter` (Platzhalter-Zeichnung) | IMPLEMENTIERT |
 | `scripts/buildings` | `Building` | IMPLEMENTIERT |
 | `scripts/player` | `Player`, `PlayerVisual` | IMPLEMENTIERT |
 | `scripts/camera` | `CameraRig` | IMPLEMENTIERT |
@@ -57,7 +57,7 @@ Autoloads: EventBus · GameClock · AssetRegistry · LocalProfile
 ## 5. ID-Schema [IMPLEMENTIERT]
 
 `<präfix>_<id>`: `plr` Spieler · `npc` · `wld` Welt · `pln` Planet · `cnt` Kontinent · `reg` Region · `stl` Siedlung · `ter` Territorium · `bld` Gebäude · `prp` Objekt · `biz` Unternehmen · `ctr` Vertrag · `org` Organisation · `pol` politische Einheit · `cnc` Rat · `ses` Ratssitzung · `evt` Ereignis.
-Handgeschriebene Daten nutzen lesbare stabile IDs (`stl_lichtfeld`), generierte IDs zufällige Base36 (`Ids.generate`).
+Handgeschriebene Daten nutzen lesbare stabile IDs (`tpl_founding_basic`, `bld_town_hall`); Siedlungen erhalten ihre ID erst bei der Gründung, generierte IDs zufällige Base36 (`Ids.generate`).
 
 ## 6. Asset-Pipeline [IMPLEMENTIERT]
 
@@ -93,6 +93,11 @@ Code fragt logische Schlüssel ab (`exterior.building.town_hall`). `data/asset_m
 
 ### ADR-5: Firebase erst ab Bedarf
 - Phase 1 enthält keine Firebase-Anbindung (Anforderung: Singleplayer/lokal). Schema und Regeln sind in FIREBASE_SCHEMA.md vorbereitet. **[OFFEN]:** Godot-Firebase-Anbindung via REST/JS-Bridge (Web) – Entscheidung in Phase 3/12.
+
+### ADR-6: Leerer Planet, Siedlungen nur durch Spielergründung
+- *Problem:* Vorgabe des Projektinhabers (24.11.2026): Planet startet leer, keine NPC-only-Siedlungen.
+- *Entscheidung:* Genesis-Datei ohne Siedlungen; `WorldState.found_settlement` als einziger Entstehungsweg mit Pflicht-Gründer (`plr_`) und ≥ 1 menschlichem Bewohner; Siedlungsdaten = Vorlage + Gründungsdatensatz.
+- *Folgen:* Weltkarte/Server dürfen Siedlungen nie selbst erzeugen; NPC-KI darf keine Siedlungen gründen; offene Regel für verlassene Siedlungen (WORLD_DESIGN.md §5) muss vor Phase 8/13 entschieden werden.
 
 ## 9. Zukünftige Systemtrennung [GEPLANT]
 

@@ -10,7 +10,7 @@ const SAVE_PATH := "user://worlds_local.cfg"
 const SAVE_VERSION := 1
 
 var player_id: String = ""
-var display_name: String = "Neuankömmling"
+var display_name: String = "Siedler:in"
 var settings: Dictionary = {
 	"show_debug": false,
 	"time_speed": 1.0,

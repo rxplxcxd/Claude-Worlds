@@ -46,6 +46,9 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 6. Node-20-Deprecation-Hinweis in GitHub Actions (nicht blockierend).
 7. Echte iPhone-Leistung unbekannt.
 
+### Designänderung 24.11.2026: Leerer Planet
+Planet startet ohne Siedlungen; Siedlungen nur durch Spielergründung; keine NPC-only-Siedlungen. In Phase 1 als Regel umgesetzt (genesis.json, WorldState, Gründungsvorlage, Tests). Phase 2 muss die Planetengenese ohne Siedlungen und die Standortwahl für Gründungen liefern.
+
 ## Voraussetzungen für Phase 2
 - Abnahme Phase 1, Bereitstellung der Penzilla-Pakete.
-- Entscheidungen: Hintergrundgeschichte (WORLD_DESIGN.md), Planetengröße/Kontinentzahl, Globus als 3D-Szene (Compatibility) oder 2D-Projektion (GEOGRAPHY_SYSTEM.md).
+- Entscheidungen: Hintergrundgeschichte passend zum leeren Planeten und offene Fragen zur Grundregel (WORLD_DESIGN.md §2, §5), Planetengröße/Kontinentzahl, Globus als 3D-Szene (Compatibility) oder 2D-Projektion (GEOGRAPHY_SYSTEM.md).

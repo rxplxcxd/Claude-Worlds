@@ -5,7 +5,8 @@ extends RefCounted
 ## Every persistent entity (player, NPC, settlement, building, ...) gets a
 ## string ID of the form "<prefix>_<random base36>". Prefixes are documented in
 ## docs/ARCHITECTURE.md. Data files may also use stable, hand-written IDs
-## (e.g. "stl_lichtfeld"), which keeps them readable and diff-friendly.
+## (e.g. "tpl_founding_basic", "bld_town_hall"). Settlements get their ID only
+## when a player founds them (WorldState.found_settlement).
 
 const ALPHABET := "0123456789abcdefghijklmnopqrstuvwxyz"
 

@@ -1,6 +1,9 @@
 # NPC_SYSTEM
 
-**Status: [GEPLANT] – Phase 3.** In Phase 1 existieren keine NPCs (Gebäudetexte weisen darauf hin).
+**Status: [GEPLANT] – Phase 3.** In Phase 1 existieren keine NPCs.
+
+## 0. Grundregel [VERBINDLICH]
+NPCs existieren **nur innerhalb von Siedlungen, die ein Mensch gegründet hat** (als Gründungsgemeinschaft des Gründers oder durch Zuzug). NPCs **gründen keine Siedlungen**, und es gibt keine Siedlung ohne menschliche Bewohner (WORLD_DESIGN.md §1). NPC-Umzüge erfolgen nur zwischen bestehenden Spielersiedlungen.
 
 ## 1. Identität
 ```

@@ -49,14 +49,28 @@ func _run() -> void:
 	check(registry.is_allowed("interior.test"), "guard allows other vendors for interiors")
 	registry.reload()
 
+	print("[empty planet]")
+	var world: Node = get_tree().root.get_node("WorldState")
+	var profile: Node = get_tree().root.get_node("LocalProfile")
+	# Isolated storage: the real local world is never touched by tests.
+	world.use_storage("user://test_world_state.json", true)
+	var genesis: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/genesis.json"))
+	check((genesis["settlements"] as Array).is_empty(), "genesis: planet starts with zero settlements")
+	check(genesis["rules"]["npc_only_settlements_allowed"] == false, "genesis: NPC-only settlements disallowed")
+	check(world.is_planet_empty(), "world state starts empty")
+	var tpl := "res://data/settlement_templates/founding_basic.json"
+	check(world.found_settlement(tpl, "").is_empty(), "founding without a founder is rejected")
+	check(world.found_settlement(tpl, "npc_abc123").is_empty(), "an NPC cannot found a settlement")
+	check(world.is_planet_empty(), "rejected foundings leave the planet empty")
+
 	print("[data]")
-	var data := SettlementData.load_from_file("res://data/settlements/lichtfeld.json")
-	check(data != null, "settlement JSON loads")
+	var data := SettlementData.load_from_file(tpl)
+	check(data != null, "founding template loads")
+	check(data.ids.get("settlement_id", "") == "" and not data.is_founded(), "a template is not a settlement (no ID, no founder)")
 	var problems := data.validate()
 	for p in problems:
 		print("       ", p)
-	check(problems.is_empty(), "settlement layout is valid")
-	check(data.ids.get("settlement_id", "") == "stl_lichtfeld", "settlement has stable ID")
+	check(problems.is_empty(), "template layout is valid")
 	check(Iso.world_to_grid(Iso.grid_to_world(Vector2(3.5, 7.25))).distance_to(Vector2(3.5, 7.25)) < 0.001, "iso projection round trip")
 	check(Iso.facing_index(Vector2(1, 0)) == 0 and Iso.facing_index(Vector2(0, -1)) == 2 and Iso.facing_index(Vector2(-1, 1)) == 5, "8-way facing")
 
@@ -83,6 +97,13 @@ func _run() -> void:
 	check(building_count == data.buildings.size(), "all %d buildings instantiated" % data.buildings.size())
 	check(settlement.camera.is_current(), "camera is current")
 	check(hud.get_settlement_label() == "Lichtfeld", "HUD shows settlement name")
+	var founded: Array = world.get_settlements()
+	check(founded.size() == 1, "first launch founds exactly one settlement")
+	check(founded[0]["founder_player_id"] == profile.player_id and settlement.just_founded, "local player is the founder")
+	check(founded[0]["order_on_planet"] == 1, "it is the first settlement on the planet")
+	check(Ids.has_prefix(settlement.data.ids.get("settlement_id", ""), "stl") and settlement.data.is_founded(), "founded settlement has generated ID")
+	check(not settlement.data.notice_board.get("text", "").contains("{settlement}"), "template tokens are filled in")
+	check(world.validate().is_empty(), "no NPC-only settlements exist")
 
 	print("[movement]")
 	var start := player.global_position
@@ -132,7 +153,7 @@ func _run() -> void:
 	check(hud.interact_button.visible, "interact button visible")
 	bus.interact_pressed.emit()
 	await frames(3)
-	check(opened.size() == 1 and String(opened[0].get("title", "")).begins_with("Willkommen"), "interaction opens notice board panel")
+	check(opened.size() == 1 and opened[0].get("title", "") == "Lichtfeld" and String(opened[0].get("text", "")).contains("von dir gegründet"), "notice board names you as founder")
 	check(hud.is_panel_open(), "HUD panel is open")
 	player.global_position = Iso.grid_to_world(Vector2(20.0, 13.5))
 	await frames(4)
@@ -225,6 +246,17 @@ func _run() -> void:
 	await get_tree().process_frame
 	check(interacts[0] == 1, "interact button works while joystick is held (multi-touch)")
 	check(stick_vectors.back() == Vector2.ZERO, "joystick resets on release")
+
+	print("[relaunch]")
+	_main.queue_free()
+	await get_tree().process_frame
+	world.load_world()
+	_main = load("res://scenes/main/main.tscn").instantiate()
+	get_tree().root.add_child(_main)
+	await frames(3)
+	var again: SettlementScene = _main.get_node("Settlement")
+	check(not again.just_founded and world.get_settlements().size() == 1, "relaunch reuses the founded settlement")
+	check(again.data.ids.get("settlement_id") == founded[0]["settlement_id"], "settlement ID is persistent")
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])

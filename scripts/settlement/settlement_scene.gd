@@ -2,16 +2,21 @@ class_name SettlementScene
 extends Node2D
 ## Local, detailed view of ONE settlement (simulation LOD "active").
 ##
-## Builds ground, buildings, props and the player from SettlementData. The
+## Builds ground, buildings, props and the player from SettlementData.
+## The settlement must have been FOUNDED by a human player (WorldState); on
+## the very first launch the local player founds it from the template. The
 ## global world map / globe (Phase 2) is a separate scene; only the settlement
 ## the player is in is ever instantiated as nodes (docs/PERFORMANCE.md).
 
-const DEFAULT_SETTLEMENT := "res://data/settlements/lichtfeld.json"
+const DEFAULT_TEMPLATE := "res://data/settlement_templates/founding_basic.json"
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 
-@export_file("*.json") var settlement_file: String = DEFAULT_SETTLEMENT
+@export_file("*.json") var founding_template: String = DEFAULT_TEMPLATE
 
 var data: SettlementData
+var record: Dictionary = {}
+## True when this launch created the settlement (first start).
+var just_founded := false
 var player: Player
 var camera: CameraRig
 var interactions: InteractionService
@@ -22,10 +27,21 @@ var interactions: InteractionService
 
 
 func _ready() -> void:
-	data = SettlementData.load_from_file(settlement_file)
-	if data == null:
-		push_error("SettlementScene: could not load " + settlement_file)
+	record = WorldState.get_settlement_of(LocalProfile.player_id)
+	if record.is_empty():
+		# The planet has no settlement for this player yet: they found one.
+		# Phase 1 founds automatically from the template; choosing location
+		# and name on the planet follows with the globe (Phase 2/4).
+		record = WorldState.found_settlement(founding_template, LocalProfile.player_id)
+		just_founded = true
+	if record.is_empty():
+		push_error("SettlementScene: founding failed")
 		return
+	data = SettlementData.load_from_file(record.get("template_path", founding_template))
+	if data == null:
+		push_error("SettlementScene: could not load template")
+		return
+	data.apply_record(record)
 	var problems := data.validate()
 	for p in problems:
 		push_warning("Settlement layout: " + p)
@@ -54,7 +70,11 @@ func _ready() -> void:
 	GameClock.minute_changed.connect(_on_minute)
 	_on_minute(0)
 	# Deferred: sibling nodes (HUD) are ready by then.
-	EventBus.settlement_ready.emit.call_deferred(data.summary())
+	var summary := data.summary()
+	summary["just_founded"] = just_founded
+	summary["planet_name"] = WorldState.planet_name
+	summary["settlements_on_planet"] = WorldState.get_settlements().size()
+	EventBus.settlement_ready.emit.call_deferred(summary)
 
 
 ## Converts a screen position into a world position and handles a tap:

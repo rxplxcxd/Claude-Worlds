@@ -11,6 +11,9 @@ Daten- und Authentifizierungsgrundlage – **nicht** der Simulationsserver.
 
 Öffentliche Web-Konfiguration (apiKey, projectId …) ist kein Geheimnis und darf in den Client; Admin-/Service-Account-Schlüssel niemals.
 
+## 1a. Genese
+`worlds/{worldId}` wird mit Planet, Kontinenten und Regionen (nur Natur) angelegt; die Unterkollektion `settlements` ist **leer**. Ein Siedlungsdokument entsteht ausschließlich durch eine serverseitig geprüfte Gründungsanfrage eines authentifizierten Spielers und enthält Pflichtfelder `founder_player_id`, `resident_player_ids` (≥ 1), `founded_at`.
+
 ## 2. Firestore-Struktur (Vorschlag)
 Kleine Dokumente, Unterkollektionen für wachsende Listen, Schreibvorgänge bündeln.
 
@@ -19,7 +22,7 @@ worlds/{worldId}                                  name, seed, created_at, clock 
 worlds/{worldId}/continents/{continentId}
 worlds/{worldId}/regions/{regionId}               terrain, climate, resources, development, territory_id
 worlds/{worldId}/territories/{territoryId}
-worlds/{worldId}/settlements/{settlementId}       name, region_id, stage, population_counts, leader_ids, summary
+worlds/{worldId}/settlements/{settlementId}       name, region_id, stage, founder_player_id, resident_player_ids, founded_at, population_counts, summary
   ├─ buildings/{buildingId}                       type, grid, footprint, state, owner_id
   ├─ properties/{propertyId}                      parcel, owner_id, lease_contract_id
   ├─ infrastructure/{segmentId}

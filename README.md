@@ -11,14 +11,15 @@
 | Bereich | Stand |
 |---|---|
 | Godot-Projekt | Godot 4.7.2, GL Compatibility Renderer, GDScript |
-| Startsiedlung „Lichtfeld“ | Datengetrieben (`data/settlements/lichtfeld.json`), 28×28 Kacheln, 16 Gebäude, Platz, Brunnen, Straßen, Felder, Teich, Vegetation |
+| Leerer Planet | Planet startet ohne Siedlungen (`data/world/genesis.json`); Siedlungen entstehen nur durch Gründung eines Spielers (`WorldState`), keine NPC-only-Siedlungen |
+| Deine Siedlung „Lichtfeld“ | Beim ersten Start von dir gegründet aus der Vorlage `data/settlement_templates/founding_basic.json`, 28×28 Kacheln, 16 Gebäude, Platz, Brunnen, Straßen, Felder, Teich, Vegetation |
 | Darstellung | Isometrisch 2:1, Y-Sortierung, Kollisionen, Tag/Nacht-Tönung, Laternen-Licht bei Nacht |
 | Spielfigur | Tastatur (WASD/Pfeile), virtueller Joystick, Tippen/Klicken = dorthin gehen, 8 Blickrichtungen |
 | Kamera | Folgen, Ziehen zum Verschieben, Pinch-/Mausrad-Zoom, Grenzen, Zentrieren |
 | Interaktion | Gebäude/Objekte ansehen, Schwarzes Brett, Ausruhen (Zeitsprung), Brunnen |
 | HUD | Siedlungsname, Region, Spielzeit & Geschwindigkeit, Kamera-Buttons, Interaktions-Taste, Menü, Hinweise, FPS-Anzeige |
 | Web | Export ohne Threads (kompatibel mit GitHub Pages & iOS Safari), PWA (Manifest, Service Worker, Icons) |
-| CI/CD | GitHub Actions: Import → 41 automatische Tests → Web-Export → GitHub Pages (von `main`) |
+| CI/CD | GitHub Actions: Import → 55 automatische Tests → Web-Export → GitHub Pages (von `main`) |
 
 ![Phase 1 – Chromium-iPhone-Emulation, Platzhaltergrafik](docs/screenshots/phase1-iphone-landscape-emulated.png)
 
@@ -56,7 +57,7 @@ project.godot, export_presets.cfg, icon.svg
 scenes/      main/, settlement/, player/          (schlanke Szenen)
 scripts/     core/ geography/ world/ settlement/ buildings/ player/
              camera/ interaction/ ui/ persistence/
-data/        asset_manifest.json, settlements/lichtfeld.json
+data/        asset_manifest.json, world/genesis.json, settlement_templates/founding_basic.json
 assets/      (Ziel für Penzilla-Assets, siehe ASSET_INVENTORY)
 web/icons/   PWA-/Home-Screen-Icons
 tests/       Headless-Testsuite

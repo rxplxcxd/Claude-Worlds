@@ -382,9 +382,17 @@ func show_toast(text: String) -> void:
 
 
 func _on_settlement_ready(summary: Dictionary) -> void:
-	_name_label.text = summary.get("name", "")
-	_status_label.text = "%s · %s" % [summary.get("region_name", ""), summary.get("development_status", "")]
-	show_toast("Willkommen in %s!" % summary.get("name", ""))
+	var settlement: String = summary.get("name", "")
+	_name_label.text = settlement
+	var founder := "von dir gegründet" if summary.get("founder_player_id", "") == LocalProfile.player_id else "gegründet"
+	_status_label.text = "%s · %s · %s" % [summary.get("region_name", ""), summary.get("development_status", ""), founder]
+	if summary.get("just_founded", false):
+		if int(summary.get("order_on_planet", 0)) == 1:
+			show_toast("Du hast %s gegründet – die erste Siedlung auf %s." % [settlement, summary.get("planet_name", "")])
+		else:
+			show_toast("Du hast %s gegründet." % settlement)
+	else:
+		show_toast("Willkommen zurück in %s." % settlement)
 
 
 func _on_focus_changed(it: Node) -> void:

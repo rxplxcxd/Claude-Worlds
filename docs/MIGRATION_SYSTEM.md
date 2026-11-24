@@ -2,6 +2,9 @@
 
 **Status: [GEPLANT] – Phasen 8 & 13.** Nicht implementiert.
 
+## 0. Einstieg [VERBINDLICH]
+Neue Spieler kommen auf einen Planeten, auf dem nur von Spielern gegründete Siedlungen existieren. Der erste Spieler gründet zwangsläufig; jeder weitere wählt frei zwischen **Beitritt** zu einer bestehenden Spielersiedlung und **eigener Gründung**.
+
 ## 1. Umzüge
 Voraussetzungen/Faktoren: Wohnraum am Ziel, Umzugskosten, laufende Arbeits-/Mietverträge (Kündigungsfristen), Eigentum (behalten, vermieten, verkaufen), Beziehungen, Zugangs-/Aufenthaltsrechte der Zieleinheit.
 

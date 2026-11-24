@@ -2,7 +2,10 @@ class_name SettlementData
 extends RefCounted
 ## Parsed, validated settlement layout (pure data, no nodes).
 ##
-## Phase 1 reads it from a JSON file. Later the same structure is filled from
+## Built from a FOUNDING TEMPLATE plus the founding record from WorldState
+## (apply_record). A template alone is not a settlement: settlements only
+## exist after a human player founded them (docs/WORLD_DESIGN.md §1).
+## Phase 1 reads the template from a JSON file. Later the same structure is filled from
 ## Firestore documents (settlements/{id}, buildings/{id}); see
 ## docs/FIREBASE_SCHEMA.md. Keeping this class free of scene code allows the
 ## future simulation server to reuse the format.
@@ -11,7 +14,11 @@ const BLOCKING_TILES := ["water"]
 const BUILDABLE_TILES := ["grass", "path", "sand"]
 
 var ids: Dictionary = {}
+var template_id: String = ""
 var settlement_name: String = ""
+var founder_player_id: String = ""
+var founded_at_game_minutes: float = -1.0
+var order_on_planet: int = 0
 var region_name: String = ""
 var development_status: String = ""
 var size: Vector2i = Vector2i(16, 16)
@@ -39,8 +46,9 @@ static func load_from_file(path: String) -> SettlementData:
 
 
 func _parse(d: Dictionary) -> void:
-	ids = d.get("ids", {})
-	settlement_name = d.get("name", "Unbenannt")
+	ids = (d.get("location", {}) as Dictionary).duplicate()
+	template_id = d.get("template_id", "")
+	settlement_name = d.get("default_name", "Unbenannt")
 	region_name = d.get("region_name", "")
 	development_status = d.get("development_status", "")
 	var s: Array = d.get("size", [16, 16])
@@ -68,6 +76,30 @@ func _parse(d: Dictionary) -> void:
 		props.append(entry)
 	for sc in d.get("scatter", []):
 		scatter.append(sc)
+
+
+## Turns template data into a concrete, founded settlement.
+func apply_record(record: Dictionary) -> void:
+	ids["settlement_id"] = record.get("settlement_id", "")
+	settlement_name = record.get("name", settlement_name)
+	founder_player_id = record.get("founder_player_id", "")
+	founded_at_game_minutes = float(record.get("founded_at_game_minutes", -1.0))
+	order_on_planet = int(record.get("order_on_planet", 0))
+	for list in [buildings, props]:
+		for entry in list:
+			for key in ["name", "text", "function"]:
+				if entry.has(key):
+					entry[key] = _fill(str(entry[key]))
+	for key in notice_board.keys():
+		notice_board[key] = _fill(str(notice_board[key]))
+
+
+func is_founded() -> bool:
+	return ids.get("settlement_id", "") != "" and founder_player_id != ""
+
+
+func _fill(text: String) -> String:
+	return text.replace("{settlement}", settlement_name)
 
 
 func in_bounds(x: int, y: int) -> bool:
@@ -135,6 +167,8 @@ func summary() -> Dictionary:
 		"region_name": region_name,
 		"development_status": development_status,
 		"building_count": buildings.size(),
+		"founder_player_id": founder_player_id,
+		"order_on_planet": order_on_planet,
 	}
 
 

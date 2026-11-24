@@ -2,6 +2,9 @@
 
 **Status: [GEPLANT] – Phasen 8–9.** Nicht implementiert (Gemeindehaus zeigt nur Text).
 
+## 0. Ausgangslage
+Zu Beginn existieren **keine** politischen Einheiten, Grenzen oder Staaten. Alles entsteht aus Spielersiedlungen (WORLD_DESIGN.md §1).
+
 ## 1. Politische Einheiten
 ```
 PoliticalEntity { entity_id (pol_*), name, kind (settlement|city_union|admin_community|political_union|state|country|confederation),

@@ -51,7 +51,7 @@ Ablauf bei jedem Push / Pull Request:
 
 Erster Lauf auf `claude/worlds-phase-1-foundation-5131yh`: Build, Tests, Export, Artefakt ✅; Deployment korrekt übersprungen (kein `main`).
 
-## 4a. Secret für die Penzilla-Assets (einmalig, durch Projektinhaber) [OFFEN]
+## 4a. Secret für die Penzilla-Assets (einmalig, durch Projektinhaber) [ERLEDIGT – in CI-Lauf #13 erkannt, 24.11.2026]
 Damit die veröffentlichte Version die echten Grafiken enthält:
 1. github.com → Repository **Claude-Worlds** → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
 2. Name: `MEGA_ASSETS_URL` · Wert: der MEGA-Ordnerlink inkl. `#…`-Schlüssel.

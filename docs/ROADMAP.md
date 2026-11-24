@@ -4,7 +4,7 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 
 | Phase | Name | Status |
 |---|---|---|
-| 1 | World Foundation | **Implementiert (0.2.0), Abnahme ausstehend** (iPhone-Test durch Projektinhaber; Secret `MEGA_ASSETS_URL`) |
+| 1 | World Foundation | **Implementiert (0.2.0), Abnahme ausstehend** (iPhone-Test durch Projektinhaber; Merge nach `main` für Pages) |
 | 2 | World Geography | geplant |
 | 3 | Living World | geplant |
 | 4 | Settlement Foundation | geplant |

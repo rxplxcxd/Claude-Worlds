@@ -3,22 +3,17 @@ extends Node2D
 ## Living Assets – step E: technical check in Godot (QA only, not in the game).
 ## Opened with "?gallery=living" (web) – see Main._qa_gallery().
 ##
-## Shows the three integration tiers side by side with real rendering:
-##   tier 1  shader shaders/living_wear.gdshader on the ORIGINAL sprite
-##   tier 2  original + overlay (only changed pixels)
-##   tier 3  separate variant sprite
-## plus the own VFX (assets/vfx) as AnimatedSprite2D / CPUParticles2D.
-## Samples: assets/penzilla/states (generated, private).
+## Every object is composed by LivingComposer from a VisualState – the same
+## code path the game will use: structural base (tier 3) + overlays (tier 2)
+## + shared wear shader (tier 1), plus own VFX. "&profile=ultra|hoch|leistung"
+## switches the quality profile. Files: assets/penzilla/states (generated, private).
 
-const STATES_DIR := "res://assets/penzilla/states"
 const WORLD_PER_SRC := 0.25
-const FILE_SCALE := 0.5
 const CELL := Vector2(150, 190)
+const COLS := 12
 
-var manifest: Dictionary = {}
 var sprites := 0
-var _wear_materials := {}
-var _grime: Texture2D
+var profile := "hoch"
 var _vfx: Texture2D
 var _vfx_meta: Dictionary = {}
 var _font: Font
@@ -28,64 +23,80 @@ var _labels: Array = []
 func _ready() -> void:
 	add_to_group("perf_view")
 	_font = ThemeDB.fallback_font
+	profile = _url_profile()
 	var bg := ColorRect.new()
 	bg.color = Color("7ea85c")
-	bg.size = Vector2(4000, 3000)
+	bg.size = Vector2(6000, 4000)
 	bg.position = Vector2(-200, -200)
 	bg.show_behind_parent = true # captions (_draw of this node) stay on top
 	add_child(bg)
-	if not FileAccess.file_exists(STATES_DIR + "/states.json"):
-		_label(Vector2(20, 40), "Keine Beispieldateien – tools/assets/make_living_samples.py ausführen.", 24)
+	if LivingComposer.manifest().is_empty():
+		_label(Vector2(20, 40), "Keine Zustandsdateien – tools/assets/make_living_states.py ausführen.", 24)
 		return
-	manifest = JSON.parse_string(FileAccess.get_file_as_string(STATES_DIR + "/states.json"))
-	_grime = load("res://assets/vfx/grime_field.png")
 	_vfx = load("res://assets/vfx/vfx_atlas.png")
 	_vfx_meta = JSON.parse_string(FileAccess.get_file_as_string("res://assets/vfx/vfx_atlas.json"))
-	var y := 0.0
-	_row_title(y, "Stufe 1 – Shader auf dem Original (keine Zusatztextur)")
+	var y := 0
+	_row_title(y, "Gebäude – 12 Zustände als Merkmal-Kombination (Profil: %s)" % LivingComposer.PROFILES[profile]["label"])
 	var x := 0
-	for lv in [[0.0, 0.0, "gepflegt"], [0.25, 0.0, "benutzt"], [0.45, 0.1, "verschmutzt"], [0.65, 0.3, "vernachlässigt"]]:
-		_place("house_blue", "original", x, y, lv[2], _wear(lv[0], lv[1]))
-		x += 1
-	_place("bench", "original", x, y, "Bank verwittert", _wear(0.55, 0.3)); x += 1
-	_place("car", "original", x, y, "Auto verschmutzt", _wear(0.55, 0.0)); x += 1
-	_place("lamp", "original", x, y, "Laterne verwittert", _wear(0.4, 0.35))
-	y += 1
-	_row_title(y, "Stufe 2 – Original + Overlay (nur veränderte Pixel)")
-	x = 0
-	var n := _place("house_blue", "original", x, y, "beschädigt", _wear(0.35, 0.1))
-	_overlay(n, "house_blue", "overlay_damage")
-	x += 1
-	for k in ["rissig", "schlagloecher", "pfuetzen", "schlamm", "schnee"]:
-		var r := _place("road", "original", x, y, "Straße " + k, null)
-		_overlay(r, "road", "overlay_" + k)
+	for k in ["01_neu", "02_gepflegt", "03_benutzt", "04_leicht_verschmutzt", "05_vernachlaessigt", "06_heruntergekommen",
+			"07_beschaedigt", "08_schwer_beschaedigt", "09_ausgebrannt", "10_zerstoert", "11_ruine", "12_restauriert"]:
+		_visual("buildings/house_1", VisualState.preset(k), x, y, k.substr(3).replace("_", " "))
 		x += 1
 	y += 1
-	_row_title(y, "Stufe 3 – eigene Variante (strukturelle Zustände)")
+	_row_title(y, "Kombinationen, Reparaturspuren, Wetter, weitere Gebäude")
 	x = 0
-	for k in ["08_schwer_beschaedigt", "09_ausgebrannt", "10_zerstoert", "11_ruine"]:
-		_place("house_blue", k, x, y, k.substr(3).replace("_", " "), null)
-		x += 1
-	_place("tree", "abgestorben", x, y, "Baum abgestorben", null); x += 1
-	_place("bare_tree", "schnee", x, y, "BareTree Schnee", null); x += 1
-	_place("lamp", "zerstoert", x, y, "Laterne umgestürzt", null); x += 1
-	_place("car", "wrack", x, y, "Autowrack", null)
+	_visual("buildings/house_1", VisualState.create("intact", 2, 1, 2), x, y, "schmutzig+beschädigt+Brand"); x += 1
+	_visual("buildings/house_1", VisualState.create("intact", 3, 0, 1), x, y, "verwahrlost+Rußspuren"); x += 1
+	_visual("buildings/house_1", VisualState.create("intact", 0, 0, 0, 0, 2), x, y, "frisch repariert"); x += 1
+	_visual("buildings/house_1", VisualState.create("partial", 1, 2), x, y, "schwer beschädigt+Schnee", {"snow": true}); x += 1
+	_visual("buildings/house_1", VisualState.create("ruin"), x, y, "Ruine+Schnee", {"snow": true}); x += 1
+	_visual("buildings/town_hall", VisualState.preset("09_ausgebrannt"), x, y, "Rathaus ausgebrannt"); x += 1
+	_visual("buildings/town_hall", VisualState.preset("07_beschaedigt"), x, y, "Rathaus beschädigt"); x += 1
+	_visual("buildings/shop_smith", VisualState.preset("06_heruntergekommen"), x, y, "Schmiede verwahrlost"); x += 1
+	_visual("buildings/shop_smith", VisualState.preset("08_schwer_beschaedigt"), x, y, "Schmiede schwer beschädigt"); x += 1
+	_visual("buildings/emergency_post", VisualState.preset("11_ruine"), x, y, "Feuerwache Ruine"); x += 1
+	_visual("props/tent", VisualState.create("collapsed"), x, y, "Zelt eingestürzt"); x += 1
+	_visual("props/tent", VisualState.create("intact", 0, 0, 0, 0, 1), x, y, "Zelt geflickt")
 	y += 1
-	_row_title(y, "Effekte (eigene VFX im Penzilla-Stil)")
+	_row_title(y, "Stadtmöbel, Beleuchtung, Fahrzeuge, Vegetation, Brunnen")
 	x = 0
-	var burning := _place("house_blue", "09_ausgebrannt", x, y, "brennt (Flammen + Rauch)", null)
+	_visual("props/bench", VisualState.create("intact", 3), x, y, "Bank verwittert"); x += 1
+	_visual("props/bench", VisualState.create("broken"), x, y, "Bank zerstört"); x += 1
+	_visual("props/hydrant", VisualState.create("intact", 1, 1), x, y, "Hydrant beschädigt"); x += 1
+	_visual("props/lamp_off", VisualState.create("broken"), x, y, "Laterne umgestürzt"); x += 1
+	_visual("props/crates", VisualState.create("burnt"), x, y, "Kisten verbrannt"); x += 1
+	_visual("vehicles/car_red", VisualState.create("intact", 3), x, y, "Auto verlassen"); x += 1
+	_visual("vehicles/car_red", VisualState.create("wreck"), x, y, "Autowrack"); x += 1
+	_visual("props/tree_1", VisualState.create("dead"), x, y, "Baum abgestorben"); x += 1
+	_visual("props/tree_1", VisualState.create("burnt"), x, y, "Baum verbrannt"); x += 1
+	_visual("props/pine_1", VisualState.create(), x, y, "Tanne Schnee", {"snow": true}); x += 1
+	_visual("props/fountain", VisualState.create("drained", 2), x, y, "Brunnen trocken"); x += 1
+	_visual("props/fountain", VisualState.create("frozen"), x, y, "Brunnen gefroren")
+	y += 1
+	_row_title(y, "Böden – Overlays je Bodenfamilie (alle 9 Straßenkacheln teilen sie)")
+	x = 0
+	for st in ["verschmutzt", "rissig", "schlagloecher", "pfuetzen", "schnee", "frost", "laub", "muell"]:
+		_surface("tiles/road_5", st, x, y, "Straße " + st)
+		x += 1
+	_surface("tiles/path_5", "schlamm", x, y, "Weg Schlamm"); x += 1
+	_surface("tiles/grass", "trocken", x, y, "Gras trocken"); x += 1
+	_surface("tiles/sidewalk", "laub", x, y, "Gehweg Laub"); x += 1
+	_surface("tiles/water", "gefroren", x, y, "Wasser gefroren")
+	y += 1
+	_row_title(y, "Effekte (eigene VFX im Penzilla-Stil, Menge je Profil)")
+	x = 0
+	var burning := _visual("buildings/house_1", VisualState.create("intact", 1, 0, 2), x, y, "brennt (Flammen + Rauch)")
 	for off in [Vector2(-20, -60), Vector2(16, -78), Vector2(2, -40)]:
 		_flame(burning, off)
 	_smoke(burning, Vector2(0, -95))
 	x += 1
-	var road := _place("road", "original", x, y, "Regen + Pfützen", null)
-	_overlay(road, "road", "overlay_pfuetzen")
+	var road := _surface("tiles/road_5", "pfuetzen", x, y, "Regen + Pfützen")
 	_weather(road, "raindrop", Vector2(0, 260), 40)
 	x += 1
-	var snow := _place("bare_tree", "schnee", x, y, "Schneefall", null)
+	var snow := _visual("props/tree_1", VisualState.create("dead"), x, y, "Schneefall", {"snow": true})
 	_weather(snow, "snowflake", Vector2(0, 40), 30)
 	x += 1
-	var lamp := _place("lamp", "beschaedigt", x, y, "Funken (defekt)", null)
+	var lamp := _visual("props/lamp_off", VisualState.create("intact", 1, 1), x, y, "Funken (defekt)")
 	_sparks(lamp, Vector2(0, -52))
 	x += 1
 	var star := _anim(Vector2(x * CELL.x + CELL.x * 0.5, y * CELL.y + CELL.y * 0.55), "reward_star", 6.0)
@@ -97,9 +108,9 @@ func _ready() -> void:
 	_label(Vector2(x * CELL.x + 6, y * CELL.y + 28), "Reparatur", 13)
 	var cam := Camera2D.new()
 	add_child(cam)
-	cam.position = Vector2(8 * CELL.x, 4.2 * CELL.y) * 0.5
+	cam.position = Vector2(COLS * CELL.x, 5.0 * CELL.y) * 0.5
 	var vp := get_viewport_rect().size
-	var z := minf(vp.x / (8.2 * CELL.x), vp.y / (4.4 * CELL.y))
+	var z := minf(vp.x / ((COLS + 0.2) * CELL.x), vp.y / (5.2 * CELL.y))
 	cam.zoom = Vector2(z, z)
 	cam.make_current()
 	var captions := Node2D.new()
@@ -110,64 +121,72 @@ func _ready() -> void:
 
 
 func perf_stats() -> Dictionary:
-	return {"view": "Living-Assets-Galerie", "visible_objects": sprites, "total_objects": sprites}
+	# context separates gallery measurements from real game measurements
+	return {"view": "Living-Assets-Galerie (%s)" % profile, "context": "testgalerie", "visible_objects": sprites, "total_objects": sprites}
 
 
-func _wear(dirt: float, fade: float) -> ShaderMaterial:
-	# Shared per quantised level → sprites at the same level keep batching.
-	var key := "%.2f_%.2f" % [dirt, fade]
-	if not _wear_materials.has(key):
-		var m := ShaderMaterial.new()
-		m.shader = preload("res://shaders/living_wear.gdshader")
-		m.set_shader_parameter("grime_tex", _grime)
-		m.set_shader_parameter("dirt", dirt)
-		m.set_shader_parameter("fade", fade)
-		m.set_shader_parameter("grime_px", 90.0)
-		_wear_materials[key] = m
-	return _wear_materials[key]
+func _url_profile() -> String:
+	if OS.has_feature("web"):
+		var q := str(JavaScriptBridge.eval("location.search", true))
+		for p in ["ultra", "hoch", "leistung"]:
+			if q.contains("profile=" + p):
+				return p
+	return "hoch"
 
 
-func _place(asset: String, file: String, col: int, row: float, caption: String, mat: Material) -> Node2D:
+## Composes an object from its VisualState (same code path the game will use).
+func _visual(key: String, state: VisualState, col: int, row: float, caption: String, weather := {}) -> Node2D:
 	var holder := Node2D.new()
 	holder.position = Vector2(col * CELL.x + CELL.x * 0.5, row * CELL.y + CELL.y - 18)
 	add_child(holder)
-	var path := "%s/%s/%s.png" % [STATES_DIR, asset, file]
-	if ResourceLoader.exists(path):
-		var tex: Texture2D = load(path)
-		var s := Sprite2D.new()
-		s.texture = tex
-		s.centered = false
-		var k := WORLD_PER_SRC / FILE_SCALE * _fit(asset)
-		s.scale = Vector2(k, k)
-		s.position = Vector2(-tex.get_width() * k * 0.5, -tex.get_height() * k)
-		if mat:
-			s.material = mat
-		holder.add_child(s)
-		holder.set_meta("sprite", s)
-		sprites += 1
+	var entry: Dictionary = LivingComposer.manifest().get("assets", {}).get(key, {})
+	var orig_path := "res://assets/penzilla/%s.png" % key
+	var original: Texture2D = load(orig_path) if ResourceLoader.exists(orig_path) else null
+	var node := LivingComposer.build(key, state, original, profile, weather)
+	var canvas: Array = entry.get("canvas_src", [512, 512])
+	var k := _fit(canvas)
+	node.scale = Vector2(k, k)
+	node.position = Vector2(-canvas[0] * k * 0.5, -canvas[1] * k)
+	holder.add_child(node)
+	sprites += node.get_child_count()
+	holder.set_meta("visual", node)
 	_label(Vector2(col * CELL.x + 6, row * CELL.y + 28), caption, 13)
 	return holder
 
 
-func _fit(asset: String) -> float:
-	# Gallery only: show everything at a readable size.
-	return {"house_blue": 0.9, "road": 0.42, "tree": 1.6, "bare_tree": 1.6, "lamp": 1.6, "bench": 1.6, "car": 0.9}.get(asset, 1.0)
+func _surface(key: String, state: String, col: int, row: float, caption: String) -> Node2D:
+	var holder := Node2D.new()
+	holder.position = Vector2(col * CELL.x + CELL.x * 0.5, row * CELL.y + CELL.y - 18)
+	add_child(holder)
+	var path := "res://assets/penzilla/%s.png" % key
+	if ResourceLoader.exists(path):
+		var tex: Texture2D = load(path)
+		var k := _fit([tex.get_width() * 2, tex.get_height() * 2])
+		var root := Node2D.new()
+		root.scale = Vector2(k, k)
+		root.position = Vector2(-tex.get_width() * k, -tex.get_height() * 2 * k)
+		var s := Sprite2D.new()
+		s.centered = false
+		s.texture = tex
+		s.scale = Vector2(2, 2)
+		root.add_child(s)
+		var ov := LivingComposer.surface_overlay(key, state)
+		if not ov.is_empty() and ResourceLoader.exists(LivingComposer.STATES_DIR + ov["file"]):
+			var o := Sprite2D.new()
+			o.centered = false
+			o.texture = load(LivingComposer.STATES_DIR + ov["file"])
+			o.scale = Vector2(2, 2)
+			o.position = Vector2(ov["offset_src"][0], ov["offset_src"][1])
+			root.add_child(o)
+		holder.add_child(root)
+		sprites += root.get_child_count()
+	_label(Vector2(col * CELL.x + 6, row * CELL.y + 28), caption, 13)
+	return holder
 
 
-func _overlay(holder: Node2D, asset: String, file: String) -> void:
-	var info: Dictionary = manifest["assets"][asset]["files"].get(file, {})
-	var path := "%s/%s/%s.png" % [STATES_DIR, asset, file]
-	if info.is_empty() or not ResourceLoader.exists(path) or not holder.has_meta("sprite"):
-		return
-	var base: Sprite2D = holder.get_meta("sprite")
-	var s := Sprite2D.new()
-	s.texture = load(path)
-	s.centered = false
-	s.scale = base.scale
-	var off: Array = info["offset_src"]
-	s.position = base.position + Vector2(off[0], off[1]) * FILE_SCALE * base.scale.x
-	holder.add_child(s)
-	sprites += 1
+func _fit(canvas: Array) -> float:
+	# Gallery only: every object fits its cell (source px -> gallery px).
+	return minf((CELL.x - 12) / float(canvas[0]), (CELL.y - 40) / float(canvas[1]))
 
 
 func _frames(name: String) -> SpriteFrames:
@@ -200,7 +219,8 @@ func _flame(holder: Node2D, off: Vector2) -> void:
 	a.position = off
 	a.scale = Vector2.ONE * 0.45
 	a.offset = Vector2(0, -30)
-	a.play("a")
+	if LivingComposer.PROFILES[profile]["animated_fire"]:
+		a.play("a")
 	a.frame = randi() % 8
 	holder.add_child(a)
 	sprites += 1
@@ -218,7 +238,7 @@ func _smoke(holder: Node2D, off: Vector2) -> void:
 	var p := CPUParticles2D.new()
 	p.texture = _atlas_frame("smoke_dark", 2)
 	p.position = off
-	p.amount = 10
+	p.amount = maxi(2, int(10 * LivingComposer.PROFILES[profile]["particles"]))
 	p.lifetime = 2.6
 	p.direction = Vector2(0.15, -1)
 	p.spread = 12
@@ -243,7 +263,7 @@ func _weather(holder: Node2D, name: String, extents: Vector2, amount: int) -> vo
 	var p := CPUParticles2D.new()
 	p.texture = _atlas_frame(name, 0)
 	p.position = Vector2(0, -150)
-	p.amount = amount
+	p.amount = maxi(4, int(amount * LivingComposer.PROFILES[profile]["particles"]))
 	p.lifetime = 1.4 if name == "raindrop" else 4.0
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	p.emission_rect_extents = Vector2(60, 4)

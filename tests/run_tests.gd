@@ -633,11 +633,71 @@ func _run() -> void:
 		check(same, "NPCs keep name, role and appearance across relaunches")
 	clock.preview_minute_of_day = -1.0
 
+	_test_living_assets()
+
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
 	for f in _failed:
 		print("  - ", f)
 	get_tree().quit(1 if _failed.size() > 0 else 0)
+
+
+func _test_living_assets() -> void:
+	print("[living assets]")
+	# VisualState: persistence round trip, clamping, tolerant loading
+	var vs := VisualState.create("partial", 9, 5, 1, 0, 0)
+	check(vs.wear == 3 and vs.damage == 2, "visual state clamps trait levels")
+	vs.apply_event("repaired", 1700000000)
+	check(vs.structure == "intact" and vs.damage == 0 and vs.repair == 2, "repair fixes damage, keeps visible repair traces")
+	var back := VisualState.from_dict(JSON.parse_string(JSON.stringify(vs.to_dict())))
+	check(back.equals(vs), "visual state survives save/load (JSON)")
+	var legacy := VisualState.from_dict({"structure": "ruin", "unknown": 1})
+	check(legacy.structure == "ruin" and legacy.wear == 0, "visual state loads old/partial records tolerantly")
+	# absence rule: loading an old record never changes it (no wall-clock decay)
+	var old_rec := VisualState.create("intact", 0).to_dict()
+	old_rec["changed_at_unix"] = 1
+	var reloaded := VisualState.from_dict(old_rec)
+	check(reloaded.wear == 0 and reloaded.structure == "intact", "absence does not cause decay (record unchanged after any time)")
+	var s2 := VisualState.create()
+	for e in ["damaged", "damaged"]:
+		s2.apply_event(e, 1)
+	check(s2.structure == "partial" and s2.damage == 2, "second damage event leads to partial collapse")
+	s2.apply_event("destroyed", 2)
+	s2.apply_event("became_ruin", 3)
+	s2.apply_event("restored", 4)
+	check(s2.structure == "intact" and s2.repair == 1 and s2.history.size() == 5, "destroy -> ruin -> restore is recorded permanently")
+	check(not s2.apply_event("time_passed", 5), "unknown events are rejected")
+	check(VisualState.create("intact", 2, 1, 2, 1, 0).layer_names() == ["wear_2", "damage_1", "fire_2", "overgrowth_1"], "traits combine into independent overlays")
+	# composer decisions with a synthetic manifest (no textures needed)
+	var lay := {}
+	for n in ["wear_2", "wear_3", "damage_1", "damage_2", "fire_1", "fire_2", "overgrowth_1", "repair_1", "repair_2", "snow_1"]:
+		lay[n] = {"file": "b/overlay_%s.png" % n, "offset_src": [2, 4]}
+	lay["damage_2"]["clipped"] = {"partial": "b/overlay_damage_2@partial.png"}
+	lay["snow_1"]["own"] = {"ruin": {"file": "b/overlay_snow_1@ruin.png", "offset_src": [6, 8]}}
+	var fake := {"version": 2, "file_scale": 0.5, "layer_order": ["wear_2", "wear_3", "repair_1", "repair_2", "damage_1", "damage_2", "fire_1", "fire_2", "overgrowth_1", "overgrowth_2", "snow_1"],
+		"allowed": {"intact": lay.keys(), "partial": ["wear_2", "damage_1", "damage_2", "fire_1", "fire_2", "snow_1"], "ruin": ["snow_1"]},
+		"assets": {"b": {"category": "building", "profile": "building", "canvas_src": [100, 100],
+			"bases": {"partial": {"file": "b/base_partial.png", "pad_src": [0, 0]}, "ruin": {"file": "b/base_ruin.png", "pad_src": [0, 0]}}, "layers": lay},
+			"h": {"category": "prop", "profile": "prop", "bases": {"broken": {"file": "h/base_broken.png"}}, "layers": {}}}}
+	LivingComposer.set_manifest_for_tests(fake)
+	var combo := VisualState.create("intact", 2, 1, 2)
+	var r_hi := LivingComposer.resolve("b", combo, "hoch")
+	var names := []
+	for l in r_hi["layers"]:
+		names.append(l["name"])
+	check(names == ["wear_2", "damage_1", "fire_2"] and r_hi["shader"] != null, "composer: dirty + damaged + partly burnt in draw order")
+	var r_low := LivingComposer.resolve("b", VisualState.create("intact", 3, 1, 2, 2, 0), "leistung")
+	check(r_low["layers"].size() == 2 and r_low["layers"][0]["name"] == "damage_1" and r_low["shader"] == null, "profile 'leistung': overlay budget keeps the story-relevant traits, no shader")
+	var r_part := LivingComposer.resolve("b", VisualState.create("partial", 0, 2), "ultra")
+	check(r_part["base"] == "b/base_partial.png" and r_part["layers"][0]["file"].ends_with("@partial.png"), "composer uses the structural base and the pre-clipped overlay")
+	var r_ruin := LivingComposer.resolve("b", VisualState.create("ruin", 3, 2, 2), "ultra", {"snow": true})
+	check(r_ruin["layers"].size() == 1 and r_ruin["layers"][0]["offset_src"] == [6, 8], "ruin: only allowed overlays, snow lies on the ruin itself")
+	var r_h := LivingComposer.resolve("h", VisualState.create("ruin"), "hoch")
+	check(r_h["base"] == "" and r_h["structure"] == "intact", "objects without a matching base fall back to the original")
+	var same_sim := VisualState.create("intact", 2, 1, 2)
+	LivingComposer.resolve("b", same_sim, "leistung")
+	check(same_sim.equals(combo), "quality profile never changes the visual/simulation state")
+	LivingComposer.set_manifest_for_tests({})
 
 
 func root_has_character_assets() -> bool:

@@ -6,7 +6,7 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 |---|---|---|
 | 1 | World Foundation | **Freigegeben** (Projektinhaber startete Phase 2 am 24.11.2026); iPhone-Test weiterhin offen |
 | 2 | World Geography | **Implementiert (0.3.0)** + **Paket 2.1 umgesetzt (0.4.0)**, Abnahme ausstehend |
-| 2.x | Living Assets (visuelles Projekt, kein Gameplay) | in Arbeit: Schritte A–F (Standard anhand von Beispielen), Schritt G erst nach Freigabe |
+| 2.x | Living Assets (visuelles Projekt, kein Gameplay) | Schritte A–G umgesetzt (Standard bestätigt, Serienproduktion geprüft); Einbau ins Spiel erst mit den Simulationssystemen; Lizenz-PDF offen |
 | 3 | Living World | geplant – **ausdrücklich noch nicht freigegeben** |
 | 4 | Settlement Foundation | geplant |
 | 5 | Social Life | geplant |

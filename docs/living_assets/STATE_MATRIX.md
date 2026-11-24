@@ -13,17 +13,62 @@ Einheitliches Zustandskonzept für alle Assets. Nicht jede Kategorie braucht all
 | 3 | Normal benutzt | erste Gebrauchsspuren | normale Nutzung |
 | 4 | Leicht verschmutzt | flache Schmutzflecken, Laufspuren unter Fenstern | Instandhaltung hinkt leicht nach |
 | 5 | Vernachlässigt | ausgeblichen, Flecken, abblätternde Farbe | länger keine Instandhaltung |
-| 6 | Stark heruntergekommen | + Risse, einzelne kaputte Fenster, Dachloch | lange vernachlässigt, Leerstand |
-| 7 | Beschädigt | Risse, kaputte Fenster, Dachlöcher | Unfall, Sturm, Konflikt |
-| 8 | Schwer beschädigt | + eingestürzte Ecke, Trümmer | schwerer Schaden |
-| 9 | Ausgebrannt | verkohlt, Ruß, Fenster schwarz, Dachstuhl offen | Brand beendet |
-| 10 | Zerstört | Mauerreste, Trümmer | Einsturz |
-| 11 | Ruine | Reste, ausgebleicht, überwuchert | zerstört + lange ungenutzt |
-| 12 | Restauriert | wie neu, sichtbar ausgebesserte Stellen | Wiederaufbau/Sanierung |
+| 6 | Stark heruntergekommen | **Verfall ohne Gewalt:** stark ausgeblichen, großflächig abblätternder Putz (Ziegel sichtbar), **vernagelte Fenster**, Moos auf dem Dach, verrottetes/vergrautes Holz, Rost, Unkraut – **keine** frischen Risse, kein Schutt | lange vernachlässigt, Leerstand |
+| 7 | Beschädigt | **frischer Schaden bei intakten Farben:** Risse ab Fensterecken, Sternrisse und Löcher im Glas, abgeplatzte Ecken, ein Dachloch mit Sparren, wenig frischer Schutt | Unfall, Sturm, Konflikt |
+| 8 | Schwer beschädigt | **Teileinsturz** einer Ecke mit Balken, alle Fenster zerstört, großes Dachloch, Schuttkegel | schwerer Schaden |
+| 9 | Ausgebrannt | **Mauern stehen, Dach weggebrannt** (Blick ins dunkle Innere, verkohlte Sparren), alles verkohlt, Rußfahnen, Stoff verkohlt | Brand beendet |
+| 10 | Zerstört | **frischer Einsturz:** niedrige Mauerstümpfe, große Schutthaufen in den eigenen Farben, Balken, Staub – keine Pflanzen | Einsturz |
+| 11 | Ruine | **alt:** stufig abgebrochenes Mauerwerk mit einer höheren Ecke, **kein Dach**, leere Öffnungen, verwittert/ausgeblichen, Schutt mit Gras, Efeu – **kein** Ruß, kein frischer Schutt | zerstört + lange ungenutzt |
+| 12 | Restauriert | **Spuren der Vergangenheit je Reparaturgrad:** Grad 1 dezent (hellere Putzflicken, neue Dachziegel in anderem Ton, neue Bretter, Stoff-Flicken), Grad 2 deutlich (umrandete Flicken, viele neue Teile, neue Scheibe) | Wiederaufbau/Sanierung |
 
 Zusätzlich (keine Stufe, sondern Ebene): **brennt** (E: Flammen, Rauch, Funken), **im Bau** (E: Gerüst/Staub/Baufortschritt – Gerüst-Grafik fehlt, siehe Prioritäten), **Wetter** (Schnee, Nässe, Frost), **Nutzung** (Licht an/aus, belebt).
 
-## 2. Gruppen je Kategorie
+## 1a. Kombinierbare Merkmale (ab Schritt G, verbindlich)
+Ein Zustand ist **keine** einzelne Grafik, sondern eine **Kombination unabhängiger Merkmale**. Die 12 Grundzustände sind nur benannte Kombinationen („Presets“). Beispiel: *verschmutzt + beschädigt + teilweise ausgebrannt* = Shader Stufe 2 + Overlay `damage_1` + Overlay `fire_2` – ohne eigene Grafik.
+
+| Merkmal | Stufen | Technik | Datei |
+|---|---|---|---|
+| `structure` | intact · partial · shell · collapsed · ruin (Gebäude); broken · burnt · wreck · dry · dead · algae · drained · frozen (je Profil) | eigene Basis-Variante | `base_<name>.png` |
+| `wear` | 0–3 | Shader (0–3) + Overlay ab 2 (`wear_2`, `wear_3`) | `overlay_wear_N.png` |
+| `damage` | 0–2 | Overlay | `overlay_damage_N.png` |
+| `fire` | 0–2 (Rußspuren · teilweise ausgebrannt) | Overlay | `overlay_fire_N.png` |
+| `overgrowth` | 0–2 | Overlay | `overlay_overgrowth_N.png` |
+| `repair` | 0–2 (Reparaturspuren) | Overlay | `overlay_repair_N.png` |
+| Wetter `snow` | 0–1 (nicht gespeichert, kommt von der Umwelt) | Overlay, auf Strukturvarianten eigenes Schnee-Overlay | `overlay_snow_1[@base].png` |
+
+Regeln: Overlays werden gegen das **intakte Original** erzeugt und für jede Strukturvariante **vorab beschnitten** (`overlay_X@partial.png`), damit nichts über eingestürzten Teilen schwebt. Welche Overlays auf welcher Basis erlaubt sind, steht im Manifest (`allowed`); Zeichenreihenfolge: Abnutzung → Reparatur → Schaden → Brand → Bewuchs → Schnee. Laufzeit: `scripts/living/visual_state.gd` + `living_composer.gd`.
+
+| Preset | structure | wear | damage | fire | overgrowth | repair |
+|---|---|---|---|---|---|---|
+| 01 Neu / 02 Gepflegt | intact | 0 | – | – | – | – |
+| 03 Benutzt / 04 Leicht verschmutzt | intact | 1 | – | – | – | – |
+| 05 Vernachlässigt | intact | 2 | – | – | – | – |
+| 06 Stark heruntergekommen | intact | 3 | – | – | 1 | – |
+| 07 Beschädigt | intact | 1 | 1 | – | – | – |
+| 08 Schwer beschädigt | partial | 1 | 2 | – | – | – |
+| 09 Ausgebrannt | shell | – | – | – | – | – |
+| 10 Zerstört | collapsed | – | – | – | – | – |
+| 11 Ruine | ruin | – | – | – | – | – |
+| 12 Restauriert | intact | 0 | – | – | – | 1 (oder 2) |
+
+## 1b. Zustände je Funktion (produziert)
+Nicht jedes Asset braucht alle Zustände; entschieden wird nach **Funktion** (`tools/assets/living_assets.json`, Profile in `living_traits.PROFILES`):
+
+| Profil | Assets | Basen | Overlays |
+|---|---|---|---|
+| building | 19 Gebäude (Wohnen, öffentlich, Gewerbe inkl. RPG-Läden) | partial, shell, collapsed, ruin | wear 2/3, damage 1/2, fire 1/2, overgrowth 1/2, repair 1/2, snow |
+| tent | Zelt | shell (verbrannt), collapsed (zusammengefallen) | wear 2/3, damage 1, fire 1, repair 1 (Flicken), snow |
+| prop | Hydrant, Mülleimer, Briefkasten, Schaltkasten, Schilder, Wasserturm, Strommast, Haltestelle, Schubkarre | broken (umgestürzt/zerbrochen) | wear 2/3 (Rost, Lackabplatzer), damage 1 (Dellen, Glasbruch), overgrowth 1, snow |
+| prop_flammable | Bank, Kisten, Marktstand, Karren, Infotafel, Garten | broken, burnt | wie prop |
+| lamp | 3 Laternen | broken (umgestürzt) | wear 2/3, damage 1 (Glas kaputt → aus), snow |
+| vehicle | Auto, Krankenwagen, Bus (noch nicht im Spiel) | burnt, wreck | wear 2 (alt/rostig), wear 3 (verlassen), damage 1, snow |
+| tree | 8 Laubbäume, 3 Tannen, 4 Büsche | dry, dead, burnt | snow |
+| crop | 2 Feldpflanzen | dry, dead, burnt | – |
+| fountain | Brunnen | algae, drained, frozen | wear 2, damage 1, overgrowth 1, snow |
+| Bodenfamilien | Asphalt (9 Kacheln), Gehweg/Beton, Weg (9), Gras, Erde, Wasser | – | je Familie **gemeinsame** Overlays: verschmutzt, rissig, Schlaglöcher, Pfützen, Schlamm, Schnee, Frost, Laub, Müll, trocken, gefroren, Algen |
+| interior | Penzilla-Möbel- und Kleinteil-Blätter (Pixel Art) | abgenutzt, verschmutzt, kaputt, verbrannt (je Möbelstück) | – (Nutzung: Penzilla-State2) |
+
+## 2. Gruppen je Kategorie (Konzept aus Schritt B)
 
 | Gruppe (Inventar) | Anzahl Dateien | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | Wetter/Nutzung |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|

@@ -477,6 +477,10 @@ def overgrowth(a, seg, level, seed):
     bottom = np.full(W, -1)
     ys_op, xs_op = np.nonzero(seg.opaque)
     np.maximum.at(bottom, xs_op, ys_op)
+    # ground = front edges of the isometric footprint (not the underside of an awning)
+    yb = ys_op.max()
+    xb = xs_op[ys_op == yb].mean()
+    bottom = np.maximum(bottom, (yb - np.abs(np.arange(W) - xb) * 0.5).astype(int))
     for i in range(int(6 + 10 * level)):
         x = int(rng.uniform(x0 + seg.w * 0.05, x1 - seg.w * 0.05))
         by = bottom[x] if bottom[x] >= 0 else y1
@@ -546,7 +550,7 @@ def snow_cap(a, seg, level, seed):
     """Snow on every upward-facing surface (first opaque rows from above)."""
     H, W = seg.opaque.shape
     rng = np.random.default_rng(seed)
-    thick = max(seg.px(16), seg.h * 0.07) * level
+    thick = max(seg.px(16), seg.h * 0.07, 8) * level
     wav = ndimage.gaussian_filter1d(rng.normal(0, 1, W), seg.px(5))
     wav = wav / max(np.abs(wav).max(), 1e-6) * seg.px(5)
     # distance below the nearest "sky" pixel above (transparent or outline top)
@@ -557,7 +561,7 @@ def snow_cap(a, seg, level, seed):
         run = np.where(row_in, run + 1, 0)
         above_free[y] = run
     m = seg.inner & (above_free > 0) & (above_free < thick + wav[None, :])
-    m = ndimage.binary_opening(m, iterations=1)
+    m = ndimage.binary_opening(m, iterations=1 if seg.h < 220 else max(2, seg.px(3)))
     out = a.copy()
     out[m, :3] = SNOW
     lower = m & ~np.roll(m, -seg.px(3), axis=0)
@@ -679,7 +683,7 @@ def break_off(a, seg, seed, side=None):
         layer = to_image(out)
         px = int(x0 - img.width * 0.35) if side == "left" else int(x1 - img.width * 0.65)
         py = int(y1 - img.height)
-        layer.alpha_composite(img, (max(0, min(W - img.width, px)), max(0, min(H - img.height, py))))
+        layer.alpha_composite(img, (max(4, min(W - img.width - 4, px)), max(4, min(H - img.height - 4, py))))
         out = np.asarray(layer).astype(np.float32) / 255.0
     return out
 
@@ -694,7 +698,9 @@ def topple(a, seg, seed):
     ang = 78 * (1 if rng.random() < 0.5 else -1)
     rot = spr.rotate(ang, expand=True, resample=Image.BICUBIC)
     rot = rot.resize((rot.width, max(1, int(rot.height * 0.62))), Image.LANCZOS)
-    canvas = Image.new("RGBA", (max(W, rot.width + 4), H), (0, 0, 0, 0))
+    cw = max(W, rot.width + 4)
+    cw += (cw - W) % 4  # symmetric growth, even per side (exact at file scale 0.5)
+    canvas = Image.new("RGBA", (cw, H), (0, 0, 0, 0))
     cx = (x0 + x1) // 2 + (canvas.width - W) // 2
     canvas.alpha_composite(rot, (max(0, min(canvas.width - rot.width, cx - rot.width // 2)), max(0, y1 - rot.height)))
     # The canvas grows symmetrically; the anchor (bottom centre) is unchanged,

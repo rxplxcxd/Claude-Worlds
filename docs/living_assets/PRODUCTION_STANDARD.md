@@ -1,6 +1,6 @@
-# Schritt F – Produktionsstandard (Vorschlag, wartet auf Bestätigung)
+# Produktionsstandard (bestätigt am 24.11.2026, mit Ergänzungen)
 
-Dieser Standard gilt für **alle** Zustandsvarianten. Er wurde aus den Beispielen (Schritt C) und der Prüfung (Schritte D/E) abgeleitet. **Schritt G (systematische Erstellung)** beginnt erst nach Bestätigung durch den Projektinhaber.
+Dieser Standard gilt für **alle** Zustandsvarianten. Bestätigt vom Projektinhaber mit Ergänzungen (deutlichere Unterscheidbarkeit, kombinierbare Merkmale, Materialerkennung, vollständige Abdeckung, dauerhafte Zustände, Lizenzprüfung, Produktionskontrolle, Performance) – eingearbeitet in §7–§9.
 
 ## 1. Stil (verbindlich)
 1. **Penzilla-Look:** flache Farbflächen, harte Kanten, keine fotografischen Texturen, kein Rauschen.
@@ -20,21 +20,36 @@ Dieser Standard gilt für **alle** Zustandsvarianten. Er wurde aus den Beispiele
 | Vorhandene Penzilla-Alternativen (BareTree, Lampe an/aus, Interior-State2, Türen offen, Fahrzeuglicht) | Original verwenden |
 
 ## 3. Dateien
-- Pfad: `assets/penzilla/states/<kategorie>/<asset>/<zustand>.png` (git-ignoriert, aus den ZIPs erzeugt).
-- Zustandsnamen nach [STATE_MATRIX.md](STATE_MATRIX.md): `03_benutzt`, `07_beschaedigt` …; Overlays `overlay_<art>.png` mit `offset_src` im Manifest.
-- PNG RGBA, transparenter Hintergrund, Maßstab 0,5 (wie Hauptimport), später Atlanten je Kategorie.
-- Manifest `states.json`: Quelle, Kategorie, Stufe, Versatz, Leinwand.
+- Pfad: `assets/penzilla/states/<spielschlüssel>/base_<struktur>.png`, `overlay_<merkmal>_<stufe>.png`, vorab beschnitten `overlay_<…>@<struktur>.png`; Böden `surfaces/<familie>/overlay_<zustand>.png` (git-ignoriert, aus den ZIPs erzeugt).
+- PNG RGBA, transparenter Hintergrund, Maßstab 0,5 (wie Hauptimport), gerade Versätze, später Atlanten je Kategorie.
+- Manifest `states.json` (Version 2): Quelle, Kategorie, Profil, Materialanteile, Basen (`canvas_src`, `pad_src`), Overlays (`offset_src`, Größe, Abdeckung, beschnittene/eigene Varianten je Basis), erlaubte Kombinationen, Zeichenreihenfolge, Presets.
 
-## 4. Materialkarte je Asset (neu, für Schritt G nötig)
-Die automatische Segmentierung (Kontur, Glas, Dach, Fassade) ist für einfache Häuser zuverlässig, verwechselt aber z. B. Markisen mit Mauerwerk. Für die Serie wird je Asset eine kleine **Materialkarte** erzeugt (automatisch, dann bei Bedarf von Hand korrigiert): `masonry | wood | metal | glass | fabric | roof | vegetation | water`. Effekte wählen danach (Stoff reißt, Mauer bekommt Risse, Metall rostet).
+## 4. Materialkarte je Asset (umgesetzt)
+Jedes Asset erhält eine **Materialkarte** (`living_materials.py`): `outline, glass, roof, plaster, brick, stone, wood (natürlich/lackiert), trim, metal (lackiert/blank), fabric, plant, water`. Quellen in dieser Reihenfolge: automatische Regeln → Ebenennamen der RPG-Pakete (exakt) → Korrekturen je Asset (`living_assets.json`). Jede Materialkarte wird als Bild geprüft (QA-Ordner). Effekte wählen nach Material: Markisen **reißen** (dunkler Spalt + hängender Lappen), Putz **blättert** und zeigt Ziegel, Ziegel bekommen **Treppenrisse**, Holz **spaltet längs der Maserung**, lackiertes Holz/Metall verliert **Lack**, Metall **rostet/verbeult**, Glas **verschmutzt/springt/bricht/wird vernagelt**, Dächer verlieren **Ziegel**.
 
 ## 5. Qualitätsprüfung je Charge
 1. Kontaktbogen Original + alle Zustände.
-2. Prüfliste: Kontur intakt? Farben aus der Palette? Keine Rauschmuster? Oberseite/Seiten korrekt? Anker identisch? Lesbar bei Spielzoom (0,25-fach)?
+2. Prüfliste: Kontur intakt? Farben aus der Palette? Keine Rauschmuster? Oberseite/Seiten korrekt? Anker identisch? Lesbar in echter Spielgröße (iPhone 15 Pro Max, älteres iPhone)? – automatisch durch `living_qa.py` (§9).
 3. Godot-Galerie (`?gallery=living`): Darstellung, Draw Calls, Speicher.
 4. Abnahme durch den Projektinhaber bei Hauptgebäuden.
 
-## 6. Werkzeuge (vor Schritt G zu verbessern)
-- Segmentierung zwischenspeichern und auf kleinerer Auflösung rechnen (Rathaus heute ~290 s).
-- Erzeugung in CI nur für tatsächlich verwendete Assets (heute ~30), nicht für alle 404 Gebäude.
-- Deterministisch (Seed je Asset und Zustand) – gleiche Eingaben ergeben gleiche Dateien.
+## 6. Werkzeuge (umgesetzt)
+- Segmentierung ~200× schneller (nur innerhalb der Farbbereiche gelabelt): Rathaus 1,5 s.
+- Produktion für die **im Spiel verwendeten** Assets + repräsentative Fahrzeuge/Innenräume (87 Einträge); weitere Assets durch Eintrag in `living_assets.json`.
+- Deterministisch (Seed je Asset und Merkmal).
+
+## 7. Unterscheidbarkeit (Ergänzung)
+- **Heruntergekommen ≠ Beschädigt**: Verfall (ausgeblichen, Putz ab, vernagelt, Moos, Unkraut, keine Risse/kein Schutt) gegen frischen Schaden (kräftige Farben, Risse, Glasbruch, Dachloch, frischer Schutt).
+- **Beschädigt ≠ Schwer beschädigt**: lokale Schäden gegen Teileinsturz mit Balken und Schuttkegel.
+- **Ausgebrannt ≠ Zerstört ≠ Ruine**: Mauern stehen/Dach weg/alles verkohlt · Mauerstümpfe/frischer bunter Schutt/Staub · stufiges altes Mauerwerk/kein Dach/verwittert/Gras auf Schutt/Efeu, kein Ruß.
+- **Restauriert ≠ Neu**: Reparaturspuren je Grad (Grad 1 dezent, Grad 2 deutlich).
+- Prüfung **in echter Spielgröße** (iPhone 15 Pro Max Standard- und kleinster Zoom, älteres iPhone): Anteil sichtbar veränderter Fläche je Zustand und zwischen Zuständen (§9).
+
+## 8. Kombinierbarkeit (Ergänzung)
+Zustände = Merkmale (Struktur-Basis + unabhängige Overlays + Shader), siehe [STATE_MATRIX.md](STATE_MATRIX.md) §1a. Keine Grafik je Kombination.
+
+## 9. Produktionskontrolle (Ergänzung)
+1. **Pilot** (`--pilot`, 20 repräsentative Assets aller Kategorien) vollständig ausarbeiten.
+2. Kontaktbögen + automatische Prüfung (`--qa`): Leinwand/Anker, abgeschnittene Ränder, weiche neue Randpixel, Konturschutz, Pixelrauschen (Flächenanteil), Sichtbarkeit je Zustand (≥ 1 % der Objektfläche sichtbar verändert), Unterscheidbarkeit zwischen Zuständen (≥ 1 %).
+3. Sichtprüfung auf Stiltreue, Materialwirkung, Perspektive/Proportionen, Transparenz/Ränder.
+4. Erst wenn Pilot ohne Befund: Ausweitung auf alle Assets, erneute Prüfung aller Bögen.

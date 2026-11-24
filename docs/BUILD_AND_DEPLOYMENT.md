@@ -24,9 +24,9 @@ node tools/perf_measure.js build/web build/perf desktop|iphone   # Diagnose-Mess
 
 # Living Assets (optional, docs/living_assets/README.md) – numpy, scipy, pillow
 python3 -I tools/assets/inventory.py /tmp/penzilla_src .            # Inventar-CSV
-python3 -I tools/assets/make_living_samples.py /tmp/penzilla_src .  # Beispielzustände (privat, assets/penzilla/states/)
+python3 -I tools/assets/make_living_states.py /tmp/penzilla_src . --qa /tmp/living_qa   # Zustände (privat, assets/penzilla/states/) + Prüfbericht
 python3 -I tools/assets/make_vfx.py .                               # eigene VFX (assets/vfx/, wird committet)
-# Test-Galerie: build/web im Browser mit ?gallery=living öffnen
+# Test-Galerie: build/web im Browser mit ?gallery=living[&profile=ultra|hoch|leistung] öffnen
 ```
 `build/` ist in `.gitignore`.
 

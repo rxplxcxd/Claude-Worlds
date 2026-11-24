@@ -222,6 +222,8 @@ func _finish_measurement() -> void:
 	last_report["resources"] = Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)
 	last_report["nodes"] = Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
 	last_report["view_details"] = _view_stats()
+	# separates test-gallery measurements from real game measurements
+	last_report["context"] = str(last_report["view_details"].get("context", "spiel"))
 	print("PERF_REPORT " + JSON.stringify(last_report))
 
 

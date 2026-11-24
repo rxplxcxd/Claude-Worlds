@@ -2,12 +2,30 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.4.2] – Living Assets Schritt G: Materialerkennung, kombinierbare Zustände, Serienproduktion
+
+### Hinzugefügt
+- **Materialerkennung** `tools/assets/living_materials.py` (Glas, Dach, Putz, Ziegel, Stein, Holz natürlich/lackiert, Zierteile, Metall, Stoff, Pflanze, Wasser) aus Farbe, Lage, Form, Textur und Kontext; RPG-Läden exakt über Ebenennamen; Korrekturen je Asset.
+- **Kombinierbare Merkmale** `tools/assets/living_traits.py`: Strukturbasen (Teileinsturz, ausgebrannt, zerstört, Ruine; umgestürzt, verbrannt, Wrack, trocken, abgestorben, Brunnen leer/veralgt/gefroren …) + unabhängige Overlays (Abnutzung 2/3, Schaden 1/2, Brand 1/2, Bewuchs 1/2, Reparaturspuren 1/2, Schnee) mit materialgerechten Effekten; Overlays je Basis vorab beschnitten.
+- **Serienproduktion** `tools/assets/make_living_states.py` für 87 Einträge (alle Spiel-Assets aller Kategorien + Fahrzeuge + Innenraum-Blätter), Profile nach Funktion (`tools/assets/living_assets.json`), Bodenfamilien mit gemeinsamen Overlays.
+- **Produktionskontrolle** `tools/assets/living_qa.py`: Kontaktbögen in voller und echter Spielgröße (iPhone 15 Pro Max, älteres iPhone), automatische Prüfungen (Leinwand/Anker, Ränder, Kantenpixel, Konturen, Rauschen, Sichtbarkeit und Unterscheidbarkeit in Spielgröße).
+- **Laufzeit-Bausteine** (noch nicht im Spiel verdrahtet): `VisualState` (dauerhaft speicherbarer visueller Zustand, nur ereignisgesteuert, kein Verfall durch Abwesenheit) und `LivingComposer` (Basis + Overlays + Shader, Qualitätsprofile Ultra/Hoch/Leistung).
+- Galerie `?gallery=living` nutzt den Composer, Profilwahl `&profile=…`; Diagnoseberichte tragen `context` (testgalerie/spiel).
+- Lizenzdokumentation `docs/living_assets/LICENSES.md`.
+- Tests: 164 Prüfungen (+15 Living Assets).
+
+### Geändert
+- Produktionsstandard bestätigt und ergänzt; Zustandsmatrix um Merkmalsmodell und Zustände je Funktion erweitert.
+
+### Nicht geändert
+- Spielmechanik und Darstellung im Spiel sind unverändert.
+
 ## [0.4.1] – Living Assets & Environmental Storytelling (visuell, kein Gameplay)
 
 ### Hinzugefügt
 - **Asset-Inventar** aller 7 901 Dateien der Penzilla-Pakete (+ CC0-Interior): `docs/living_assets/asset_inventory.csv` (Kategorie, Quelle, Maße, Perspektive, Animation, Verwendung, Godot-Kompatibilität, Lizenz, Zustandsgruppe), erzeugt von `tools/assets/inventory.py`.
 - **Zustandsmatrix** (12 Gebäudezustände, Gruppen für Vegetation, Böden, Stadtmöbel, Fahrzeuge, Innenräume) – `docs/living_assets/STATE_MATRIX.md`.
-- **Variantengenerator** `tools/assets/living_states.py` + `make_living_samples.py` (dreistufig: Shader / Overlay / Vollvariante); Ergebnisse privat in `assets/penzilla/states/` (git-ignoriert).
+- **Variantengenerator** `tools/assets/living_states.py` + `make_living_samples.py` (in 0.4.2 ersetzt) (dreistufig: Shader / Overlay / Vollvariante); Ergebnisse privat in `assets/penzilla/states/` (git-ignoriert).
 - **Eigene VFX im Penzilla-Stil** `assets/vfx/` (Feuer, Rauch, Funken, Regen, Schnee, Staub, Blätter, Spritzer, Reparatur, Belohnung, Trümmer) und Verschleiß-Shader `shaders/living_wear.gdshader`.
 - **Test-Galerie** `?gallery=living` (nur Web, nur mit URL-Parameter) zur technischen Prüfung.
 - Dokumente: Produktionsstandard (Vorschlag), Qualitätsprüfung, VFX-Quellen/Lizenzen, technische Integration inkl. Qualitätsprofile und Performance, Prioritätenliste.

@@ -1,6 +1,6 @@
 # Technische Integration – Living Assets
 
-Status: **Konzept + technischer Nachweis in Godot (Galerie)**. Im Spiel ist noch **nichts** davon aktiv (keine Änderung an Spielmechanik oder laufender Darstellung).
+Status: **Schritt G – Serienproduktion + Laufzeit-Bausteine (`VisualState`, `LivingComposer`) mit Tests; Nachweis in der Galerie.** Im Spiel ist noch **nichts** davon aktiv (keine Änderung an Spielmechanik oder laufender Darstellung).
 
 ## 1. Drei Stufen (geprüft in Godot)
 
@@ -15,36 +15,59 @@ Stufe 1 und 2 sind kombinierbar (z. B. „stark heruntergekommen“ = Shader Stu
 **Nachweis:** Galerie `?gallery=living` (Web-Build, `scripts/tools/living_gallery.gd`) zeigt alle drei Stufen und die Effekte mit echtem Godot-Rendering. Gemessen (Chromium, Software-Rendering): 41 Objekte inkl. 7 Partikelsysteme und 5 Animationen, **101 Draw Calls**, **47,6 MB Texturspeicher** (Galerie lädt alle Musterdateien gleichzeitig), keine Fehler.
 
 ## 2. Dateien und Pipeline
-- **Ableitung (privat, git-ignoriert):** `tools/assets/living_states.py` (Effektbibliothek) + `tools/assets/make_living_samples.py` → `assets/penzilla/states/<asset>/<zustand>.png` + `states.json`. Liest die Originale **nur aus den ZIP-Archiven**, verändert sie nie; Maßstab 0,5 wie der Hauptimport.
-- **Eigene VFX (im Repository, eigene Arbeit):** `tools/assets/make_vfx.py` → `assets/vfx/vfx_atlas.png` (39 Frames, 768 × 480, 14 KB) + `vfx_atlas.json` + `grime_field.png`.
-- **Inventar:** `tools/assets/inventory.py` → `docs/living_assets/asset_inventory.csv` (7 901 Zeilen, nur Metadaten).
-- Werkzeuge brauchen numpy + scipy + pillow (nur Entwicklungsrechner/CI, nie im Spiel).
+| Baustein | Aufgabe |
+|---|---|
+| `tools/assets/living_materials.py` | **Materialerkennung**: Segmentierung in flache Farbflächen (Penzilla = Cel-Look), Klassifikation in `outline, glass, roof, plaster, brick, stone, wood, trim, metal, fabric, plant, water` aus Farbe, Lage (Himmelskante = Dach/Markise), Form (Streifen ≠ Scheibe), Textur (Ziegel), Kontext (Licht-/Schattenseite derselben Wand; Texturdetails erben die Fläche); bei RPG-Läden **exakt aus den Ebenennamen** (`OuterWall_ClayBrick`, `Fabric_Green` …); Korrekturen je Asset in `living_assets.json` (`overrides`). Rathaus: 1,5 s statt 290 s. |
+| `tools/assets/living_traits.py` | **Merkmal-Effekte je Material** (Putz blättert → Ziegel sichtbar; Ziegel: Treppenrisse, fehlende Steine; Holz: Risse längs der Maserung, Vergrauen, Fäulnis, gebrochene Bretter; lackiertes Holz/Metall: Lack platzt ab; Metall: Rost, Dellen; Glas: Schmutzfilm, Sternriss, Bruch, vernagelt; Dach: verschobene/neue Ziegel, Löcher mit Sparren, Moos; Stoff: Ausbleichen, Risse mit Lappen, Flicken, verkohlt) + Strukturvarianten + Profile je Funktion |
+| `tools/assets/living_sources.py` | liest Originale **nur** aus den ZIP-Archiven (RPG-Läden wie im Hauptimport zusammengesetzt) |
+| `tools/assets/make_living_states.py` | Produktion: `--pilot` (repräsentative Auswahl) oder alle; `--qa <ordner>` erzeugt Kontaktbögen + Prüfbericht |
+| `tools/assets/living_qa.py` | automatische Prüfung (§7) + Kontaktbögen in voller Größe und **echter Spielgröße** |
+| Ausgabe (privat, git-ignoriert) | `assets/penzilla/states/<schlüssel>/base_*.png, overlay_*.png[@basis]`, Bodenfamilien unter `surfaces/<familie>/`, Manifest `states.json` (Version 2) |
+| Eigene VFX (Repository) | `tools/assets/make_vfx.py` → `assets/vfx/` |
 
-## 3. Godot-Bausteine (Vorschlag für die Integration)
+Erzeugung arbeitet auf einer **gepufferten Leinwand** (Schutt, Efeu, umgestürzte Objekte werden nie abgeschnitten); Basen werden auf die Original-Leinwand zurückgeschnitten, wenn sie hineinpassen, sonst mit `pad_src` (Anker bleibt exakt). Versätze sind gerade Zahlen (exakt bei Maßstab 0,5). Deterministisch (fester Seed je Asset und Merkmal).
+
+## 3. Godot-Bausteine (umgesetzt, noch nicht im Spiel verdrahtet)
 ```
-LivingVisual (Komponente am Building/Prop)
- ├─ base: Sprite2D           Original oder Stufe-3-Variante
- ├─ material                 gemeinsames Verschleiß-Material der Stufe (Stufe 1)
- ├─ overlay: Sprite2D?        Stufe 2, nur wenn nötig
- └─ fx: Node2D?              Flammen (AnimatedSprite2D), Rauch/Funken (CPUParticles2D)
+VisualState (scripts/living/visual_state.gd)      reine Daten, speicherbar
+  structure, wear, damage, fire, overgrowth, repair, changed_at_unix, history
+  to_dict()/from_dict()  · apply_event(…)  · layer_names()  · preset("07_beschaedigt")
+
+LivingComposer (scripts/living/living_composer.gd)
+  resolve(key, state, profile, weather) -> {base, layers[], shader}   (reine Entscheidung, getestet)
+  build(key, state, original_texture, profile, weather) -> Node2D
+    ├─ Sprite2D  Basis (Original oder Strukturvariante) + gemeinsames Verschleiß-Material
+    └─ Sprite2D  je Overlay (vorab beschnitten, Versatz aus dem Manifest)
 ```
-- **CPUParticles2D** statt GPUParticles2D: läuft im Compatibility-Renderer auf WebGL 2 zuverlässig.
-- Texturen der Stufe 3 werden **erst bei Bedarf geladen** (die meisten Gebäude sind die meiste Zeit in Zustand 2–4 = nur Original + Shader).
-- Overlays und Varianten liegen später in **Atlanten je Kategorie** (weniger Texturwechsel).
+- **Keine Pixelarbeit zur Laufzeit**: nur gestapelte Sprites; Overlays sind je Strukturvariante vorab beschnitten. Batching bleibt erhalten (ein Material je Verschleißstufe).
+- Overlays bleiben **ohne Shader** (das Schmutzfeld ist je Textur verankert und würde zwischen getrennten Sprites nicht passen).
+- **CPUParticles2D** für Feuer/Rauch/Wetter (WebGL 2 im Compatibility-Renderer zuverlässig).
+- Texturen werden nur bei Bedarf geladen; später Atlanten je Kategorie.
 
-## 4. Qualitätsprofile (Referenzgerät iPhone 15 Pro Max)
+### Dauerhafte Speicherung (vorbereitet)
+`VisualState.to_dict()` ist das Speicherformat je Objekt (z. B. künftig `WorldState.settlements[…].buildings[id].visual`):
+```json
+{"schema": 1, "structure": "intact", "wear": 1, "damage": 0, "fire": 0, "overgrowth": 0, "repair": 2,
+ "changed_at_unix": 1764000000, "history": [{"event": "repaired", "at": 1764000000}]}
+```
+- Änderungen **nur durch Ereignisse** der Simulation (`damaged`, `fire_large`, `burnt_out`, `destroyed`, `became_ruin`, `repaired`, `restored`, `traces_faded`, `maintained`, `neglected`, `overgrown`, `cleared`); Historie (max. 12 Einträge).
+- **Laden verändert nichts** – es gibt keine Funktion, die Verfall aus verstrichener Echtzeit ableitet (Test: *absence does not cause decay*).
+- Wetter wird **nicht** gespeichert (kommt aus der Umwelt).
 
-| | **Ultra** (iPhone 15 Pro/Max und neuer) | **Hoch** (iPhone 12–14) | **Leistung** (ältere iPhones, z. B. XR/11/SE) |
+## 4. Qualitätsprofile (Referenzgerät iPhone 15 Pro Max) – umgesetzt in `LivingComposer.PROFILES`
+
+| | **Ultra** (iPhone 15 Pro/Max und neuer) | **Hoch** (Standard; iPhone 12–14) | **Leistung** (ältere iPhones, z. B. XR/11/SE) |
 |---|---|---|---|
-| Stufe 1 Shader | an | an | aus → Original (Zustände 3–5 sehen wie 2 aus) |
-| Stufe 2 Overlays | alle | alle | nur Schäden ab Zustand 6 |
-| Stufe 3 Varianten | an | an | an (gehören zur Lesbarkeit der Welt) |
-| Feuer/Rauch | volle Partikelzahl | 60 % | 25 %, Flamme ohne Rauch |
-| Wetter-Partikel | 100 % | 50 % | 20 % + Boden-Overlay |
-| Funken, Staub, Blätter | an | an | aus |
-| Auflösung | 100 % | 100 % | 75 % (dynamisch) |
+| Strukturvarianten (Ausgebrannt, Zerstört, Ruine …) | an | an | an (gehören zur Lesbarkeit der Welt) |
+| Overlays je Objekt | bis 6 | bis 4 | bis 2 – **Vorrang**: Schaden > Brand > Reparatur > Abnutzung > Bewuchs > Schnee |
+| Verschleiß-Shader | an | an | aus |
+| Wetter-Overlays (Schnee auf Objekten) | an | an | aus (Boden-Overlays bleiben) |
+| Partikel (Feuer, Rauch, Regen, Schnee) | 100 % | 60 % | 25 % |
+| animierte Flammen | an | an | aus (stehendes Bild) |
 
-**Die Simulation ist in allen Profilen identisch.** Profile ändern nur Darstellung; der sichtbare Zustand wird aus denselben Simulationswerten abgeleitet (§5). Umschalten per Menü; Standard nach Gerätemessung.
+**Die Simulation ist in allen Profilen identisch**: Profile wirken nur in `resolve()/build()`, der `VisualState` wird nie verändert (Test: *quality profile never changes the visual/simulation state*). Galerie: `?gallery=living&profile=ultra|hoch|leistung`.
+
+**Messungen:** Diagnoseberichte tragen jetzt `context` = `testgalerie` oder `spiel` – Galerie-Werte (alle Zustände gleichzeitig geladen) dürfen nicht mit dem Spielbetrieb verglichen werden.
 
 ## 5. Automatische Zustandsauswahl (Vorschlag, noch nicht umgesetzt)
 Eine reine Funktion `VisualStateResolver.resolve(sim) → {base, wear, overlay, fx}` liest **nur** Simulationswerte:
@@ -62,13 +85,16 @@ Eine reine Funktion `VisualStateResolver.resolve(sim) → {base, wear, overlay, 
 
 **Abwesenheitsregel (verbindlich):** Die Abwesenheit eines Spielers verändert **keinen** Eingangswert. `maintenance` sinkt nur, wenn die Simulation tatsächlich keine Instandhaltung leistet (fehlendes Budget, fehlendes Personal, Leerstand) – Instandhaltung durch NPCs/Verträge läuft auch während der Pause weiter ([SIMULATION_ARCHITECTURE.md](../SIMULATION_ARCHITECTURE.md)). **Hysterese** (z. B. ±0,05) verhindert Flackern zwischen zwei Stufen.
 
-## 6. Performance-Einschätzung
-| Aspekt | Einschätzung |
+## 6. Performance-Einschätzung (Stand Schritt G, gemessen)
+| Aspekt | Wert / Einschätzung |
 |---|---|
-| Speicher Stufe 1 | ~0 (eine 192-KB-Textur für alles) |
-| Speicher Stufe 2 | gering: Overlays 10–57 % der Originalfläche; nur geladen, wenn aktiv |
-| Speicher Stufe 3 | wie das Original je aktivem Zustand; bei 21 Gebäuden, davon typischerweise 0–3 im Zustand ≥ 8 → wenige MB |
-| Draw Calls | Stufe 1: keine zusätzlichen (gemeinsame Materialien je Stufe); Stufe 2: +1 je Overlay; Effekte: +1 je Partikelsystem/Animation |
-| Shaderkosten | 2 Texturzugriffe + wenige Rechenschritte je Pixel – auf dem iPhone vernachlässigbar im Vergleich zur Füllrate der Sprites |
-| Größtes Risiko | nicht die Zustände, sondern der bestehende Boden (357 Draw Calls) und die Figuren-Texturen (~380 MB) – siehe [PERFORMANCE.md](../PERFORMANCE.md) §7. Diese sollten **vor** einer breiten Zustandsintegration optimiert werden. |
-| Erzeugungszeit (Werkzeug) | Haus ~40 s, Rathaus ~290 s (Segmentierung in Python) → vor Schritt G optimieren (Segmentierung zwischenspeichern, gröber analysieren) |
+| Umfang der Serie | 771 PNG-Dateien, **23,3 MB** auf Datenträger (privat); Gebäude im Mittel 1,1 MB je Gebäude (alle Basen + Overlays), Stadtmöbel 8–126 KB, Bäume ~30 KB, Bodenfamilien: 32 Overlays für alle 23 Bodenkacheln |
+| Grafikspeicher im Spiel | nur **aktive** Zustände werden geladen. Wohnhaus: Original 0,52 MB (RGBA), typischer Overlay 0,01–0,22 MB; Beispiel „verschmutzt + beschädigt + teilweise ausgebrannt“ = +0,47 MB. Rathaus mit **allen** Overlays gleichzeitig wären 6,6 MB – kommt nur in der Galerie vor |
+| Overlay-Fläche | Median 12 % der Objektfläche (max. 83 % bei Schnee auf kleinen Objekten) |
+| Draw Calls | Shader: 0 zusätzlich (gemeinsames Material je Stufe); Overlay: +1 je Overlay; Profil **Leistung** begrenzt auf 2 Overlays je Objekt |
+| CPU zur Laufzeit | keine Pixelarbeit: Overlays sind je Strukturvariante vorab beschnitten; `resolve()` ist eine kleine Tabellenentscheidung |
+| Galerie (Kontext **testgalerie**, Chromium/SwiftShader, iPhone-15-Pro-Max-Emulation) | 97–102 Objekte, **208–216 Draw Calls**, **71,3–71,8 MB** Texturspeicher je Profil (alle Zustände gleichzeitig geladen) – **nicht** mit dem Spielbetrieb vergleichbar; FPS unter Software-Rendering nicht aussagekräftig |
+| Spielbetrieb (Kontext **spiel**) | unverändert, da noch nicht eingebaut (Referenz: PERFORMANCE.md §7 – 448 Draw Calls, davon 357 Boden) |
+| Größtes Risiko | weiterhin Boden-Draw-Calls und Figuren-Texturen (PERFORMANCE.md §7) – vor einer breiten Zustandsintegration optimieren |
+| Erzeugungszeit (Werkzeug) | gesamte Serie inkl. Prüfung ~15 min auf einem CPU-Kern (Gebäude 10–37 s, Objekte < 1 s) |
+| iPhone | **nicht gemessen** – Messung durch den Projektinhaber: `?gallery=living&perf=1&profile=…` (Galerie) bzw. `?perf=1` (Spiel) |

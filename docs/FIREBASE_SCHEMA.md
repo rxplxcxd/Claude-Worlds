@@ -21,8 +21,12 @@ Kleine Dokumente, Unterkollektionen für wachsende Listen, Schreibvorgänge bün
 worlds/{worldId}                                  name, seed, created_at (UTC); Zeit = Server-UTC, keine eigene Spielzeit
 (Geografie: NICHT in Firestore – gebackene Dateien data/world/planet, gleich für alle; nur veränderliche Felder:)
 worlds/{worldId}/regions/{regionId}               development, territory_id (nur sobald ≠ Genesis)
-worlds/{worldId}/territories/{territoryId}        owner_settlement_id, owner_player_id, region_ids[], kind, claimed_at
+worlds/{worldId}/territories/{territoryId}        owner_entity_id, kind, geometry (sphärisches Polygon), area_km2, cover_l8[] (Index-Zellen inkl. 21-km-Puffer),
+                                                  status (provisional|active|dormant), version, claimed_at, last_active_at
+  └ history/{changeId}                            Grenzänderungen (Erweiterung, Vertrag, Fusion)
+worlds/{worldId}/expansion_claims/{claimId}       territory_id, geometry, state, deadlines, objections[]
 worlds/{worldId}/settlements/{settlementId}       name, region_id, stage, founder_player_id, resident_player_ids, founded_at_unix (UTC), timezone (IANA), utc_offset_minutes_at_founding, position {lat, lon}, region_id, continent_id, territory_id, population_counts, summary
+  ├─ chunks/{chunkId}                             version, terrain, parcels, buildings, road_segments, zones (Siedlungszustand, ADR-17)
   ├─ buildings/{buildingId}                       type, grid, footprint, state, owner_id
   ├─ properties/{propertyId}                      parcel, owner_id, lease_contract_id
   ├─ infrastructure/{segmentId}
@@ -35,7 +39,9 @@ worlds/{worldId}/contracts/{contractId}           parties (IDs), kind, terms, st
 worlds/{worldId}/trade_routes/{routeId}
 worlds/{worldId}/organizations/{orgId}
 worlds/{worldId}/political_entities/{entityId}
-  └─ laws/{lawId}
+  └─ laws/{lawId}                                 rules[], effects[], level, status, version (LAW_ENGINE.md §3)
+worlds/{worldId}/procedures/{procedureId}         action, actor, target, requirements, state, deadlines (Verfahren)
+worlds/{worldId}/properties/{propertyId}          parcel/building, owner, shares, leases
 worlds/{worldId}/councils/{councilId}
   └─ sessions/{sessionId}
        └─ decisions/{decisionId}

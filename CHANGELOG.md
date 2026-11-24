@@ -2,6 +2,85 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.5.0] – Phase 3: Living World
+
+### Hinzugefügt
+- **Simulation des Siedlungslebens** (`scripts/sim/`, `data/sim/living_world.json`): persistente NPC-Identitäten (Persönlichkeit, Alter, Beruf mit Fertigkeit), 5 Bedürfnisse, 9 Aktivitäten, Berufe mit Schichten, Utility AI, ereignisgesteuertes Fortschreiben (`advance`), Siedlungszeitzone.
+- **Navigation**: Raster-A* (AStarGrid2D), Orte (Türen, Dorfplatz, Grün) mit Stehplätzen, gecachte Wegzeiten; NPCs gehen sichtbar über Gehwege und queren Straßen.
+- **Simulations-LOD**: S0 (im Bild, detailliert, nach Grafikprofil begrenzt) / S1 (nur Daten); Darstellung als Funktion von Zustand und Zeit → nie veraltet, kein Nachsimulieren; Nachholen nach Abwesenheit beim Laden.
+- **Interaktionen**: Live-Infokarte und „Grüßen“ (persistente Wirkung), Gruppen und Sprechblasen auf Platz/Grün/Läden, Arbeits- und Benutzen-Animationen.
+- **Visuelle Folgen**: `VisualEventRouter` – Kaminrauch/Werkstattfunken aus dem aktuellen Zustand; Simulationsereignisse → dauerhafte Living-Assets-Zustände (`record.visual_states`).
+- **Grafikprofile** Ultra/Hoch/Leistung (automatisch erkannt, nur Darstellung).
+- **Lizenz**: Penzilla-Pflichtnennung und vollständige Bearbeitungsliste im Menü („Mitwirkende & Lizenzen“) und in `CREDITS.md`; verbindliche Lizenzauswertung.
+- **Cooked FX** (Cozy Chunky) bewertet: privater Import, Testgalerie `?gallery=cookedfx`, Entscheidungsvorlage.
+- Tests: 185 Prüfungen (Determinismus, Ein-Sprung = viele Schritte, Schichten, Nachtruhe, Navigation, Speichern/Laden, Nachholen, LOD-Invarianz, 1 000 NPCs, Interaktion, Router, Credits).
+
+### Geändert
+- Speicherschema 4 (Migration automatisch). NPC-Präsenz nach fester Uhrzeit (Phase 1) durch die Simulation ersetzt.
+
+## [0.4.2] – Living Assets Schritt G: Materialerkennung, kombinierbare Zustände, Serienproduktion
+
+### Hinzugefügt
+- **Materialerkennung** `tools/assets/living_materials.py` (Glas, Dach, Putz, Ziegel, Stein, Holz natürlich/lackiert, Zierteile, Metall, Stoff, Pflanze, Wasser) aus Farbe, Lage, Form, Textur und Kontext; RPG-Läden exakt über Ebenennamen; Korrekturen je Asset.
+- **Kombinierbare Merkmale** `tools/assets/living_traits.py`: Strukturbasen (Teileinsturz, ausgebrannt, zerstört, Ruine; umgestürzt, verbrannt, Wrack, trocken, abgestorben, Brunnen leer/veralgt/gefroren …) + unabhängige Overlays (Abnutzung 2/3, Schaden 1/2, Brand 1/2, Bewuchs 1/2, Reparaturspuren 1/2, Schnee) mit materialgerechten Effekten; Overlays je Basis vorab beschnitten.
+- **Serienproduktion** `tools/assets/make_living_states.py` für 87 Einträge (alle Spiel-Assets aller Kategorien + Fahrzeuge + Innenraum-Blätter), Profile nach Funktion (`tools/assets/living_assets.json`), Bodenfamilien mit gemeinsamen Overlays.
+- **Produktionskontrolle** `tools/assets/living_qa.py`: Kontaktbögen in voller und echter Spielgröße (iPhone 15 Pro Max, älteres iPhone), automatische Prüfungen (Leinwand/Anker, Ränder, Kantenpixel, Konturen, Rauschen, Sichtbarkeit und Unterscheidbarkeit in Spielgröße).
+- **Laufzeit-Bausteine** (noch nicht im Spiel verdrahtet): `VisualState` (dauerhaft speicherbarer visueller Zustand, nur ereignisgesteuert, kein Verfall durch Abwesenheit) und `LivingComposer` (Basis + Overlays + Shader, Qualitätsprofile Ultra/Hoch/Leistung).
+- Galerie `?gallery=living` nutzt den Composer, Profilwahl `&profile=…`; Diagnoseberichte tragen `context` (testgalerie/spiel).
+- Lizenzdokumentation `docs/living_assets/LICENSES.md`.
+- Tests: 164 Prüfungen (+15 Living Assets).
+
+### Geändert
+- Produktionsstandard bestätigt und ergänzt; Zustandsmatrix um Merkmalsmodell und Zustände je Funktion erweitert.
+
+### Nicht geändert
+- Spielmechanik und Darstellung im Spiel sind unverändert.
+
+## [0.4.1] – Living Assets & Environmental Storytelling (visuell, kein Gameplay)
+
+### Hinzugefügt
+- **Asset-Inventar** aller 7 901 Dateien der Penzilla-Pakete (+ CC0-Interior): `docs/living_assets/asset_inventory.csv` (Kategorie, Quelle, Maße, Perspektive, Animation, Verwendung, Godot-Kompatibilität, Lizenz, Zustandsgruppe), erzeugt von `tools/assets/inventory.py`.
+- **Zustandsmatrix** (12 Gebäudezustände, Gruppen für Vegetation, Böden, Stadtmöbel, Fahrzeuge, Innenräume) – `docs/living_assets/STATE_MATRIX.md`.
+- **Variantengenerator** `tools/assets/living_states.py` + `make_living_samples.py` (in 0.4.2 ersetzt) (dreistufig: Shader / Overlay / Vollvariante); Ergebnisse privat in `assets/penzilla/states/` (git-ignoriert).
+- **Eigene VFX im Penzilla-Stil** `assets/vfx/` (Feuer, Rauch, Funken, Regen, Schnee, Staub, Blätter, Spritzer, Reparatur, Belohnung, Trümmer) und Verschleiß-Shader `shaders/living_wear.gdshader`.
+- **Test-Galerie** `?gallery=living` (nur Web, nur mit URL-Parameter) zur technischen Prüfung.
+- Dokumente: Produktionsstandard (Vorschlag), Qualitätsprüfung, VFX-Quellen/Lizenzen, technische Integration inkl. Qualitätsprofile und Performance, Prioritätenliste.
+
+### Nicht geändert
+- Spielmechanik und Darstellung im Spiel sind unverändert; Zustände werden noch nirgends im Spiel verwendet.
+
+## [0.4.0] – Paket 2.1: Territorien, 20-km-Regel, Besiedelbarkeit, Diagnose
+
+### Hinzugefügt
+- **Eigene Territorien** statt ganzer Regionen: Startterritorium genau 1 × 1 km (sphärisches Polygon, Ost/Nord ausgerichtet, auch an den Polen), mit Index-Zellen, Version, Historie, Status; Siedlungsfläche (`settlement_area`) getrennt gespeichert.
+- **20 km zwischen Territoriumsgrenzen**, geodätisch (Punkt–Bogen-/Polygonabstand auf der Kugel, korrekt über Datumsgrenze und Pole); Überlappungsprüfung als Invariante.
+- **Räumlicher Index** (Würfel-Kugel-Quadtree, Ebene 8 ≈ 24 km).
+- **Sperrzonen** und Territorien exakt im Globus-Shader; Zoom bis ~120 km Höhe; Kamera bis 89°.
+- **Ganzer Planet besiedelbar**: keine Breiten-/Biom-Sperren mehr; Schwierigkeitsklassen leicht/mittel/schwer/extrem mit Anforderungen; extrem nur mit Bestätigung.
+- **Auswahl „Beitreten / Gründen“** nach dem Editor; Beitreten sichtbar als „Mehrspieler – noch nicht verfügbar“.
+- **Eine aktive Gründung pro Spieler.**
+- **Polartag/Polarnacht** im Sonnenmodell und im Menü.
+- **Diagnose (`PerfMonitor`)**: Live-Werte, 20-s-Messung, Aufschlüsselung der Draw Calls, `tools/perf_measure.js`, QA-Parameter `?qa_quickstart=1`.
+- Tests: 149 Prüfungen.
+
+### Geändert
+- Spielstände: Schema 3; Phase-2-Regionsansprüche werden einmalig in 1-km²-Territorien umgewandelt (gleiche ID, Historie).
+- Breitengrad-Berechnung über `atan2` (exakt nahe den Polen); Planet neu gebacken (eine Regionsmitte um 0,001° verschoben, Zellen identisch).
+
+### Gemessen
+- Siedlung: 448 Draw Calls, davon 357 Boden; ~380 MB Texturspeicher, überwiegend Figuren-Ebenen → Optimierungsvorschläge O1–O9 (PERFORMANCE.md §7.3).
+
+## [0.3.1] – Designvorgaben und technische Bewertung (nur Dokumentation)
+
+### Hinzugefügt
+- `docs/DESIGN_DIRECTIVES.md`: verbindliche Vorgaben des Projektinhabers vom 24.11.2026 (Regionen ≠ Siedlungsgrenze, ganzer Planet besiedelbar, 20 km zwischen Territoriumsgrenzen, 1 × 1 km Start, Beitreten/Gründen, Gestaltungsfreiheit, Eigentum/Befugnisse, Gesetzes-Engine, mehrstufige Simulation, 60 FPS).
+- `docs/TECHNICAL_ASSESSMENT.md`: Bewertung des Codes (unterstützt, fehlend, Architekturänderungen A1–A12, Risiken, Exploits, Mehrspieler-Folgen, Phasenvorschlag).
+- `docs/TERRITORY_SYSTEM.md`, `docs/LAW_ENGINE.md`, `docs/SIMULATION_ARCHITECTURE.md`.
+
+### Geändert
+- GEOGRAPHY_SYSTEM (§4 als überholt markiert, §8 Hierarchie/Kapazität), SETTLEMENT_SYSTEM (§8 Ausgangszustand, §9 Gestaltungsfreiheit), PLAYER_SYSTEM (§3a Beitreten/Gründen), NPC_SYSTEM, POLITICAL_SYSTEM, WORLD_DESIGN, PERFORMANCE (§6 Weg zu 60 FPS, Korrektur einer zu optimistischen Aussage zum Boden), ARCHITECTURE (vorgeschlagene ADR-15…20), FIREBASE_SCHEMA, ROADMAP.
+- **Kein Code geändert.** Die im Code noch aktiven Phase-2-Regeln (±62°, 300 km, Region als Gebiet) sind als Abweichung dokumentiert (DESIGN_DIRECTIVES §10).
+
 ## [0.3.0] – Phase 2: World Geography
 
 ### Hinzugefügt

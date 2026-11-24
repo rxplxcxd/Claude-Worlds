@@ -13,3 +13,10 @@ build/
 
 # Processed purchased assets (not redistributed in the public repo; see docs/ASSET_INVENTORY.md)
 assets/penzilla/
+
+# Python caches (asset tools)
+__pycache__/
+
+# third-party assets whose licenses forbid redistribution (Cooked FX)
+assets/thirdparty/cooked_fx/
+tests/tmp/

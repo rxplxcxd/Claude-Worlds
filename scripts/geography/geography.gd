@@ -8,10 +8,12 @@ extends Node
 ## site rules for founding (docs/GEOGRAPHY_SYSTEM.md §4).
 
 const PLANET_DIR := "res://data/world/planet"
-## Founding rules (proposal, docs/GEOGRAPHY_SYSTEM.md §7 [OFFEN] for final values).
-const MIN_SETTLEMENT_DISTANCE_KM := 300.0
-const MAX_FOUNDING_LATITUDE := 62.0
-const IDEAL_NEIGHBOUR_KM := Vector2(400.0, 1600.0)
+## Paket 2.1 (DESIGN_DIRECTIVES.md §2–3): no geographic bans. The whole planet
+## is settleable; the environment decides the DIFFICULTY. Only water cannot be
+## founded on (there is no land). Distance rule: 20 km border to border
+## (TerritoryGeometry.MIN_FOUNDING_GAP_KM).
+const IDEAL_NEIGHBOUR_KM := Vector2(20.0, 400.0)
+const DIFFICULTY_CLASSES := ["leicht", "mittel", "schwer", "extrem"]
 
 var _planet: PlanetData
 
@@ -32,11 +34,12 @@ func is_loaded() -> bool:
 
 
 ## Rates a founding site. `settlements` / `territories` = WorldState records.
-## Returns {valid, score (0..100), factors {name: 0..1}, reasons [], sample,
-## region}. Factors: water, climate, soil, resources, terrain, neighbours.
+## Returns {valid, score (0..100, attractiveness), factors {name: 0..1},
+## reasons [] (why invalid), sample, region, difficulty {class, hardness,
+## drivers, requirements, label}, nearest_border_km, nearest_name, ring}.
 func rate_site(lat: float, lon: float, settlements: Array, territories: Array, ignore_settlement_id: String = "") -> Dictionary:
 	var p := planet()
-	var out := {"valid": false, "score": 0, "factors": {}, "reasons": [], "sample": {}, "region": {}}
+	var out := {"valid": false, "score": 0, "factors": {}, "reasons": [], "sample": {}, "region": {}, "difficulty": {}, "nearest_border_km": INF, "nearest_name": "", "ring": []}
 	if p == null:
 		out["reasons"].append("Planetendaten fehlen.")
 		return out
@@ -45,30 +48,32 @@ func rate_site(lat: float, lon: float, settlements: Array, territories: Array, i
 	out["sample"] = s
 	out["region"] = region
 	var reasons: Array = out["reasons"]
-	if not s["land"]:
-		reasons.append("Hier ist Wasser.")
+	var ring := TerritoryGeometry.start_square(lat, lon, p.radius_km)
+	out["ring"] = ring
+	# 1) Land: the start square must lie on land. (Planet cells are ~49 km;
+	#    finer coasts follow with the terrain refinement in Phase 4.)
+	var land_ok: bool = s["land"]
+	for c in ring:
+		land_ok = land_ok and p.is_land(p.cell_of(float(c[0]), float(c[1])))
+	if not land_ok:
+		reasons.append("Hier ist Wasser – eine Siedlung braucht Land.")
+	# 2) 20 km between territory borders (geodesic), no overlap.
+	var nb := TerritoryGeometry.nearest_border(ring, territories, p.radius_km, ignore_settlement_id)
+	var gap: float = nb["distance_km"]
+	out["nearest_border_km"] = gap
+	if not nb["territory"].is_empty():
+		var owner := _settlement_name(settlements, nb["territory"].get("owner_settlement_id", ""))
+		out["nearest_name"] = owner
+		if gap <= 0.0:
+			reasons.append("Der Ort liegt im Gebiet von %s." % owner)
+		elif gap < TerritoryGeometry.MIN_FOUNDING_GAP_KM:
+			reasons.append("Nur %s km bis zur Gebietsgrenze von %s – mindestens %d km nötig." % [_km(gap), owner, int(TerritoryGeometry.MIN_FOUNDING_GAP_KM)])
+	if not land_ok:
+		out["valid"] = false
 		return out
-	var biome: String = s["biome"]
-	if biome == "ice":
-		reasons.append("Auf Eis kann keine Siedlung entstehen.")
-	if biome == "mountain":
-		reasons.append("Das Hochgebirge ist zu steil für eine Gründung.")
-	if absf(lat) > MAX_FOUNDING_LATITUDE:
-		reasons.append("Zu nah am Pol (max. %d° Breite)." % int(MAX_FOUNDING_LATITUDE))
-	# Distance to other settlements and foreign territory.
-	var nearest := INF
-	for st in settlements:
-		if st.get("settlement_id", "") == ignore_settlement_id or not st.has("position"):
-			continue
-		var pos: Dictionary = st["position"]
-		nearest = minf(nearest, Geo.distance_km(lat, lon, pos["lat"], pos["lon"], p.radius_km))
-	if nearest < MIN_SETTLEMENT_DISTANCE_KM:
-		reasons.append("Zu nah an einer anderen Siedlung (%d km, mindestens %d km)." % [int(nearest), int(MIN_SETTLEMENT_DISTANCE_KM)])
-	for t in territories:
-		if t.get("owner_settlement_id", "") != ignore_settlement_id and (t.get("region_ids", []) as Array).has(s["region_id"]):
-			reasons.append("Die Region gehört bereits zum Gebiet einer anderen Siedlung.")
+	# 3) Attractiveness factors (unchanged idea from Phase 2).
 	var f := {}
-	# Water: river right here > lake/coast nearby > region access.
+	var biome: String = s["biome"]
 	var water := 0.2
 	if _near_flag(p, lat, lon, "river", 1):
 		water = 1.0
@@ -78,6 +83,8 @@ func rate_site(lat: float, lon: float, settlements: Array, territories: Array, i
 		water = 0.8
 	elif region.get("water_access", "none") != "none":
 		water = 0.5
+	if biome == "ice":
+		water = maxf(water, 0.35) # ice can be melted – at an energy cost
 	f["water"] = water
 	var t_c: float = s["temperature_c"]
 	var rain: float = s["rainfall"]
@@ -92,21 +99,84 @@ func rate_site(lat: float, lon: float, settlements: Array, territories: Array, i
 	for k in mini(4, res.size()):
 		res_sum += float(res[k]["abundance"])
 	f["resources"] = clampf(res_sum / 3.0, 0.0, 1.0)
-	f["terrain"] = {"plain": 1.0, "forest": 0.75, "hills": 0.6, "desert": 0.3, "tundra": 0.25, "mountain": 0.05, "ice": 0.0}.get(biome, 0.5)
-	if nearest == INF:
-		f["neighbours"] = 0.7 # first settlement: no trade partners yet, no conflict either
-	elif nearest < MIN_SETTLEMENT_DISTANCE_KM:
+	f["terrain"] = {"plain": 1.0, "forest": 0.75, "hills": 0.6, "desert": 0.3, "tundra": 0.25, "mountain": 0.1, "ice": 0.05}.get(biome, 0.5)
+	if gap == INF:
+		f["neighbours"] = 0.7 # first settlement: no partners yet, no conflict either
+	elif gap < TerritoryGeometry.MIN_FOUNDING_GAP_KM:
 		f["neighbours"] = 0.0
 	else:
-		f["neighbours"] = 1.0 if nearest <= IDEAL_NEIGHBOUR_KM.y else clampf(1.0 - (nearest - IDEAL_NEIGHBOUR_KM.y) / 3000.0, 0.3, 1.0)
+		f["neighbours"] = 1.0 if gap <= IDEAL_NEIGHBOUR_KM.y else clampf(1.0 - (gap - IDEAL_NEIGHBOUR_KM.y) / 3000.0, 0.3, 1.0)
 	out["factors"] = f
 	var weights := {"water": 0.24, "climate": 0.2, "soil": 0.18, "resources": 0.14, "terrain": 0.14, "neighbours": 0.1}
 	var score := 0.0
 	for k in weights.keys():
 		score += weights[k] * float(f[k])
 	out["score"] = int(round(score * 100.0))
+	out["difficulty"] = difficulty(s, region, f, gap)
 	out["valid"] = reasons.is_empty()
 	return out
+
+
+## Founding difficulty from the environment (TERRITORY_SYSTEM.md §6). No site
+## on land is forbidden; harder sites need more resources, technology and
+## logistics. Returns {class, index 0..3, hardness 0..1, drivers {name: 0..1},
+## requirements [text], label}.
+func difficulty(s: Dictionary, region: Dictionary, f: Dictionary, gap_km: float) -> Dictionary:
+	var t: float = s["temperature_c"]
+	var biome: String = s["biome"]
+	var elev: float = maxf(float(s["elevation_m"]), 0.0)
+	var d := {}
+	d["cold_heat"] = clampf((8.0 - t) / 30.0, 0.0, 1.0) + clampf((t - 30.0) / 12.0, 0.0, 1.0)
+	d["water"] = clampf(1.0 - float(f.get("water", 0.0)), 0.0, 1.0)
+	d["food"] = clampf(1.0 - float(f.get("soil", 0.0)) * 1.4, 0.0, 1.0)
+	d["terrain"] = {"plain": 0.0, "forest": 0.2, "hills": 0.35, "desert": 0.45, "tundra": 0.5, "mountain": 0.8, "ice": 0.9}.get(biome, 0.3) + clampf((elev - 2500.0) / 3000.0, 0.0, 0.3)
+	d["energy"] = clampf(float(d["cold_heat"]) * 1.1 + (0.2 if biome == "ice" else 0.0), 0.0, 1.0)
+	var access := 0.65
+	if s["coastal"] or s["river"]:
+		access = 0.25
+	elif region.get("water_access", "none") != "none":
+		access = 0.45
+	d["transport"] = access
+	d["resources"] = clampf(1.0 - float(f.get("resources", 0.0)), 0.0, 1.0)
+	var w := {"cold_heat": 0.22, "water": 0.14, "food": 0.18, "terrain": 0.16, "energy": 0.12, "transport": 0.1, "resources": 0.08}
+	var h := 0.0
+	for k in w.keys():
+		h += w[k] * clampf(float(d[k]), 0.0, 1.0)
+	var idx := 0
+	if h >= 0.62:
+		idx = 3
+	elif h >= 0.45:
+		idx = 2
+	elif h >= 0.3:
+		idx = 1
+	var req: Array = []
+	if float(d["cold_heat"]) > 0.5:
+		req.append("Isolierte, beheizte Gebäude und Kälteschutz")
+	if float(d["energy"]) > 0.55:
+		req.append("Hoher Energiebedarf (Heizung%s)" % (", Eisschmelze" if biome == "ice" else ""))
+	if float(d["water"]) > 0.6:
+		req.append("Wasserversorgung aufwendig (Brunnen, Leitungen oder Schmelze)")
+	if float(d["food"]) > 0.7:
+		req.append("Kaum eigene Landwirtschaft – Nahrung muss eingeführt oder in Gewächshäusern erzeugt werden")
+	if float(d["terrain"]) > 0.6:
+		req.append("Schwieriges Gelände – höhere Baukosten")
+	if float(d["transport"]) > 0.6:
+		req.append("Abgelegen – lange, teure Versorgungswege")
+	if t > 32.0:
+		req.append("Hitzeschutz und Kühlung")
+	return {"class": DIFFICULTY_CLASSES[idx], "index": idx, "hardness": snappedf(h, 0.01), "drivers": d, "requirements": req,
+		"label": ["Leichter Start", "Mittlerer Aufwand", "Schwieriger Standort", "Extremer Standort"][idx]}
+
+
+func _settlement_name(settlements: Array, settlement_id: String) -> String:
+	for st in settlements:
+		if st.get("settlement_id", "") == settlement_id:
+			return str(st.get("name", "einer Siedlung"))
+	return "einer Siedlung"
+
+
+static func _km(v: float) -> String:
+	return ("%.1f" % v).replace(".", ",")
 
 
 ## Best valid site on the planet (deterministic): region centres and a few

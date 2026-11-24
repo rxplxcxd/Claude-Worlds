@@ -90,5 +90,9 @@ Lizenzen am **24.11.2026 direkt auf den Originalseiten geprüft**.
 ## 6. Selbst erstellte Dateien
 | Datei | Verwendung |
 |---|---|
+| `assets/vfx/vfx_atlas.png/.json`, `assets/vfx/grime_field.png` | eigene VFX und Verschleiß-Feld (Living Assets), prozedural aus `tools/assets/make_vfx.py` |
 | `icon.svg`, `web/icons/*.png` | App-/PWA-Icons (projekt-eigen) |
 | Prozedurale Platzhalter (`IsoPainter`, `GroundLayer`, `Building`, `Prop`, `PlayerVisual`) | Fallback ohne Penzilla-Dateien |
+
+## 7. Vollständiges Inventar und Zustände (Living Assets)
+Die vollständige Liste aller Dateien der Pakete (7 901 Einträge, mit Maßen, Perspektive, Animation, Godot-Kompatibilität, Lizenz und möglicher Zustandsgruppe) steht in [living_assets/asset_inventory.csv](living_assets/asset_inventory.csv). Zustände, Produktionsstandard und Lizenzen: [living_assets/README.md](living_assets/README.md).

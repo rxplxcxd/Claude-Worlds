@@ -24,9 +24,22 @@ var camera: CameraRig
 var interactions: InteractionService
 ## Generated street furniture (for tests / validation).
 var street_items: Array = []
-## Founding community (Npc nodes).
+## Inhabitants (Npc nodes) – presentation of the simulation.
 var npcs: Array[Npc] = []
-var _presence_timer := 0.0
+## Phase 3: the living world of this settlement (pure data, see docs/LIVING_WORLD.md).
+var sim: SettlementSim
+var building_nodes: Dictionary = {}   # building_id -> Building
+var _names: Dictionary = {}
+var _npc_by_id: Dictionary = {}
+var _lod_timer := 0.0
+var _save_timer := 60.0
+var _detail: Dictionary = {}           # npc_id -> true for LOD S0 (visible + detailed)
+var _groups: Dictionary = {}
+var _preview_sim: SettlementSim
+var _preview_key := -1
+var _fx_nodes: Dictionary = {}          # effect key -> node
+var _vfx_atlas: Texture2D
+var _vfx_meta: Dictionary = {}
 
 @onready var ground: GroundLayer = $Ground
 @onready var objects: Node2D = $Objects
@@ -53,7 +66,7 @@ func _ready() -> void:
 	data.apply_record(record)
 	# The sun follows the settlement's latitude on the planet (day length).
 	if record.has("position"):
-		GameClock.latitude = clampf(float(record["position"]["lat"]), -60.0, 60.0)
+		GameClock.latitude = float(record["position"]["lat"])
 	var problems := data.validate()
 	for p in problems:
 		push_warning("Settlement layout: " + p)
@@ -69,7 +82,9 @@ func _ready() -> void:
 	interactions.name = "InteractionService"
 	interactions.settlement = data
 	add_child(interactions)
+	player.interaction_requested.connect(_on_interaction_requested)   # refresh NPC card first
 	player.interaction_requested.connect(interactions.open)
+	EventBus.interaction_action.connect(_on_interaction_action)
 
 	camera = CameraRig.new()
 	camera.name = "Camera"
@@ -81,6 +96,7 @@ func _ready() -> void:
 	player.moved_by_input.connect(camera.recenter)
 
 	_setup_occlusion()
+	add_to_group("perf_view")
 	GameClock.minute_changed.connect(_on_minute)
 	_on_minute(0)
 	# Deferred: sibling nodes (HUD) are ready by then.
@@ -94,6 +110,21 @@ func _ready() -> void:
 
 
 ## Blocks/unblocks direct control (e.g. while the character editor is open).
+## Diagnostics for PerfMonitor: world objects whose position lies in (or
+## close to) the camera view. The ground is one drawing with all tiles.
+func perf_stats() -> Dictionary:
+	var vis := 0
+	var total := 0
+	if camera:
+		var rect := Rect2(camera.get_screen_center_position() - get_viewport_rect().size * 0.5 / camera.zoom, get_viewport_rect().size / camera.zoom).grow(160)
+		for c in objects.get_children():
+			total += 1
+			if c is Node2D and rect.has_point((c as Node2D).global_position):
+				vis += 1
+	return {"view": "Siedlung", "visible_objects": vis, "total_objects": total,
+		"ground_tiles_drawn": data.size.x * data.size.y if data else 0, "npcs": npcs.size()}
+
+
 func set_input_enabled(on: bool) -> void:
 	if player:
 		player.input_enabled = on
@@ -134,6 +165,7 @@ func _build_buildings() -> void:
 		var b := Building.new()
 		b.setup(entry)
 		objects.add_child(b)
+		building_nodes[entry.get("id", "")] = b
 
 
 func _build_props() -> void:
@@ -225,25 +257,43 @@ func _scatter_vegetation() -> void:
 func _build_npcs() -> void:
 	if not CharacterCatalog.is_available():
 		return # NPCs need the character art; no placeholder crowd.
+	if WorldState.authority:
+		WorldState.authority.ensure_population(record)
 	var roster: Array = record.get("npcs", [])
 	if roster.is_empty():
-		roster = NpcRoster.generate(record.get("settlement_id", ""), data.buildings)
+		roster = NpcRoster.generate(record.get("settlement_id", ""), data.buildings, SettlementSim.load_config().get("founding_population", {}).get("composition", []))
 		record["npcs"] = roster
-		WorldState.save_world()
-	var spawn_cell := Vector2i(int(floor(data.spawn.x)), int(floor(data.spawn.y)))
-	var reserved: Array = [spawn_cell]
-	for it in street_items:
-		var g: Vector2 = it["grid_v"]
-		reserved.append(Vector2i(int(floor(g.x)), int(floor(g.y))))
-	var spots := NpcRoster.plan_spots(data, roster, reserved)
-	var names := {}
 	for b in data.buildings:
-		names[b.get("id", "")] = b.get("name", "")
-	for r in roster:
-		var n := Npc.new()
-		n.setup(r, spots.get(r.get("npc_id", ""), {}), names)
-		objects.add_child(n)
-		npcs.append(n)
+		_names[b.get("id", "")] = b.get("name", "")
+	# Phase 3: bring the living world to NOW before anything is shown
+	# (catch-up after absence is event-driven and invisible), then persist.
+	sim = SettlementSim.create(record, data, int(GameClock.get_utc_unix()))
+	if WorldState.authority:
+		WorldState.authority.attach_hot(sim)   # tier S0/S1 while the scene is open
+	sim.store()
+	WorldState.save_world()
+	_sync_npc_nodes()
+	_update_lod(true)
+
+
+## One node per LIVING inhabitant: newcomers appear, the deceased leave.
+func _sync_npc_nodes() -> void:
+	var alive := {}
+	for r in sim.roster:
+		alive[r["npc_id"]] = true
+		if not _npc_by_id.has(r["npc_id"]):
+			var n := Npc.new()
+			n.setup(r, _names)
+			objects.add_child(n)
+			npcs.append(n)
+			_npc_by_id[r["npc_id"]] = n
+	for id in _npc_by_id.keys():
+		if not alive.has(id):
+			var n: Npc = _npc_by_id[id]
+			npcs.erase(n)
+			_npc_by_id.erase(id)
+			_detail.erase(id)
+			n.queue_free()
 
 
 func _build_player() -> void:
@@ -302,11 +352,290 @@ func _process(delta: float) -> void:
 	# Cheap; keeps the time-of-day preview and dawn/dusk transitions fluid.
 	day_night.color = GameClock.get_ambient_color()
 	_update_occlusion(delta)
-	_presence_timer -= delta
-	if _presence_timer <= 0.0:
-		_presence_timer = 0.5 # also follows the time-of-day preview
-		for n in npcs:
-			n.update_presence()
+	if sim == null:
+		return
+	_lod_timer -= delta
+	if _lod_timer <= 0.0:
+		_lod_timer = 0.25
+		var n_before := sim.roster.size()
+		sim.advance_to(int(GameClock.get_utc_unix()))
+		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived"]):
+			_sync_npc_nodes()
+		_update_lod(false)
+	_render_npcs(false)
+	_save_timer -= delta
+	if _save_timer <= 0.0:
+		_save_timer = 60.0
+		persist()
+
+
+## Writes the simulation into the settlement record and saves the world.
+func persist() -> void:
+	if sim:
+		sim.store()
+		WorldState.save_world()
+
+
+func _exit_tree() -> void:
+	persist()
+	if sim and WorldState.authority:
+		WorldState.authority.detach_hot(record.get("settlement_id", ""))
+
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		persist()
+
+
+# --- Phase 3: presentation of the simulation (LOD) ---------------------------------
+
+## Time shown: real time, or the time-of-day preview (menu / QA) – the
+## preview uses a throw-away simulation and never changes the real one.
+func render_time() -> float:
+	if GameClock.preview_minute_of_day < 0.0:
+		return GameClock.get_utc_unix()
+	var now := int(GameClock.get_utc_unix())
+	return float(NpcBrain.day_start(now, sim.offset_min()) + int(GameClock.preview_minute_of_day * 60.0))
+
+
+func render_sim() -> SettlementSim:
+	if GameClock.preview_minute_of_day < 0.0:
+		_preview_sim = null
+		return sim
+	var t := int(render_time())
+	var key := int(t / 300)
+	if _preview_sim == null or _preview_key != key:
+		_preview_key = key
+		_preview_sim = SettlementSim.preview(record, data, t, sim.config)
+	return _preview_sim
+
+
+## LOD classification (4×/s): NPCs whose position lies in the camera view
+## are rendered in detail (S0, capped by the graphics profile, nearest to the
+## view centre first); all others are data-only (S1): hidden, not processed.
+func _update_lod(force: bool) -> void:
+	var s := render_sim()
+	var t := render_time()
+	var rect := _view_rect().grow(220)
+	var cap := int(GraphicsProfile.params()["npc_detail_cap"])
+	var centre := rect.get_center()
+	var cand := []
+	for r in s.roster:
+		var id: String = r["npc_id"]
+		var info := s.render_info(id, t)
+		var w := Iso.grid_to_world(info.get("grid", Vector2.ZERO))
+		if info.get("visible", false) and rect.has_point(w):
+			cand.append([w.distance_squared_to(centre), id])
+	cand.sort()
+	_detail.clear()
+	for i in mini(cap, cand.size()):
+		_detail[cand[i][1]] = true
+	_groups = s.groups_at(t)
+	_render_npcs(true)
+	_update_effects(s, t)
+
+
+func _view_rect() -> Rect2:
+	if camera == null:
+		return _world_bounds()
+	var vp := get_viewport_rect().size / camera.zoom
+	return Rect2(camera.get_screen_center_position() - vp * 0.5, vp)
+
+
+func _render_npcs(all: bool) -> void:
+	var s := render_sim()
+	var t := render_time()
+	var bubbles: bool = GraphicsProfile.params()["chat_bubbles"]
+	var infos := {}
+	for n in npcs:
+		var id := n.npc_id
+		if not _detail.has(id):
+			if all and n.is_present():
+				n.apply_render({"visible": false}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
+			n.set_process(false)
+			continue
+		n.set_process(true)
+		infos[id] = s.render_info(id, t)
+	_assign_seats(infos)
+	_avoid(infos)
+	for n in npcs:
+		var id := n.npc_id
+		if not infos.has(id):
+			continue
+		var info: Dictionary = infos[id]
+		var w := Iso.grid_to_world(info.get("grid", Vector2.ZERO))
+		var wd := Iso.grid_to_world(info.get("grid", Vector2.ZERO) + info.get("dir", Vector2.ZERO)) - w
+		var partner := Vector2.INF
+		var talking := false
+		var grp: Array = _groups.get(info.get("place", ""), [])
+		if grp.size() > 1 and grp.has(id) and not info.get("walking", false):
+			var i := grp.find(id)
+			var other: String = grp[(i + 1) % grp.size()]
+			partner = Iso.grid_to_world(infos[other].get("grid", Vector2.ZERO) if infos.has(other) else s.render_info(other, t).get("grid", Vector2.ZERO))
+			talking = bubbles and grp[int(t / 4.0) % grp.size()] == id
+		n.apply_render(info, w, wd, partner, talking)
+
+
+## Benches are used: people relaxing, chatting or on a break near a free
+## bench sit down on it (one person per seat; presentation only).
+const SEAT_ACTS := ["leisure", "socialize", "pause", "eat_out"]
+var _seats: Array = []
+
+
+func _seat_positions() -> Array:
+	if _seats.is_empty() and data:
+		for p in data.props:
+			if p.get("kind", "") == "bench":
+				var g: Vector2 = p.get("grid_v", Vector2.ZERO)
+				_seats.append(g + Vector2(-0.18, 0.12))
+				_seats.append(g + Vector2(0.18, 0.12))
+	return _seats
+
+
+func _assign_seats(infos: Dictionary) -> void:
+	var free := {}
+	for i in _seat_positions().size():
+		free[i] = true
+	var ids: Array = infos.keys()
+	ids.sort()
+	for id in ids:
+		var info: Dictionary = infos[id]
+		if not info.get("visible", false) or info.get("walking", false) or not info.get("act", "") in SEAT_ACTS:
+			continue
+		var best := -1
+		var best_d := 2.2
+		for i in free:
+			var d: float = (_seats[i] as Vector2).distance_to(info["grid"])
+			if d < best_d:
+				best_d = d
+				best = i
+		if best >= 0:
+			free.erase(best)
+			info["grid"] = _seats[best]
+			info["seat"] = true
+
+
+## Local avoidance (presentation only – never changes the simulation):
+## walkers keep to the right of their direction, so oncoming people pass
+## each other, and anybody closer than a body width is pushed apart.
+static func _avoid(infos: Dictionary) -> void:
+	const LANE := 0.2
+	const MIN_DIST := 0.42
+	var ids: Array = infos.keys()
+	ids.sort()
+	for id in ids:
+		var info: Dictionary = infos[id]
+		if info.get("visible", false) and info.get("walking", false):
+			var d: Vector2 = info.get("dir", Vector2.ZERO)
+			if d.length_squared() > 0.000001:
+				info["grid"] = info["grid"] + Vector2(-d.y, d.x).normalized() * LANE
+	for iter in 2:
+		for i in ids.size():
+			var a: Dictionary = infos[ids[i]]
+			if not a.get("visible", false):
+				continue
+			for j in range(i + 1, ids.size()):
+				var b: Dictionary = infos[ids[j]]
+				if not b.get("visible", false) or (a.get("seat", false) and b.get("seat", false)):
+					continue
+				var delta: Vector2 = b["grid"] - a["grid"]
+				var dist := delta.length()
+				if dist < MIN_DIST:
+					var push := (delta.normalized() if dist > 0.0001 else Vector2(1, 0).rotated(float(i))) * (MIN_DIST - dist) * 0.5
+					# standing people hold their spot, walkers step aside
+					var a_moves: bool = a.get("walking", false) or not b.get("walking", false)
+					var b_moves: bool = b.get("walking", false) or not a.get("walking", false)
+					if a_moves:
+						a["grid"] = a["grid"] - push * (1.0 if b_moves else 2.0)
+					if b_moves:
+						b["grid"] = b["grid"] + push * (1.0 if a_moves else 2.0)
+
+
+## Effects derived from the simulation state (VisualEventRouter): appear and
+## disappear with what the inhabitants actually do right now.
+func _update_effects(s: SettlementSim, t: float) -> void:
+	var want := {}
+	for e in VisualEventRouter.active_effects(s, t):
+		if building_nodes.has(e["building_id"]):
+			want[e["vfx"] + "|" + e["building_id"]] = e
+	for key in _fx_nodes.keys():
+		if not want.has(key):
+			_fx_nodes[key].queue_free()
+			_fx_nodes.erase(key)
+	for key in want:
+		if not _fx_nodes.has(key):
+			var node := _make_effect(want[key])
+			if node:
+				_fx_nodes[key] = node
+
+
+func _make_effect(e: Dictionary) -> Node2D:
+	if _vfx_atlas == null:
+		if not ResourceLoader.exists("res://assets/vfx/vfx_atlas.png"):
+			return null
+		_vfx_atlas = load("res://assets/vfx/vfx_atlas.png")
+		_vfx_meta = JSON.parse_string(FileAccess.get_file_as_string("res://assets/vfx/vfx_atlas.json"))
+	var b: Building = building_nodes[e["building_id"]]
+	var p := CPUParticles2D.new()
+	var k := float(GraphicsProfile.params()["particles"])
+	var frame_name := "smoke_light" if e["vfx"] == "chimney_smoke" else "spark"
+	var r: Array = _vfx_meta["animations"][frame_name]["frames"][1]
+	var at := AtlasTexture.new()
+	at.atlas = _vfx_atlas
+	at.region = Rect2(r[0], r[1], r[2], r[3])
+	p.texture = at
+	if e["vfx"] == "chimney_smoke":
+		p.position = b.position + Vector2(10, -b.height * 0.95)
+		p.amount = maxi(2, int(6 * k))
+		p.lifetime = 3.0
+		p.direction = Vector2(0.25, -1)
+		p.spread = 10
+		p.gravity = Vector2(4, -6)
+		p.initial_velocity_min = 8
+		p.initial_velocity_max = 14
+		p.scale_amount_min = 0.12
+		p.scale_amount_max = 0.22
+		var ramp := Gradient.new()
+		ramp.set_color(0, Color(1, 1, 1, 0.85))
+		ramp.set_color(1, Color(1, 1, 1, 0))
+		p.color_ramp = ramp
+	else:
+		p.position = b.position + Vector2(18, -18)
+		p.amount = maxi(2, int(5 * k))
+		p.lifetime = 0.6
+		p.explosiveness = 0.5
+		p.direction = Vector2(0, -1)
+		p.spread = 70
+		p.gravity = Vector2(0, 200)
+		p.initial_velocity_min = 40
+		p.initial_velocity_max = 70
+		p.scale_amount_min = 0.1
+		p.scale_amount_max = 0.16
+	p.z_index = 50
+	p.name = "Fx_%s_%s" % [e["vfx"], e["building_id"]]
+	objects.add_child(p)
+	return p
+
+
+## Opens an NPC's card with live information (connected before the
+## InteractionService so the text is current).
+func _on_interaction_requested(it: Interactable) -> void:
+	if it and it.kind == "npc" and _npc_by_id.has(it.interaction_id) and sim:
+		(_npc_by_id[it.interaction_id] as Npc).refresh_card(render_sim(), int(render_time()), _names)
+
+
+func _on_interaction_action(interaction_id: String, action_id: String) -> void:
+	if action_id != "talk" or not _npc_by_id.has(interaction_id) or sim == null:
+		return
+	var t := int(GameClock.get_utc_unix())
+	sim.player_talk(interaction_id, t)
+	var n: Npc = _npc_by_id[interaction_id]
+	var mood := NpcBrain.mood(sim.needs_now(interaction_id, t))
+	var first := str(n.record.get("name", "")).get_slice(" ", 0)
+	var lines := ["%s nickt dir müde zu." % first, "%s grüßt kurz zurück." % first, "„Hallo! Schön, dich zu sehen“, sagt %s." % first, "%s lächelt: „Was für ein Tag!“" % first]
+	EventBus.toast_requested.emit(lines[clampi(int(mood * 4.0), 0, 3)])
+	n.refresh_card(sim, t, _names)
+	persist()
 
 
 # --- occlusion: keep the player visible behind buildings and trees ---------

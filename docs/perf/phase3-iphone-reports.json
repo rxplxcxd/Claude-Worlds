@@ -1,0 +1,36 @@
+[
+ {
+  "buffer_mem_mb": 18.3,
+  "context": "spiel",
+  "cpu_physics_ms_avg": 1.24,
+  "cpu_process_ms_avg": 22.17,
+  "draw_calls_avg": 445,
+  "draw_calls_max": 445,
+  "fps_1pct_low": 6.7,
+  "fps_avg": 7.5,
+  "frame_ms_avg": 133.37,
+  "frame_ms_max": 148.9,
+  "frame_ms_p95": 144.44,
+  "gpu_ms_avg": 0,
+  "nodes": 773,
+  "pixel_ratio": "3.0",
+  "primitives_avg": 2522,
+  "render_cpu_ms_avg": 1.59,
+  "resolution": "(1290, 2217)",
+  "resources": 195,
+  "samples": 150,
+  "seconds": 20,
+  "static_mem_mb": 0,
+  "texture_mem_mb": 359,
+  "video_mem_mb": 377.3,
+  "view": "Siedlung",
+  "view_details": {
+   "ground_tiles_drawn": 676,
+   "npcs": 12,
+   "total_objects": 183,
+   "view": "Siedlung",
+   "visible_objects": 51
+  },
+  "visible_objects_avg": 51
+ }
+]

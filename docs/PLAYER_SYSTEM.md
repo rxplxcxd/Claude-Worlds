@@ -22,7 +22,12 @@ Player {
 ## 3. Spieler = Bewohner [GEPLANT]
 Spieler und NPCs nutzen dieselben gesellschaftlichen Regeln (Wohnen, Arbeiten, Verträge, Ämter). Technisch: gemeinsames Interface `Resident` (ID, Wohnort, Arbeit, Geldbörse, Beziehungen); Spieler-Entscheidungen kommen vom Menschen, NPC-Entscheidungen von der KI.
 
-## 3a. Einstieg neuer Spieler [GEPLANT, verbindliche Regel]
+## 3a. Einstieg neuer Spieler [Auswahl IMPLEMENTIERT (0.4.0) · Beitreten GEPLANT (Phase 12)]
+Umsetzung: `scripts/ui/start_choice.gd` – nach dem Charakter-Editor „Wie möchtest du beginnen?“. „Eigene Siedlung gründen“ öffnet den Globus. „Einer Siedlung beitreten“ ist sichtbar, aber **deaktiviert** und erklärt, warum: Die Version läuft nur lokal, es gibt keine Siedlungen anderer Spieler (die angezeigte Zahl wird tatsächlich gezählt: 0). Es wird nichts vorgetäuscht.
+Nach dem Charakter-Editor folgt eine **Auswahl** ([DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §4):
+- **A) Einer bestehenden Siedlung beitreten:** Globus/Liste der Spielersiedlungen mit Filtern (Entfernung, Größe, Einwanderungsregeln aus der Gesetzgebung, Sprache/Spielstil); je nach Regel sofortiger Zuzug, Antrag oder geschlossen. Benötigt eine gemeinsame Welt (Phase 12); vorher wird die Option angezeigt und erklärt.
+- **B) Eigene Siedlung gründen:** Standortwahl auf dem Globus mit Sperrzonen und Schwierigkeitsanzeige (heute: Gründungsmodus des Globus).
+- Ist der Planet leer, ist nur B möglich.
 - **Planet leer** (erster Spieler): Gründen ist die einzige Möglichkeit.
 - **Es gibt Spielersiedlungen:** Wahl zwischen „Beitreten“ und „Eigene Siedlung gründen“ – gleichwertig, keine Pflicht zur eigenen Siedlung.
 Später jederzeit: umziehen (MIGRATION_SYSTEM).

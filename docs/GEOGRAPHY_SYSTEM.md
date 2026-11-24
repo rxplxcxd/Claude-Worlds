@@ -60,7 +60,10 @@ Ergebnis `data/world/planet/planet.json` (Metadaten, Kontinente, Regionen, 129 K
 
 **Regel:** Änderungen an Seed oder Generator ⇒ `generator_version` erhöhen, neu backen **und** gespeicherte Positionen/Regions-IDs migrieren.
 
-## 4. Standortwahl und Standortbewertung [IMPLEMENTIERT]
+## 4. Standortwahl und Standortbewertung [IMPLEMENTIERT – Regeln seit Paket 2.1 (0.4.0) nach TERRITORY_SYSTEM.md]
+
+> **Seit Paket 2.1 umgesetzt:** keine Sperren nach Breite/Biom, 20 km Grenze-zu-Grenze, Schwierigkeitsklassen, Startterritorium 1 × 1 km. Die nachfolgende Tabelle beschreibt den **alten** Phase-2-Stand und dient nur der Nachvollziehbarkeit.
+> Die folgenden Phase-2-Regeln (±62°, Eis/Hochgebirge gesperrt, 300 km zwischen Mittelpunkten, fremde **Region** gesperrt) widersprechen den verbindlichen Vorgaben ([DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §2–3) und werden ersetzt durch: 20 km zwischen Territoriumsgrenzen (geodätisch) und ein Schwierigkeitsmodell ohne geografische Sperren ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §3, §6). Die Faktorbewertung bleibt als Grundlage erhalten.
 
 `Geography.rate_site(lat, lon, settlements, territories)` liefert `valid`, `score` (0–100), Faktoren und Gründe.
 
@@ -99,10 +102,32 @@ Ergebnis `data/world/planet/planet.json` (Metadaten, Kontinente, Regionen, 129 K
 
 ## 7. Offene Punkte [OFFEN]
 
-1. **Planetengröße/Seed:** Vorschlag Radius 4 000 km, 5 Kontinente, Seed 777 – Bestätigung durch den Projektinhaber.
-2. **Gründungsregeln:** Mindestabstand 300 km, max. ±62° Breite, eine Region pro Gründung – Werte bestätigen.
+1. **Planetengröße/Seed:** Radius 4 000 km, 5 Kontinente, 157 Regionen – vom Projektinhaber am 24.11.2026 „grundsätzlich in Ordnung“ befunden.
+2. **Gründungsregeln:** entschieden – siehe [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §2–3 (keine Breitengrad-Sperre, 20 km zwischen Grenzen).
 3. **Dürfen Gründer Regionen benennen?** (WORLD_DESIGN.md §3)
 4. **Lokale Karte aus der Region ableiten** (Küste, Fluss, Wald im Siedlungsraster) – Phase 4.
 5. **Gebietswachstum** (weitere Regionen, Grenzen zwischen Siedlungen) – Phase 4/9.
 6. **Echter Tag/Nacht-Schatten auf dem Globus** aus der UTC-Zeit – Idee, nicht umgesetzt.
 7. **Detailgrad:** 49-km-Zellen wirken in der regionalen Stufe grob; höhere Auflösung (1024 × 512) kostet etwa 4× Ladezeit/Speicher – erst nach Messung auf dem iPhone entscheiden.
+
+
+## 8. Hierarchie und Kapazität [GEPLANT – Bewertung 24.11.2026]
+Vorgabe: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §1.
+
+**Ergebnis der Prüfung:** Das *natürliche* Modell (Planet → Kontinent → Region → Zelle) trägt die Anforderungen. Nicht tragfähig ist die Kopplung **Territorium = Region** (eine Siedlung belegt eine ganze Region; zusammen mit 300 km Abstand ≈ 157 Siedlungen maximal).
+
+Neues Schichtenmodell:
+```
+Natur (gebacken, unveränderlich)        Menschlich (dynamisch, gespeichert)
+Planet                                   PoliticalEntity: Land / Staat / politische Region / Stadtverbund
+ └ Kontinent                                └ Siedlung / Stadt (Settlement)
+    └ Region (Landschaftsraum)                  └ Territorium (Polygon, versioniert)
+       └ Unterregion (optional, Seed)               └ Siedlungsfläche (lokales Raster, Chunks)
+          └ Zelle 49 km → Verfeinerung                  └ Grundstücke, Gebäude, Straßen
+```
+- Natürliche Regionen = Namen, Klima, Statistik, **keine** Besitz-/Verwaltungseinheit → beliebig viele Siedlungen je Region.
+- Verwaltungseinheiten verweisen auf Territorien und ändern sich durch Spieler.
+- **Räumlicher Index** (S2-ähnlicher Würfel-Kugel-Quadtree) für Abfragen „Was liegt in der Nähe?“ – [TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §3.
+- **Kapazität:** ≈ 68 Mio. km² Land; bei 1-km-Startflächen und 20 km Abstand theoretisch ≈ 170 000 Gründungen.
+- **Globus bei Tausenden Siedlungen:** Marker nach Sicht kacheln, planetar als Cluster, Territorien als eigene Mesh-Ebene statt Regions-Tönung.
+- **Pole:** Sonnenmodell ohne ±60°-Grenze (Polartag/-nacht als Spielfaktor), Globuskamera bis nahe 90°.

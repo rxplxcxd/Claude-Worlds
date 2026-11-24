@@ -1,0 +1,35 @@
+[
+ {
+  "buffer_mem_mb": 18.3,
+  "cpu_physics_ms_avg": 1.03,
+  "cpu_process_ms_avg": 42.91,
+  "draw_calls_avg": 444.2,
+  "draw_calls_max": 450,
+  "fps_1pct_low": 6.8,
+  "fps_avg": 7.5,
+  "frame_ms_avg": 133.35,
+  "frame_ms_max": 148.07,
+  "frame_ms_p95": 143.83,
+  "gpu_ms_avg": 0,
+  "nodes": 761,
+  "pixel_ratio": "3.0",
+  "primitives_avg": 2602,
+  "render_cpu_ms_avg": 1.96,
+  "resolution": "(1290, 2217)",
+  "resources": 190,
+  "samples": 150,
+  "seconds": 20,
+  "static_mem_mb": 0,
+  "texture_mem_mb": 376.5,
+  "video_mem_mb": 394.8,
+  "view": "Siedlung",
+  "view_details": {
+   "ground_tiles_drawn": 676,
+   "npcs": 12,
+   "total_objects": 183,
+   "view": "Siedlung",
+   "visible_objects": 59
+  },
+  "visible_objects_avg": 59
+ }
+]

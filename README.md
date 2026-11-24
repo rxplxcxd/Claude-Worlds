@@ -3,7 +3,7 @@
 **Lebendige, persistente Gesellschafts-, Wirtschafts- und Zivilisationssimulation**
 2.5D-isometrische Lebens-, Aufbau- und Gesellschaftssimulation · Godot 4.7.2 · GDScript · Web / iOS Safari / PWA
 
-> **Projektstatus: Phase 2 – World Geography, Version 0.3.0** (zur Abnahme durch den Projektinhaber). Phase 1 ist freigegeben.
+> **Projektstatus: Phase 2 + Paket 2.1, Version 0.4.0** (zur Abnahme durch den Projektinhaber). Phase 3 ist **nicht** freigegeben.
 > Spätere Phasen sind dokumentiert, aber **nicht implementiert**.
 
 ## Was Phase 1 enthält (implementiert)
@@ -12,10 +12,13 @@
 |---|---|
 | Godot-Projekt | Godot 4.7.2, GL Compatibility Renderer, GDScript |
 | Leerer Planet | Planet startet ohne Siedlungen (`data/world/genesis.json`); Siedlungen entstehen nur durch Gründung eines Spielers (`WorldState`), keine NPC-only-Siedlungen |
-| **Planet & Globus (Phase 2)** | Planet Aurel mit 5 Kontinenten und 157 Regionen (Gelände, Klima, Wasser, Rohstoffe), 3D-Globus mit Zoomstufen, Standortwahl mit Bewertung bei der Gründung, Territorien – [GEOGRAPHY_SYSTEM](docs/GEOGRAPHY_SYSTEM.md) |
+| **Planet & Globus (Phase 2)** | Planet Aurel mit 5 Kontinenten und 157 Regionen (Gelände, Klima, Wasser, Rohstoffe), 3D-Globus mit Zoomstufen, Standortwahl mit Bewertung bei der Gründung – [GEOGRAPHY_SYSTEM](docs/GEOGRAPHY_SYSTEM.md) |
+| **Territorien (Paket 2.1)** | Startterritorium 1 × 1 km, 20 km zwischen Gebietsgrenzen (geodätisch), Sperrzonen auf dem Globus, ganzer Planet besiedelbar mit Schwierigkeitsklassen, Auswahl „Beitreten/Gründen“ – [TERRITORY_SYSTEM](docs/TERRITORY_SYSTEM.md) |
+| Living Assets (visuell, in Vorbereitung) | Asset-Inventar, Zustandsmatrix, Beispielzustände, eigene VFX, Test-Galerie `?gallery=living` – noch **nicht** im Spiel verwendet – [living_assets](docs/living_assets/README.md) |
+| Diagnose | Leistungsanzeige mit 20-s-Messung (F3 / Menü / `?perf=1`) – [PERFORMANCE §7](docs/PERFORMANCE.md) |
 | Deine Siedlung „Lichtfeld“ | Beim ersten Start von dir gegründet aus der Vorlage `data/settlement_templates/founding_basic.json`, 26×26 Kacheln, 21 Gebäude (inkl. Marktzeile), Dorfplatz mit Brunnen, Straßen mit Gehwegen, Felder, Teich, Gründerzelt, Vegetation |
 | Charakter-Editor | Modulare Penzilla-Figur (Körper, Gesicht, Frisur/Hüte, Oberteile, Hosen/Overalls, Schuhe, Extras, Farben, Outfits), lebendige Vorschau (Atmen, Blinzeln, Drehen, Gehen, Benutzen), Zufall/Rückgängig, Speicherung – [CHARACTER_SYSTEM](docs/CHARACTER_SYSTEM.md) |
-| NPCs | Gründungsgemeinschaft (12) mit dauerhaften Namen, Rollen, Arbeitsplätzen und rollentypischer Kleidung; tagsüber am Arbeitsplatz, abends zu Hause, nachts drinnen – [NPC_SYSTEM](docs/NPC_SYSTEM.md) |
+| **Lebendige Welt (Phase 3)** | 12 Bewohner mit Persönlichkeit, Alter, Beruf und Schichten, Bedürfnissen (Hunger, Energie, Gesellschaft, Freizeit, Hygiene) und Utility AI: gehen über Gehwege zur Arbeit, essen, treffen sich am Platz (Sprechblasen), erholen sich im Grünen, schlafen – nach der Ortszeit der Siedlung, ohne Einfrieren, beim Zurückkommen sofort aktuell; Live-Infokarte und Grüßen – [LIVING_WORLD](docs/LIVING_WORLD.md) |
 | Echtzeit | Uhr synchron zur Ortszeit, Zeitzone/Sommerzeit automatisch, Sonnenstand → Tag/Nacht, Laternen automatisch |
 | Stadtbild | Regelbasierte Platzierung: Laternen mit Ausleger über der Straße und Lichtkegel, Hydranten am Bordstein, Schilder, Bushaltestelle, Briefkästen – [SETTLEMENT_SYSTEM §7](docs/SETTLEMENT_SYSTEM.md) |
 | Grafik | **Penzilla-Assets integriert**: Giant City Builder (Boden, Straßen/Gehwege mit Autotiling, Gebäude, Pflanzen, Deko), Isometric RPG Buildings (Läden, Zelt), Ultimate Protagonist (modulare Figuren), Basic GUI (HUD, Editor); Stylized Grass als Editor-Hintergrund |
@@ -25,7 +28,7 @@
 | Interaktion | Gebäude/Objekte ansehen, NPCs ansprechen (Name, Rolle, Arbeitsplatz), Schwarzes Brett, Ausruhen, Brunnen |
 | HUD | Siedlungsname, Region, Uhrzeit & Datum (Ortszeit), Kamera-Buttons, Interaktions-Taste, Menü (Figur bearbeiten, Tageszeit-Vorschau, Zeitzone, Sonnenauf-/-untergang), Hinweise, FPS-Anzeige |
 | Web | Export ohne Threads (kompatibel mit GitHub Pages & iOS Safari), PWA (Manifest, Service Worker, Icons) |
-| CI/CD | GitHub Actions: Asset-Import → 118 automatische Tests → Web-Export → GitHub Pages (von `main`) |
+| CI/CD | GitHub Actions: Asset-Import → 149 automatische Tests → Web-Export → GitHub Pages (von `main`) |
 
 ![Lichtfeld mit Penzilla-Grafik (Chromium, iPhone-Emulation)](docs/screenshots/phase1-iphone-landscape-emulated.png)
 
@@ -78,6 +81,8 @@ docs/        Design- und Technikdokumentation
 
 ## Dokumentation
 
-[ARCHITECTURE](docs/ARCHITECTURE.md) · [CHARACTER_SYSTEM](docs/CHARACTER_SYSTEM.md) · [QA_CHECKLIST](docs/QA_CHECKLIST.md) · [ROADMAP](docs/ROADMAP.md) · [ASSET_INVENTORY](docs/ASSET_INVENTORY.md) · [BUILD_AND_DEPLOYMENT](docs/BUILD_AND_DEPLOYMENT.md) · [PERFORMANCE](docs/PERFORMANCE.md) · [WORLD_DESIGN](docs/WORLD_DESIGN.md) · [GEOGRAPHY_SYSTEM](docs/GEOGRAPHY_SYSTEM.md) · [SETTLEMENT_SYSTEM](docs/SETTLEMENT_SYSTEM.md) · [PLAYER_SYSTEM](docs/PLAYER_SYSTEM.md) · [NPC_SYSTEM](docs/NPC_SYSTEM.md) · [SOCIAL_SYSTEM](docs/SOCIAL_SYSTEM.md) · [ECONOMY_SYSTEM](docs/ECONOMY_SYSTEM.md) · [TRADE_AND_LOGISTICS](docs/TRADE_AND_LOGISTICS.md) · [POLITICAL_SYSTEM](docs/POLITICAL_SYSTEM.md) · [COUNCIL_SYSTEM](docs/COUNCIL_SYSTEM.md) · [MIGRATION_SYSTEM](docs/MIGRATION_SYSTEM.md) · [CONTRACT_SYSTEM](docs/CONTRACT_SYSTEM.md) · [FIREBASE_SCHEMA](docs/FIREBASE_SCHEMA.md) · [GAMEPLAY_DESIGN](docs/GAMEPLAY_DESIGN.md) · [CHANGELOG](CHANGELOG.md)
+**Verbindlich:** [DESIGN_DIRECTIVES](docs/DESIGN_DIRECTIVES.md) · [TECHNICAL_ASSESSMENT](docs/TECHNICAL_ASSESSMENT.md) · [TERRITORY_SYSTEM](docs/TERRITORY_SYSTEM.md) · [LAW_ENGINE](docs/LAW_ENGINE.md) · [SIMULATION_ARCHITECTURE](docs/SIMULATION_ARCHITECTURE.md)
+
+[ARCHITECTURE](docs/ARCHITECTURE.md) · [CHARACTER_SYSTEM](docs/CHARACTER_SYSTEM.md) · [QA_CHECKLIST](docs/QA_CHECKLIST.md) · [ROADMAP](docs/ROADMAP.md) · [ASSET_INVENTORY](docs/ASSET_INVENTORY.md) · [BUILD_AND_DEPLOYMENT](docs/BUILD_AND_DEPLOYMENT.md) · [PERFORMANCE](docs/PERFORMANCE.md) · [LIVING_WORLD](docs/LIVING_WORLD.md) · [LIVING_ASSETS](docs/living_assets/README.md) · [WORLD_DESIGN](docs/WORLD_DESIGN.md) · [GEOGRAPHY_SYSTEM](docs/GEOGRAPHY_SYSTEM.md) · [SETTLEMENT_SYSTEM](docs/SETTLEMENT_SYSTEM.md) · [PLAYER_SYSTEM](docs/PLAYER_SYSTEM.md) · [NPC_SYSTEM](docs/NPC_SYSTEM.md) · [SOCIAL_SYSTEM](docs/SOCIAL_SYSTEM.md) · [ECONOMY_SYSTEM](docs/ECONOMY_SYSTEM.md) · [TRADE_AND_LOGISTICS](docs/TRADE_AND_LOGISTICS.md) · [POLITICAL_SYSTEM](docs/POLITICAL_SYSTEM.md) · [COUNCIL_SYSTEM](docs/COUNCIL_SYSTEM.md) · [MIGRATION_SYSTEM](docs/MIGRATION_SYSTEM.md) · [CONTRACT_SYSTEM](docs/CONTRACT_SYSTEM.md) · [FIREBASE_SCHEMA](docs/FIREBASE_SCHEMA.md) · [GAMEPLAY_DESIGN](docs/GAMEPLAY_DESIGN.md) · [CHANGELOG](CHANGELOG.md) · [CREDITS](CREDITS.md)
 
 Jedes Dokument kennzeichnet Inhalte als **[IMPLEMENTIERT]**, **[GEPLANT]** oder **[OFFEN]**.

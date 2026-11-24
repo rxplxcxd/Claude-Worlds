@@ -1,0 +1,32 @@
+{
+ "_comment": "Credits shown in the game (Menü → Mitwirkende & Lizenzen) and in CREDITS.md. Penzilla Standard Licence (Dec. 2024) requires the mandatory credit and a full list of edits alongside it.",
+ "sections": [
+  {
+   "title": "Grafik",
+   "lines": [
+    "[b]Graphics created by Penzilla Design[/b] – https://penzilla.itch.io",
+    "Pakete: Giant City Builder (Isometric City Builder Pack), Isometric RPG Buildings, Ultimate Protagonist (Isometric RPG Hero Creator), Giant Basic GUI Bundle, Top-Down Retro Interior."
+   ]
+  },
+  {
+   "title": "Bearbeitungen der Penzilla-Grafiken (vollständige Liste)",
+   "lines": [
+    "1. Verkleinert: alle Spielgrafiken auf 50 %, Oberflächen-Symbole auf 25 % (Lanczos-Filter).",
+    "2. Isometric RPG Buildings: die Ebenen der Läden (Wände, Balken, Fenster, Dach, Markise, Schild) und des Zelts zu je einem Bild zusammengesetzt und an das Raster von Giant City Builder angepasst (Breite auf eine Kachel skaliert, senkrecht leicht gestaucht).",
+    "3. Ultimate Protagonist: Einzelbilder der Animationsblätter auf den genutzten Bereich zugeschnitten; Kleidungs- und Haarfarben werden im Spiel durch Einfärben der weißen „Blank“-Ebene mit Penzillas eigenen Farbwerten erzeugt; die Ebenen einer Figur werden zur Laufzeit zu einem Bild zusammengesetzt.",
+    "4. Straßenlaternen: Mast, Ausleger und Leuchte aus Giant-City-Builder-Teilen zusammengesetzt und einzeln skaliert.",
+    "5. Darstellung im Spiel: Tag-/Nacht-Einfärbung, weiche Durchsicht (Transparenz) wenn die Spielfigur hinter einem Gebäude steht.",
+    "6. Living Assets (nur in Entwicklungs-/Testgalerien, noch nicht im veröffentlichten Spiel): abgeleitete Zustandsbilder – Verschmutzung, abblätternder Putz, Risse, zerbrochene/vernagelte Fenster, Dachschäden, Brand- und Rußspuren, Teileinsturz, Ruine, Schutt, Bewuchs, Reparaturspuren, Schnee, Wetter auf Böden, trockene/abgestorbene/verbrannte Pflanzen, umgestürzte/zerbrochene Objekte, Fahrzeugwracks, abgenutzte Möbel – als separate Dateien; die Originale bleiben unverändert."
+   ]
+  },
+  {
+   "title": "Weitere Inhalte",
+   "lines": [
+    "Hintergrund des Figuren-Editors: Stylized Grass & Dirt (Hersteller im Paket nicht angegeben; vom Projektinhaber bereitgestellt).",
+    "Innenausstattung (in Vorbereitung): Kenney „Furniture Kit“ und OpenGameArt-Sammlungen, CC0 (gemeinfrei).",
+    "Eigene Effekte (Feuer, Rauch, Wetter, Funken, Belohnung): WORLDS-Projekt.",
+    "Schrift und Engine: Godot Engine (MIT-Lizenz)."
+   ]
+  }
+ ]
+}

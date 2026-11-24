@@ -14,6 +14,9 @@ const SETTLEMENT_SCENE := preload("res://scenes/settlement/settlement.tscn")
 var settlement: SettlementScene
 var editor: CharacterEditor
 var globe: GlobeScreen
+## "Beitreten oder Gründen" (Paket 2.1).
+var start_choice: StartChoice
+var _choice_layer: CanvasLayer
 var _editor_layer: CanvasLayer
 
 @onready var hud: Hud = $HUD
@@ -28,19 +31,80 @@ func _ready() -> void:
 	_update_content_scale()
 	hud.edit_character_requested.connect(func() -> void: open_character_editor("edit"))
 	hud.map_requested.connect(func() -> void: open_globe("browse"))
-	if needs_character_creation():
+	if _qa_gallery():
+		return
+	if _qa_quickstart():
+		pass
+	elif needs_character_creation():
 		hud.visible = false
 		open_character_editor("create")
 	elif needs_founding():
 		hud.visible = false
-		open_globe("found")
+		open_start_choice()
 	else:
 		_start_world()
+
+
+## QA hook (web only): "?gallery=living" opens the Living-Assets test gallery,
+## "?gallery=cookedfx" the Cooked-FX evaluation gallery, instead of the game.
+func _qa_gallery() -> bool:
+	if not OS.has_feature("web"):
+		return false
+	var q := str(JavaScriptBridge.eval("location.search", true))
+	var g: Node2D = null
+	if q.contains("gallery=living"):
+		g = LivingGallery.new()
+	elif q.contains("gallery=anim"):
+		g = AnimGallery.new()       # character animation library (QA)
+	elif q.contains("gallery=cookedfx"):
+		g = CookedFxGallery.new()   # evaluation of the Cooked FX pack (private files)
+	if g == null:
+		return false
+	hud.visible = false
+	g.name = "Gallery"
+	add_child(g)
+	return true
+
+
+## QA hook (web only, for automated measurements): "?qa_quickstart=1" creates
+## the default character if none exists and founds at the best free site.
+## Never active without the URL parameter.
+func _qa_quickstart() -> bool:
+	if not OS.has_feature("web") or not str(JavaScriptBridge.eval("location.search", true)).contains("qa_quickstart=1"):
+		return false
+	if not LocalProfile.has_character() and CharacterCatalog.is_available():
+		LocalProfile.set_character(CharacterCatalog.default_appearance(), "")
+	if needs_founding():
+		var record := WorldState.found_settlement(SettlementScene.DEFAULT_TEMPLATE, LocalProfile.player_id, "")
+		if record.is_empty():
+			return false
+		_start_world(true)
+	else:
+		_start_world()
+	return true
 
 
 ## The player has no settlement yet: they must found one (empty planet rule).
 func needs_founding() -> bool:
 	return WorldState.get_settlement_of(LocalProfile.player_id).is_empty()
+
+
+## New player without a settlement: choose between joining (marked as not
+## yet available – no shared world exists) and founding (globe).
+func open_start_choice() -> void:
+	if start_choice:
+		return
+	_choice_layer = CanvasLayer.new()
+	_choice_layer.layer = 25
+	add_child(_choice_layer)
+	start_choice = StartChoice.new()
+	start_choice.name = "StartChoice"
+	_choice_layer.add_child(start_choice)
+	start_choice.found_chosen.connect(func() -> void:
+		_choice_layer.queue_free()
+		_choice_layer = null
+		start_choice = null
+		open_globe("found"))
 
 
 func open_globe(mode: String) -> void:
@@ -112,7 +176,7 @@ func _on_character_confirmed(appearance: Dictionary, name_text: String) -> void:
 	_close_editor()
 	if settlement == null:
 		if needs_founding():
-			open_globe("found")
+			open_start_choice()
 		else:
 			hud.visible = true
 			_start_world()

@@ -28,16 +28,22 @@ func is_available() -> bool:
 
 # --- geometry -----------------------------------------------------------
 
-func frame_size() -> Vector2:
+func frame_size(anim: String = "") -> Vector2:
 	var f: Dictionary = data.get("frame", {})
-	var c: Array = f.get("crop_src", [0, 0, 460, 460])
+	var c := _crop(anim)
 	return Vector2(c[2] - c[0], c[3] - c[1]) * float(f.get("file_scale", 1.0))
 
 
-## Feet position inside one frame, in file pixels.
-func feet_in_frame() -> Vector2:
+## Source crop of an animation (wide swings and sitting poses have their own).
+func _crop(anim: String) -> Array:
 	var f: Dictionary = data.get("frame", {})
-	var c: Array = f.get("crop_src", [0, 0, 460, 460])
+	return anim_info(anim).get("crop_src", f.get("crop_src", [0, 0, 460, 460])) if anim != "" else f.get("crop_src", [0, 0, 460, 460])
+
+
+## Feet position inside one frame, in file pixels.
+func feet_in_frame(anim: String = "") -> Vector2:
+	var f: Dictionary = data.get("frame", {})
+	var c := _crop(anim)
 	var feet: Array = f.get("feet_src", [230, 426])
 	return (Vector2(feet[0], feet[1]) - Vector2(c[0], c[1])) * float(f.get("file_scale", 1.0))
 
@@ -114,8 +120,16 @@ func swatch_color(slot: String, option_id: String, color_id: String) -> Color:
 ## "HoldingTool" variants while standing).
 func resolve_anim(app: Dictionary, anim: String) -> String:
 	var tool: String = app.get("tool", {}).get("option", "none")
-	if anim == "idle" and tool != "none" and anim_info("idle_tool").size() > 0:
-		return "idle_tool"
+	var has_tool := tool != "none"
+	if has_tool and anim_info(anim + "_tool").size() > 0:
+		return anim + "_tool"          # idle/walk/sit while carrying the tool
+	# work animations need the matching tool, otherwise "interact"
+	if anim == "dig" and tool != "shovel":
+		return "interact"
+	if anim == "swing" and not tool in ["hammer", "axe"]:
+		return "interact"
+	if anim_info(anim).is_empty():
+		return "idle_tool" if has_tool else "idle"
 	return anim
 
 

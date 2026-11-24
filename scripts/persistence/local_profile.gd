@@ -13,6 +13,7 @@ var player_id: String = ""
 var display_name: String = "Siedler:in"
 var settings: Dictionary = {
 	"show_debug": false,
+	"graphics_profile": "auto",
 	"time_speed": 1.0,
 }
 var saved_game_minutes: float = -1.0

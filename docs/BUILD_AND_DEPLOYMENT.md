@@ -20,6 +20,13 @@ godot --headless --path . --export-release "Web" build/web/index.html
 node tools/serve_and_shoot.js build/web build/shots              # optional: Browser-Smoke-Test (Playwright)
 node tools/browser_editor_test.js build/web build/editor          # optional: Charakter-Editor im Browser
 TZ_ID=America/New_York node tools/world_shots.js build/web build/world "?preview=21:00"   # Welt, Zeitzone, Nachtvorschau
+node tools/perf_measure.js build/web build/perf desktop|iphone   # Diagnose-Messung (PERFORMANCE.md §7)
+
+# Living Assets (optional, docs/living_assets/README.md) – numpy, scipy, pillow
+python3 -I tools/assets/inventory.py /tmp/penzilla_src .            # Inventar-CSV
+python3 -I tools/assets/make_living_states.py /tmp/penzilla_src . --qa /tmp/living_qa   # Zustände (privat, assets/penzilla/states/) + Prüfbericht
+python3 -I tools/assets/make_vfx.py .                               # eigene VFX (assets/vfx/, wird committet)
+# Test-Galerie: build/web im Browser mit ?gallery=living[&profile=ultra|hoch|leistung] öffnen
 ```
 `build/` ist in `.gitignore`.
 

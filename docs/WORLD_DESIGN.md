@@ -53,5 +53,6 @@ Aktuell 120 Spieltage pro Spieljahr (`GameClock.DAYS_PER_YEAR`). Abhängig vom W
 ## 5. Offene Fragen zur Grundregel [OFFEN – Entscheidung durch Projektinhaber]
 1. **Was passiert mit einer Siedlung, wenn alle menschlichen Bewohner sie verlassen oder dauerhaft inaktiv sind?** Ohne Regel entstünde genau die verbotene „NPC-only“-Siedlung. Optionen: (a) „ruhend“ – eingefroren, keine Entwicklung, kann von einem Spieler übernommen/wiederbelebt werden; (b) Gründer bleibt Eigentümer, Siedlung ruht bis zur Rückkehr; (c) NPCs ziehen in andere Spielersiedlungen, Siedlung verfällt langsam zu einer Ruine. *Empfehlung: (b) mit Übergang in (a) nach langer Inaktivität* – passt zu „keine Bestrafung für Pausen“.
 2. **Gründungsgemeinschaft:** Bleibt es bei 20–50 NPCs, die *mit* dem Gründer kommen (Masterprompt 4.2)? *Annahme bis zur Entscheidung: ja* – es ist eine Spielersiedlung, keine NPC-Siedlung.
-3. **Darf ein Spieler mehrere Siedlungen gründen?** *Vorschlag: eine aktive Gründung gleichzeitig* (verhindert, dass ein Spieler den Planeten mit leeren Gründungen „besetzt“).
-4. **Mindestabstand zwischen Gründungen?** *Vorschlag: ja*, damit Neuankömmlinge freie Standorte finden.
+3. **Darf ein Spieler mehrere Siedlungen gründen?** *Vorschlag: eine aktive Gründung gleichzeitig* (verhindert, dass ein Spieler den Planeten mit leeren Gründungen „besetzt“) – Exploit-Schutz siehe [TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §7.
+4. **Mindestabstand zwischen Gründungen?** **Entschieden 24.11.2026:** 20 km zwischen Territoriumsgrenzen, geodätisch ([DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §3).
+5. **Besiedelbarkeit:** **Entschieden 24.11.2026:** der ganze Planet inkl. Polargebiete, Schwierigkeit statt Sperre ([DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §2).

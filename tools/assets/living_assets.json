@@ -1,0 +1,443 @@
+{
+ "_comment": "Living Assets – production list (step G). profile = which states make sense for the asset's FUNCTION (see docs/living_assets/STATE_MATRIX.md). overrides = material corrections (living_materials.MaterialSeg). Keys = game keys from penzilla_selection.json; 'source' for files not used in the game yet.",
+ "pilot": [
+  "buildings/house_1",
+  "buildings/town_hall",
+  "buildings/shop_smith",
+  "buildings/emergency_post",
+  "props/tent",
+  "props/tree_1",
+  "props/bush_1",
+  "props/crop_1",
+  "props/lamp_off",
+  "props/bench",
+  "props/hydrant",
+  "props/crates",
+  "props/fountain",
+  "vehicles/car_red",
+  "tiles/road_5",
+  "tiles/sidewalk",
+  "tiles/path_5",
+  "tiles/grass",
+  "tiles/water",
+  "interior/furniture"
+ ],
+ "assets": {
+  "buildings/town_hall": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/trade_post": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/water_works": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/clinic": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/emergency_post": {
+   "category": "building",
+   "profile": "building",
+   "overrides": [
+    {
+     "hsv": [
+      0.03,
+      0.75,
+      0.8
+     ],
+     "tol": 0.05,
+     "material": "brick",
+     "from": [
+      "plaster",
+      "wood"
+     ]
+    }
+   ]
+  },
+  "buildings/energy_station": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/workshop": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/farm_shop": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/depot": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/player_home": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/house_1": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/house_2": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/house_3": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/house_4": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/house_5": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/house_6": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/shop_baker": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/shop_grocer": {
+   "category": "building",
+   "profile": "building"
+  },
+  "buildings/shop_smith": {
+   "category": "building",
+   "profile": "building"
+  },
+  "props/tent": {
+   "category": "building",
+   "profile": "tent"
+  },
+  "props/fountain": {
+   "category": "prop",
+   "profile": "fountain",
+   "default_material": "stone",
+   "overrides": [
+    {
+     "material": "water",
+     "from": [
+      "glass"
+     ]
+    },
+    {
+     "material": "stone",
+     "from": [
+      "wood"
+     ]
+    }
+   ]
+  },
+  "props/garden": {
+   "category": "prop",
+   "profile": "prop_flammable",
+   "default_material": "wood"
+  },
+  "props/tree_1": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/tree_2": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/tree_3": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/tree_4": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/tree_5": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/tree_6": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/tree_7": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/tree_8": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/pine_1": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/pine_2": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/pine_3": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/bush_1": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/bush_2": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/bush_3": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/bush_4": {
+   "category": "vegetation",
+   "profile": "tree"
+  },
+  "props/crop_1": {
+   "category": "vegetation",
+   "profile": "crop"
+  },
+  "props/crop_2": {
+   "category": "vegetation",
+   "profile": "crop"
+  },
+  "props/lamp_on": {
+   "category": "prop",
+   "profile": "lamp",
+   "default_material": "metal"
+  },
+  "props/lamp_off": {
+   "category": "prop",
+   "profile": "lamp",
+   "default_material": "metal"
+  },
+  "props/lamp_arm": {
+   "category": "prop",
+   "profile": "lamp",
+   "default_material": "metal"
+  },
+  "props/bench": {
+   "category": "prop",
+   "profile": "prop_flammable",
+   "default_material": "wood"
+  },
+  "props/notice_board": {
+   "category": "prop",
+   "profile": "prop_flammable",
+   "default_material": "wood"
+  },
+  "props/market_stall": {
+   "category": "prop",
+   "profile": "prop_flammable",
+   "default_material": "wood"
+  },
+  "props/crates": {
+   "category": "prop",
+   "profile": "prop_flammable",
+   "default_material": "wood"
+  },
+  "props/cart": {
+   "category": "prop",
+   "profile": "prop_flammable",
+   "default_material": "wood"
+  },
+  "props/wheelbarrow": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/electrical_box": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/electrical_tower": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/mailbox": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/trash_can": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/trash_small": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/hydrant": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/water_tower": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/bus_stop": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/street_sign": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "props/traffic_sign": {
+   "category": "prop",
+   "profile": "prop",
+   "default_material": "metal"
+  },
+  "tiles/grass": {
+   "category": "surface",
+   "family": "grass"
+  },
+  "tiles/dirt": {
+   "category": "surface",
+   "family": "dirt"
+  },
+  "tiles/low_dirt": {
+   "category": "surface",
+   "family": "dirt"
+  },
+  "tiles/water": {
+   "category": "surface",
+   "family": "water"
+  },
+  "tiles/concrete": {
+   "category": "surface",
+   "family": "sidewalk"
+  },
+  "tiles/sidewalk": {
+   "category": "surface",
+   "family": "sidewalk"
+  },
+  "tiles/road_1": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_2": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_3": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_4": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_5": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_6": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_7": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_8": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/road_9": {
+   "category": "surface",
+   "family": "asphalt"
+  },
+  "tiles/path_1": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_2": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_3": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_4": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_5": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_6": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_7": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_8": {
+   "category": "surface",
+   "family": "path"
+  },
+  "tiles/path_9": {
+   "category": "surface",
+   "family": "path"
+  },
+  "vehicles/car_red": {
+   "category": "vehicle",
+   "profile": "vehicle",
+   "source": [
+    "gcb",
+    "Vehicles/CarType1_Red_Front.png"
+   ]
+  },
+  "vehicles/van_ambulance": {
+   "category": "vehicle",
+   "profile": "vehicle",
+   "source": [
+    "gcb",
+    "Vehicles/CarType2_Ambulance_Front.png"
+   ]
+  },
+  "vehicles/bus_yellow": {
+   "category": "vehicle",
+   "profile": "vehicle",
+   "source": [
+    "gcb",
+    "Vehicles/Bus_Yellow_Front.png"
+   ]
+  },
+  "interior/furniture": {
+   "category": "interior",
+   "source": [
+    "interior",
+    "TopDownHouse_FurnitureState1.png"
+   ]
+  },
+  "interior/small_items": {
+   "category": "interior",
+   "source": [
+    "interior",
+    "TopDownHouse_SmallItems.png"
+   ]
+  }
+ }
+}

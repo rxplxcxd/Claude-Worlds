@@ -1,6 +1,6 @@
 # QA_CHECKLIST
 
-Prüfliste für Version 0.3.0 (Phase 1 + Phase 2). Spalte **Stand**: ✅ automatisiert (Headless-Testsuite, 118 Prüfungen) · 🌐 im Browser geprüft (Chromium/Playwright, Desktop 1280×720, Software-GL) · ⏳ muss vom Projektinhaber auf dem iPhone geprüft werden.
+Prüfliste für Version 0.4.0 (Phase 1, Phase 2, Paket 2.1). Spalte **Stand**: ✅ automatisiert (Headless-Testsuite, 149 Prüfungen) · 🌐 im Browser geprüft (Chromium/Playwright, Desktop 1280×720, Software-GL) · ⏳ muss vom Projektinhaber auf dem iPhone geprüft werden.
 
 > Ehrlicher Hinweis: Es wurde **kein echtes iPhone** getestet. Alle 🌐-Prüfungen liefen in Chromium; Safari/WebKit-Eigenheiten (Touch, Tastatur, Speicher) sind damit nicht abgedeckt.
 
@@ -82,6 +82,20 @@ Prüfliste für Version 0.3.0 (Phase 1 + Phase 2). Spalte **Stand**: ✅ automat
 | G11 | Alter Spielstand (Phase 1) wird einmal verortet, Hinweis erscheint | ✅ ⏳ (auf deinem Gerät mit deinem echten Spielstand) |
 | G12 | Hochformat: Globus oben, Infotafel unten, „Hier gründen“ sichtbar | 🌐 (iPhone-13-Emulation) ⏳ |
 | G13 | Bildrate des Globus auf dem iPhone | ⏳ |
+
+## H. Territorien & Start (Paket 2.1)
+| # | Prüfung | Stand |
+|---|---|---|
+| H1 | Nach dem Editor: Auswahl „Beitreten / Gründen“; Beitreten deaktiviert mit Erklärung | ✅ 🌐 |
+| H2 | Gründung erzeugt Territorium 1 × 1 km (Fläche 1,000 km², Seiten 1 km) | ✅ |
+| H3 | 14 km zur Grenze → abgelehnt; ≥ 20 km → erlaubt; im Gebiet → abgelehnt | ✅ |
+| H4 | Abstand Grenze-zu-Grenze (nicht Mittelpunkt), über die Datumsgrenze, am Pol | ✅ |
+| H5 | Eis und Polarland gründbar, als „extrem“ eingestuft, Bestätigung nötig | ✅ 🌐 |
+| H6 | Sperrzone (rot, 20 km) und eigenes Gebiet auf dem Globus sichtbar; „Gebiete“ schaltet um | ✅ 🌐 |
+| H7 | Zweite Gründung desselben Spielers abgelehnt | ✅ |
+| H8 | Phase-2-Spielstand → 1-km²-Territorium, Historie, Schema 3 | ✅ ⏳ (dein echter Spielstand) |
+| H9 | Polartag/Polarnacht im Menü | ✅ |
+| H10 | Leistungsanzeige + 20-s-Messung in Siedlung und Globus | ✅ 🌐 ⏳ (iPhone) |
 
 ## Ausführen
 ```bash

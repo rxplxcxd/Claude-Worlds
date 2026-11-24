@@ -11,7 +11,7 @@ extends Node3D
 signal zoom_level_changed(level: String)
 
 const LEVELS := ["planetar", "kontinental", "regional"]
-const MIN_DIST := 1.18
+const MIN_DIST := 1.03
 const MAX_DIST := 4.2
 const LEVEL_LIMITS := [2.35, 1.6] # altitude thresholds (distance) planetar/kontinental
 const FOV := 38.0
@@ -70,7 +70,7 @@ func setup(p: PlanetData) -> void:
 	camera = Camera3D.new()
 	camera.name = "Camera"
 	camera.fov = FOV
-	camera.near = 0.02
+	camera.near = 0.004
 	camera.far = 200.0
 	add_child(camera)
 
@@ -92,14 +92,15 @@ func setup(p: PlanetData) -> void:
 	env.environment.background_mode = Environment.BG_COLOR
 	env.environment.background_color = Color(0.02, 0.04, 0.09)
 	add_child(env)
-	update_overlays({}, "")
+	update_overlays("")
 	_apply_camera()
 
 
-## Territories / highlight changed → rebuild the per-region lookup row.
-func update_overlays(claimed_regions: Dictionary, highlight: String) -> void:
+## Highlighted natural region changed → rebuild the per-region lookup row.
+## (Since Paket 2.1 regions are only nature; territories are drawn separately.)
+func update_overlays(highlight: String) -> void:
 	highlight_region = highlight
-	var img := PlanetTextures.region_lut(planet, claimed_regions, highlight)
+	var img := PlanetTextures.region_lut(planet, {}, highlight)
 	if _lut_tex == null:
 		_lut_tex = ImageTexture.create_from_image(img)
 	else:
@@ -108,13 +109,44 @@ func update_overlays(claimed_regions: Dictionary, highlight: String) -> void:
 	_material.set_shader_parameter("lut_width", float(img.get_width()))
 
 
+## Territories (1 km squares) and the founding exclusion zones around them.
+## The shader takes the 32 territories nearest to the view centre.
+func set_territories(territories: Array, show_territories: bool, show_zones: bool) -> void:
+	var items: Array = []
+	var view_dir := Geo.to_vec3(view_lat, view_lon)
+	for t in territories:
+		var core: Dictionary = t.get("core", {})
+		var c: Array = core.get("center", [])
+		if c.size() < 2:
+			continue
+		var v := Geo.to_vec3(float(c[0]), float(c[1]))
+		items.append([v.dot(view_dir), v, Geo.east(float(c[0]), float(c[1])), float(core.get("size_km", 1.0)) * 0.5])
+	items.sort_custom(func(a, b): return a[0] > b[0])
+	var cs := PackedVector4Array()
+	var es := PackedVector4Array()
+	for k in mini(items.size(), 32):
+		var it: Array = items[k]
+		cs.append(Vector4(it[1].x, it[1].y, it[1].z, 0.0))
+		es.append(Vector4(it[2].x, it[2].y, it[2].z, it[3]))
+	while cs.size() < 32:
+		cs.append(Vector4.ZERO)
+		es.append(Vector4.ZERO)
+	_material.set_shader_parameter("terr_c", cs)
+	_material.set_shader_parameter("terr_e", es)
+	_material.set_shader_parameter("terr_count", mini(items.size(), 32))
+	_material.set_shader_parameter("radius_km", planet.radius_km)
+	_material.set_shader_parameter("zone_km", TerritoryGeometry.MIN_FOUNDING_GAP_KM + TerritoryGeometry.START_SIZE_KM * 0.5)
+	_material.set_shader_parameter("territory_strength", 1.0 if show_territories else 0.0)
+	_material.set_shader_parameter("zone_strength", 1.0 if show_zones else 0.0)
+
+
 func make_current() -> void:
 	camera.make_current()
 
 
 ## Smoothly turns the globe so (lat, lon) faces the camera.
 func focus(lat: float, lon: float, dist: float = -1.0, instant: bool = false) -> void:
-	_target_lat = clampf(lat, -80.0, 80.0)
+	_target_lat = clampf(lat, -89.0, 89.0)
 	_target_lon = lon
 	if dist > 0.0:
 		_target_dist = clampf(dist, MIN_DIST, MAX_DIST)
@@ -130,7 +162,7 @@ func rotate_by_screen(delta: Vector2) -> void:
 	var h := maxf(get_viewport().get_visible_rect().size.y, 1.0)
 	var k := (distance - 1.0) * 95.0 / h
 	_target_lon = _target_lon - delta.x * k
-	_target_lat = clampf(_target_lat + delta.y * k, -80.0, 80.0)
+	_target_lat = clampf(_target_lat + delta.y * k, -89.0, 89.0)
 	view_lon = _target_lon
 	view_lat = _target_lat
 	_apply_camera()

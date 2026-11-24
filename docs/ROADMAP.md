@@ -5,8 +5,9 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 | Phase | Name | Status |
 |---|---|---|
 | 1 | World Foundation | **Freigegeben** (Projektinhaber startete Phase 2 am 24.11.2026); iPhone-Test weiterhin offen |
-| 2 | World Geography | **Implementiert (0.3.0), Abnahme ausstehend** |
-| 3 | Living World | geplant |
+| 2 | World Geography | **Implementiert (0.3.0)** + **Paket 2.1 umgesetzt (0.4.0)**, Abnahme ausstehend |
+| 2.x | Living Assets (visuelles Projekt, kein Gameplay) | Schritte A–G umgesetzt; Lizenz-PDF geprüft (Pflichtnennung + Bearbeitungsliste im Spiel seit 0.5.0); Anbindung an Simulationsereignisse vorbereitet (VisualEventRouter) |
+| 3 | Living World | **Freigegeben 24.11.2026 – implementiert (0.5.0)**: Identitäten, Bedürfnisse, Tagesabläufe, Berufe, Navigation, Utility AI, Interaktionen, Simulations-LOD, Persistenz ([LIVING_WORLD.md](LIVING_WORLD.md)); Abnahme + iPhone-Test ausstehend |
 | 4 | Settlement Foundation | geplant |
 | 5 | Social Life | geplant |
 | 6 | Economy | geplant |
@@ -80,6 +81,25 @@ Planet startet ohne Siedlungen; Siedlungen nur durch Spielergründung; keine NPC
 5. Kein Tag/Nacht-Schatten auf dem Globus.
 6. Globus-Leistung auf echtem iPhone ungemessen.
 
-## Voraussetzungen für Phase 3 (Living World)
-- Abnahme Phase 2 (insb. Planetengröße, Gründungsregeln – GEOGRAPHY_SYSTEM.md §7).
-- Entscheidungen: NPC-Anzahl je Siedlung auf dem iPhone (Leistungsbudget), Tagesablauf nach Siedlungszeitzone, offene Fragen WORLD_DESIGN.md §5 (verlassene Siedlungen).
+## Designvorgaben vom 24.11.2026 – Einordnung in die Phasen
+Verbindlich: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) · Bewertung: [TECHNICAL_ASSESSMENT.md](TECHNICAL_ASSESSMENT.md). **Nichts davon ist implementiert**; jedes Paket startet erst nach Freigabe.
+
+| Paket / Phase | Inhalte |
+|---|---|
+| **2.1 Geografie-Korrekturen** ✅ umgesetzt (0.4.0) | Territorien als Polygone (1 × 1 km Start), 20 km Grenzabstand geodätisch, Sperrzonen auf dem Globus, Schwierigkeitsmodell statt Sperren (±62°, Eis, Gebirge entfallen), räumlicher Index, Polar-Sonne, Auswahl „Beitreten / Gründen“ (Beitreten erklärt, aktiv ab Phase 12), Migration bestehender Territorien |
+| **Performance-Paket** – Diagnose ✅ (0.4.0), Optimierungen O1–O9 vorgeschlagen (PERFORMANCE.md §7.3), warten auf Freigabe | Messanzeige, Boden in Chunks + Atlas, Sprite-Atlanten, dynamische Auflösung, Drosselung unsichtbarer Objekte; Messung auf dem iPhone ([PERFORMANCE.md](PERFORMANCE.md) §6) |
+| **3 Living World** | Simulationskern (`advance`, Stufen S0/S1 lokal), Bedürfnisse, Tagesabläufe, Navigation ([SIMULATION_ARCHITECTURE.md](SIMULATION_ARCHITECTURE.md)) |
+| **4 Settlement Foundation** | 1-km-Siedlungsfläche in Chunks, Gründungspaket (klein, ineffizient), Gelände aus der Region, Siedlungszustand persistent (ADR-17) |
+| **7 Property & Construction** | Bauen/Verschieben/Abreißen über Befehle, Grundstücke, Zonen, Straßengraph, Eigentum, Berechtigungs-Pipeline, Räumung/Entschädigung |
+| **8 Inter-Settlement** | Territoriale Erweiterung, Annäherung, Verträge über Grenzen ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §5) |
+| **9 Government & Politics** | Gesetzes-Engine mit Ebenen, Verfahren, Abstimmungen ([LAW_ENGINE.md](LAW_ENGINE.md)) |
+| **12/13 Multiplayer** | Server-Autorität für Gründung/Bau/Gesetze/Simulation (S2/S3), Beitreten, Anti-Exploit |
+
+## Voraussetzungen für Phase 4 (Settlement Foundation)
+Vorhanden aus Phase 3: Bewohner mit Bedürfnissen, Berufen, Arbeitsplätzen und Tagesablauf; Orte und Wegnetz; ereignisgesteuerte, persistente Simulation; Ereignis-Schnittstelle zu Living Assets.
+Offen / zu entscheiden:
+- Abnahme Phase 3 auf dem iPhone (Tagesablauf, Lesbarkeit, Leistung mit `?perf=1`).
+- Startbevölkerung: bleibt es bei 12 oder abhängig von Schwierigkeit/Region? Obergrenze NPCs je Siedlung auf älteren iPhones (Messung).
+- Grundversorgung: sollen Essen/Wasser/Energie Vorräte verbrauchen (Kopplung Bedürfnisse ↔ Ressourcen) schon in Phase 4 oder erst Phase 6?
+- Siedlungsfläche 1 km² in Chunks (ADR-17) und Navigation über Chunks (Wegnetz je Chunk, Fernwege).
+- Bevölkerungsentwicklung (Zuzug, Geburten) und verlassene Siedlungen (WORLD_DESIGN.md §5).

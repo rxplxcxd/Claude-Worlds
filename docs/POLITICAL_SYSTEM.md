@@ -34,6 +34,8 @@ Unterschieden werden: **Selbstbezeichnung** (frei, ohne Wirkung) → **interne A
 Abstimmung der Siedlungsleitungen, Vertreter, Volksabstimmung, Parlament, vertragliche Zustimmung – festgelegt in der Verfassung der Einheit.
 
 ## 5. Ämter, Parteien, Wahlen, Gesetze, Steuern
+**Präzisiert 24.11.2026:** Gesetze entstehen über eine **regelbasierte Gesetzes-Engine** (WENN – DANN, mit Bedingungen, Fristen, Abstimmungen, Ausnahmen, Sanktionen, Einspruch, Geltungsbereich) auf den Ebenen Siedlung, Stadt, Region, Staat, Land – siehe [LAW_ENGINE.md](LAW_ENGINE.md). Eigentum, Ämter und Gesetze werden bei jeder Handlung gemeinsam geprüft; auch Amtsträger sind an Gesetze gebunden.
+
 Bürgermeister, Verwaltung, Parteien/Gruppen, periodische Wahlen, Gesetze mit messbaren Effekten (Steuersätze, Bauregeln, Öffnungszeiten), Haushalte, Genehmigungen, Diplomatie.
 
 ## 6. Offene Fragen [OFFEN]

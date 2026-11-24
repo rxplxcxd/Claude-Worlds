@@ -456,6 +456,7 @@ func _render_npcs(all: bool) -> void:
 			continue
 		n.set_process(true)
 		infos[id] = s.render_info(id, t)
+	_assign_seats(infos)
 	_avoid(infos)
 	for n in npcs:
 		var id := n.npc_id
@@ -473,6 +474,45 @@ func _render_npcs(all: bool) -> void:
 			partner = Iso.grid_to_world(infos[other].get("grid", Vector2.ZERO) if infos.has(other) else s.render_info(other, t).get("grid", Vector2.ZERO))
 			talking = bubbles and grp[int(t / 4.0) % grp.size()] == id
 		n.apply_render(info, w, wd, partner, talking)
+
+
+## Benches are used: people relaxing, chatting or on a break near a free
+## bench sit down on it (one person per seat; presentation only).
+const SEAT_ACTS := ["leisure", "socialize", "pause", "eat_out"]
+var _seats: Array = []
+
+
+func _seat_positions() -> Array:
+	if _seats.is_empty() and data:
+		for p in data.props:
+			if p.get("kind", "") == "bench":
+				var g: Vector2 = p.get("grid_v", Vector2.ZERO)
+				_seats.append(g + Vector2(-0.18, 0.12))
+				_seats.append(g + Vector2(0.18, 0.12))
+	return _seats
+
+
+func _assign_seats(infos: Dictionary) -> void:
+	var free := {}
+	for i in _seat_positions().size():
+		free[i] = true
+	var ids: Array = infos.keys()
+	ids.sort()
+	for id in ids:
+		var info: Dictionary = infos[id]
+		if not info.get("visible", false) or info.get("walking", false) or not info.get("act", "") in SEAT_ACTS:
+			continue
+		var best := -1
+		var best_d := 2.2
+		for i in free:
+			var d: float = (_seats[i] as Vector2).distance_to(info["grid"])
+			if d < best_d:
+				best_d = d
+				best = i
+		if best >= 0:
+			free.erase(best)
+			info["grid"] = _seats[best]
+			info["seat"] = true
 
 
 ## Local avoidance (presentation only – never changes the simulation):
@@ -496,7 +536,7 @@ static func _avoid(infos: Dictionary) -> void:
 				continue
 			for j in range(i + 1, ids.size()):
 				var b: Dictionary = infos[ids[j]]
-				if not b.get("visible", false):
+				if not b.get("visible", false) or (a.get("seat", false) and b.get("seat", false)):
 					continue
 				var delta: Vector2 = b["grid"] - a["grid"]
 				var dist := delta.length()

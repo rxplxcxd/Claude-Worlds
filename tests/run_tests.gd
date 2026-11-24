@@ -646,6 +646,7 @@ func _run() -> void:
 	_test_living_assets()
 	_test_living_world()
 	_test_world_authority()
+	_test_animations()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
@@ -981,6 +982,52 @@ func _test_dynamic_navigation(data: SettlementData, cfg: Dictionary, t0: int) ->
 				overlaps += 1
 	check(overlaps == 0, "no two visible inhabitants stand inside each other (unique spots + avoidance)")
 	auth.detach_hot("stl_nav")
+
+
+func _test_animations() -> void:
+	print("[animations]")
+	var cat: Node = get_tree().root.get_node("CharacterCatalog")
+	var farmer := {"tool": {"option": "shovel"}}
+	var builder := {"tool": {"option": "hammer"}}
+	var plain := {"tool": {"option": "none"}}
+	check(cat.resolve_anim(farmer, "dig") == "dig" and cat.resolve_anim(builder, "dig") == "interact" and cat.resolve_anim(builder, "swing") == "swing" and cat.resolve_anim(plain, "swing") == "interact", "work animations match the tool (dig needs a shovel, swing a hammer or axe)")
+	check(cat.resolve_anim(builder, "walk") == "walk_tool" and cat.resolve_anim(builder, "sit") == "sit_tool" and cat.resolve_anim(plain, "sit") == "sit", "carrying a tool uses the tool variants of walk/sit/idle")
+	check(["sit", "get_up", "run", "dig", "swing", "walk_tool", "sit_tool", "get_up_tool"].all(func(a): return int(cat.anim_info(a).get("frames", 0)) > 0), "animation library: sit, get up, run, dig, swing (+ tool variants)")
+	if not root_has_character_assets():
+		print("       (Penzilla character layers not imported – texture checks skipped)")
+		return
+	var ok := true
+	for a in cat.data["anims"]:
+		var tex: Texture2D = cat.layer_texture(a, "body")
+		var fs: Vector2 = cat.frame_size(a)
+		if tex == null or absf(tex.get_width() - fs.x * int(cat.anim_info(a)["frames"])) > 1.0 or absf(tex.get_height() - fs.y * 5) > 1.0:
+			ok = false
+			print("       sheet size mismatch: ", a, " ", tex.get_size() if tex else Vector2.ZERO, " frame ", fs)
+	check(ok, "every animation sheet matches its frame size (per-animation crop)")
+	var feet_ok := true
+	for a in ["dig", "swing", "sit_tool"]:
+		# feet stay at the same world position across different crops
+		var off_a: Vector2 = cat.feet_in_frame(a) / cat.file_scale() + Vector2(cat.anim_info(a)["crop_src"][0], cat.anim_info(a)["crop_src"][1])
+		var off_i: Vector2 = cat.feet_in_frame("idle") / cat.file_scale() + Vector2(cat.data["frame"]["crop_src"][0], cat.data["frame"]["crop_src"][1])
+		if off_a.distance_to(off_i) > 0.5:
+			feet_ok = false
+	check(feet_ok, "feet anchor is identical for all crops (no jumping between animations)")
+	# state machine
+	var n := Npc.new()
+	n.setup({"npc_id": "npc_anim", "name": "A B", "role": "farmer", "appearance": cat.role_appearance("farmer", 5)})
+	add_child(n)
+	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "leisure", "walking": false, "seat": true, "place": "park"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
+	var sat: bool = n.seated and n.rig.anim == "sit"
+	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "leisure", "walking": false, "place": "park"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
+	var got_up: bool = n.rig.anim == "get_up" and not n.seated
+	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "hurry": true, "place": "a", "target": "b"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
+	var ran: bool = n.rig.anim == "run"
+	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "door": "enter", "door_f": 0.9, "place": "a", "target": "bld:x"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
+	var door: bool = n.modulate.a < 0.5 and n.rig.anim == "interact"
+	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "work", "walking": false, "place": "bld:farm"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
+	var dig: bool = n.rig.anim == "dig"
+	n.queue_free()
+	check(sat and got_up and ran and door and dig, "NPC animation states: sit down, get up, run when late, open the door and step in, dig at work")
 
 
 ## Personality has measurable effects (population-level A/B with fixed seeds).

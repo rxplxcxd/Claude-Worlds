@@ -311,6 +311,8 @@ static func decide(rec: Dictionary, state: Dictionary, t: int, ctx: Dictionary) 
 		if cd > 0.0 and t - int(state.get("recent", {}).get(act, -1000000)) < int(cd * 3600.0):
 			score -= 0.8
 		var cand := {"act": act, "place": place, "minutes": minutes, "score": score}
+		if act == "work" and t + travel > int(shift[0]) + 120:
+			cand["hurry"] = true   # late for the shift: runs
 		if act == "pause":
 			cand["shift_start"] = int(shift[0])
 		cands.append(cand)
@@ -391,7 +393,11 @@ static func advance(rec: Dictionary, state: Dictionary, to: int, ctx: Dictionary
 			state["pause_for"] = int(d["shift_start"])
 		if d["place"] != state["place"]:
 			var walk_s := maxi(1, nav.travel_seconds(state["place"], d["place"]))
+			if d.get("hurry", false):
+				walk_s = maxi(1, int(walk_s * 0.55))
 			state["travel"] = {"from": state["place"], "to": d["place"], "depart": boundary, "arrive": boundary + walk_s, "next": d["act"], "next_dur": d["minutes"], "nav_v": nav.version}
+			if d.get("hurry", false):
+				state["travel"]["hurry"] = true
 			state["act"] = "walk"
 			state["t0"] = boundary
 			state["t1"] = boundary + walk_s

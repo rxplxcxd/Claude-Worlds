@@ -24,6 +24,7 @@ extends RefCounted
 const CONFIG_PATH := "res://data/sim/living_world.json"
 const SIM_VERSION := 2
 const MICRO_WINDOW_S := 86400
+const DOOR_S := 1.6                # seconds of a door passage (presentation)
 
 var config: Dictionary = {}
 var nav: NavGrid
@@ -330,7 +331,17 @@ func render_info(npc_id: String, t: float) -> Dictionary:
 		else:
 			p = nav.position_on_path(tr["from"], tr["to"], f)
 			q = nav.position_on_path(tr["from"], tr["to"], minf(1.0, f + 2.0 / span))
-		return {"visible": true, "grid": p, "dir": q - p, "act": "walk", "walking": true, "place": tr["from"], "target": tr["to"]}
+		var out := {"visible": true, "grid": p, "dir": q - p, "act": "walk", "walking": true, "place": tr["from"], "target": tr["to"], "hurry": tr.get("hurry", false)}
+		# doors: stepping out of / into a building (presentation phases)
+		var left := float(tr["arrive"]) - t
+		var into := t - float(tr["depart"])
+		if str(tr["to"]).begins_with("bld:") and left < DOOR_S:
+			out["door"] = "enter"
+			out["door_f"] = 1.0 - left / DOOR_S
+		elif str(tr["from"]).begins_with("bld:") and into < DOOR_S:
+			out["door"] = "exit"
+			out["door_f"] = into / DOOR_S
+		return out
 	var act: String = st["act"] if tr.is_empty() else str(tr.get("next", st["act"]))
 	var place: String = st["place"] if tr.is_empty() else str(tr["to"])
 	var a: Dictionary = config.get("activities", {}).get(act, {})

@@ -37,6 +37,7 @@ var _blinking := 0.0
 var _parts: Array[Sprite2D] = []
 var _face_sprite: Sprite2D
 var _build_id := 0
+var _held := false
 
 
 func _ready() -> void:
@@ -58,6 +59,7 @@ func play(new_anim: String, restart: bool = false) -> void:
 	anim = new_anim
 	frame = 0
 	_time = 0.0
+	_held = false
 	_rebuild()
 
 
@@ -89,7 +91,12 @@ func _process(delta: float) -> void:
 	_time += delta
 	var step := int(_time * fps)
 	var new_frame := step % frames if info.get("loop", true) else mini(step, frames - 1)
-	if not info.get("loop", true) and step >= frames:
+	if not info.get("loop", true) and step >= frames and info.get("hold", false):
+		# held poses (sitting): stay on the last frame until another anim plays
+		if not _held:
+			_held = true
+			animation_finished.emit(anim)
+	elif not info.get("loop", true) and step >= frames:
 		var finished := anim
 		anim = "idle"
 		frame = 0
@@ -197,11 +204,11 @@ func _add_part(tex: Texture2D, mod: Color, premult: bool) -> Sprite2D:
 func _apply_frame() -> void:
 	if _parts.is_empty():
 		return
-	var fs := CharacterCatalog.frame_size()
+	var fs := CharacterCatalog.frame_size(_resolved)
 	var rule: Array = FACING_ROWS[facing]
 	var region := Rect2(frame * fs.x, int(rule[0]) * fs.y, fs.x, fs.y)
 	var scale_f := world_per_src / CharacterCatalog.file_scale()
-	var feet := CharacterCatalog.feet_in_frame()
+	var feet := CharacterCatalog.feet_in_frame(_resolved)
 	for s in _parts:
 		s.region_rect = region
 		s.flip_h = rule[1]

@@ -54,6 +54,8 @@ func _qa_gallery() -> bool:
 	var g: Node2D = null
 	if q.contains("gallery=living"):
 		g = LivingGallery.new()
+	elif q.contains("gallery=anim"):
+		g = AnimGallery.new()       # character animation library (QA)
 	elif q.contains("gallery=cookedfx"):
 		g = CookedFxGallery.new()   # evaluation of the Cooked FX pack (private files)
 	if g == null:

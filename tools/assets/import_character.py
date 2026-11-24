@@ -2,7 +2,7 @@
 """Builds the modular character layers from Penzilla "Ultimate Protagonist".
 
 Usage:
-    python3 -I tools/assets/import_character.py <dir_with_zips> [<project_root>]
+    python3 -I tools/assets/import_character.py <dir_with_zips> [<project_root>] [anim,anim,...]
 
 Reads AnimationSheets/CustomaizableCharacter/<Animation>/<Layer>.png directly
 from Ultimate_Protagonist.zip and writes, per animation and item:
@@ -49,10 +49,7 @@ def main():
     with open(os.path.join(root, "data", "character_catalog.json"), encoding="utf-8") as f:
         cat = json.load(f)
     frame = cat["frame"]
-    crop = frame["crop_src"]
     scale = float(frame["file_scale"])
-    cw, ch = crop[2] - crop[0], crop[3] - crop[1]
-    out_w, out_h = round(cw * scale), round(ch * scale)
 
     zpath = os.path.join(src_dir, "Ultimate_Protagonist.zip")
     z = zipfile.ZipFile(zpath)
@@ -65,8 +62,15 @@ def main():
     out_root = os.path.join(root, "assets", "penzilla", "character", "layers")
     written, missing, repaired = 0, [], []
     total_bytes = 0
+    only = set(sys.argv[3].split(",")) if len(sys.argv) > 3 else None
     for anim_id, anim in cat["anims"].items():
+        if only and anim_id not in only:
+            continue
         folder = anim["source_folder"]
+        # per-animation crop (wide tool swings, sitting) – default: the common frame
+        crop = anim.get("crop_src", frame["crop_src"])
+        cw, ch = crop[2] - crop[0], crop[3] - crop[1]
+        out_w, out_h = round(cw * scale), round(ch * scale)
         for item_id, item in cat["items"].items():
             if anim_id not in item.get("anims", list(cat["anims"].keys())):
                 continue
@@ -92,7 +96,9 @@ def main():
                     cell = cells[c]
                     # Repair single empty frames in otherwise drawn rows (pack
                     # defect, e.g. Beanie Idle NW frame 0) from the nearest frame.
-                    if not filled[c] and any(filled):
+                    # (only a single gap: several empty frames are real occlusion,
+                    # e.g. a bow tie hidden while bending down to dig)
+                    if not filled[c] and any(filled) and filled.count(False) == 1:
                         src = min((i for i in range(cols) if filled[i]), key=lambda i: abs(i - c))
                         cell = cells[src]
                         repaired.append(f"{anim_id}/{item_id} row {r} frame {c} <- frame {src}")

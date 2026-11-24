@@ -121,6 +121,19 @@
         385,
         462
       ]
+    },
+    "get_up_tool": {
+      "source_folder": "GetUpHoldingTool",
+      "frames": 4,
+      "fps": 8,
+      "loop": false,
+      "label": "Aufstehen mit Werkzeug",
+      "crop_src": [
+        50,
+        40,
+        385,
+        462
+      ]
     }
   },
   "layer_order": [
@@ -163,7 +176,9 @@
       },
       "anims": [
         "idle",
-        "idle_tool"
+        "idle_tool",
+        "sit",
+        "sit_tool"
       ]
     },
     "suit": {
@@ -263,49 +278,87 @@
     "tool_hammer": {
       "source": "Layer13_Hammer_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "swing",
+        "get_up_tool"
       ]
     },
     "tool_hammer_back": {
       "source": "NegativeLayer1_Hammer_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "swing",
+        "get_up_tool"
       ]
     },
     "tool_shovel": {
       "source": "Layer13_Showel_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "dig",
+        "get_up_tool"
       ]
     },
     "tool_shovel_back": {
       "source": "NegativeLayer1_Showel_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "dig",
+        "get_up_tool"
       ]
     },
     "tool_watercan": {
       "source": "Layer13_WaterCan_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "get_up_tool"
       ]
     },
     "tool_watercan_back": {
       "source": "NegativeLayer1_WaterCan_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "get_up_tool"
       ]
     },
     "tool_axe": {
       "source": "Layer13_Axe_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "swing",
+        "get_up_tool"
       ]
     },
     "tool_axe_back": {
       "source": "NegativeLayer1_Axe_Iron",
       "anims": [
-        "idle_tool"
+        "idle_tool",
+        "walk_tool",
+        "sit_tool",
+        "run",
+        "swing",
+        "get_up_tool"
       ]
     }
   },

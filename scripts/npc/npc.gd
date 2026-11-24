@@ -18,6 +18,7 @@ var rig: CharacterRig
 var where := ""            # "" = not visible (indoors / data-only)
 var act := ""
 var walking := false
+var seated := false
 var detailed := true       # false = beyond the profile's detail cap (no idle animations)
 var _interactable: Interactable
 var _shape: CollisionPolygon2D
@@ -81,10 +82,17 @@ func _set_present(on: bool) -> void:
 
 ## info = SettlementSim.render_info(...); world = its position in world px.
 ## chat: partner world position (Vector2.INF if none), talking: bubble on.
+## Animation state machine (presentation only):
+##   door exit/enter → reach for the door and fade in/out at the doorway
+##   walking         → walk (run when late for a shift)
+##   seated          → sit down (held pose), get up when leaving
+##   working         → dig (shovel) / swing (hammer, axe) / interact
+##   otherwise       → idle with small turns, facing a chat partner
 func apply_render(info: Dictionary, world: Vector2, world_dir: Vector2, chat_partner: Vector2, talking: bool) -> void:
 	if not info.get("visible", false):
 		if is_present():
 			_set_present(false)
+		seated = false
 		return
 	if not is_present():
 		_set_present(true)
@@ -92,19 +100,53 @@ func apply_render(info: Dictionary, world: Vector2, world_dir: Vector2, chat_par
 	where = str(info.get("place", ""))
 	var new_act := str(info.get("act", ""))
 	position = world
-	if info.get("walking", false):
-		if not walking or rig.anim != "walk":
+	var door := str(info.get("door", ""))
+	modulate.a = 1.0
+	if door != "":
+		var f := float(info.get("door_f", 0.0))
+		# entering: walk up, reach for the door, then vanish inside;
+		# leaving: appear in the doorway and step out
+		modulate.a = clampf((1.0 - f) / 0.45, 0.0, 1.0) if door == "enter" else clampf(f / 0.45, 0.0, 1.0)
+		if door == "enter" and f > 0.35 and rig.anim != "interact":
+			rig.play("interact", true)
+		elif door == "exit" and rig.anim != "walk":
 			rig.play("walk")
+		if world_dir.length_squared() > 0.0001:
+			rig.set_facing(Iso.facing_index(world_dir))
 		walking = true
+		seated = false
+	elif info.get("walking", false):
+		var want := "run" if info.get("hurry", false) else "walk"
+		if not walking or rig.anim != want:
+			rig.play(want)
+		walking = true
+		seated = false
 		if world_dir.length_squared() > 0.0001:
 			rig.set_facing(Iso.facing_index(world_dir))
 	else:
-		if walking or new_act != act:
-			rig.play("idle")
+		var sit := bool(info.get("seat", false))
+		if sit and not seated:
+			rig.play("sit", true)
+			seated = true
+		elif not sit and seated:
+			rig.play("get_up", true)
+			seated = false
+		elif not sit and (walking or new_act != act):
+			rig.play(work_anim() if new_act == "work" else "idle")
 		walking = false
 	act = new_act
 	_partner_pos = chat_partner
-	_bubble.visible = talking and not walking
+	_bubble.visible = talking and not walking and modulate.a > 0.9
+
+
+## The work animation that fits the person's tool.
+func work_anim() -> String:
+	match str(record.get("appearance", {}).get("tool", {}).get("option", "none")):
+		"shovel":
+			return "dig"
+		"hammer", "axe":
+			return "swing"
+	return "interact"
 
 
 func _process(delta: float) -> void:
@@ -129,9 +171,11 @@ func _process(delta: float) -> void:
 	if _timer > 0.0:
 		return
 	_timer = _rng.randf_range(4.0, 9.0)
-	var has_tool: bool = record.get("appearance", {}).get("tool", {}).get("option", "none") != "none"
-	if act == "work" and has_tool and _rng.randf() < 0.6:
-		rig.play("interact", true)
+	if seated:
+		return   # sitting people keep their pose
+	if act == "work":
+		# work in bouts: the tool animation, then a short breather
+		rig.play(work_anim() if rig.anim == "idle" or _rng.randf() < 0.7 else "idle")
 	elif act in ["eat_out", "errand"] and _rng.randf() < 0.3:
 		rig.play("interact", true)
 	elif _partner_pos == Vector2.INF:

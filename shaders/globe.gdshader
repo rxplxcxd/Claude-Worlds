@@ -94,13 +94,13 @@ void fragment() {
 		float edge = max(max(e_r, e_l), max(e_d, e_u));
 		vec3 info = lut(r);
 		if (info.r > 0.5) {
-			col = mix(col, territory_color, 0.26 * territory_strength);
+			col = mix(col, territory_color, 0.34 * territory_strength);
 			float o_r = lut(rr).r < 0.5 ? e_r : 0.0;
 			float o_l = lut(rl).r < 0.5 ? e_l : 0.0;
 			float o_d = lut(rd).r < 0.5 ? e_d : 0.0;
 			float o_u = lut(ru).r < 0.5 ? e_u : 0.0;
 			float outer = max(max(o_r, o_l), max(o_d, o_u));
-			col = mix(col, territory_color * 0.8, outer * territory_strength);
+			col = mix(col, territory_color, outer * territory_strength);
 		}
 		if (info.g > 0.5) {
 			col = mix(col, highlight_color, 0.18);

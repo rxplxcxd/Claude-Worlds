@@ -2,6 +2,17 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.3.1] – Designvorgaben und technische Bewertung (nur Dokumentation)
+
+### Hinzugefügt
+- `docs/DESIGN_DIRECTIVES.md`: verbindliche Vorgaben des Projektinhabers vom 24.11.2026 (Regionen ≠ Siedlungsgrenze, ganzer Planet besiedelbar, 20 km zwischen Territoriumsgrenzen, 1 × 1 km Start, Beitreten/Gründen, Gestaltungsfreiheit, Eigentum/Befugnisse, Gesetzes-Engine, mehrstufige Simulation, 60 FPS).
+- `docs/TECHNICAL_ASSESSMENT.md`: Bewertung des Codes (unterstützt, fehlend, Architekturänderungen A1–A12, Risiken, Exploits, Mehrspieler-Folgen, Phasenvorschlag).
+- `docs/TERRITORY_SYSTEM.md`, `docs/LAW_ENGINE.md`, `docs/SIMULATION_ARCHITECTURE.md`.
+
+### Geändert
+- GEOGRAPHY_SYSTEM (§4 als überholt markiert, §8 Hierarchie/Kapazität), SETTLEMENT_SYSTEM (§8 Ausgangszustand, §9 Gestaltungsfreiheit), PLAYER_SYSTEM (§3a Beitreten/Gründen), NPC_SYSTEM, POLITICAL_SYSTEM, WORLD_DESIGN, PERFORMANCE (§6 Weg zu 60 FPS, Korrektur einer zu optimistischen Aussage zum Boden), ARCHITECTURE (vorgeschlagene ADR-15…20), FIREBASE_SCHEMA, ROADMAP.
+- **Kein Code geändert.** Die im Code noch aktiven Phase-2-Regeln (±62°, 300 km, Region als Gebiet) sind als Abweichung dokumentiert (DESIGN_DIRECTIVES §10).
+
 ## [0.3.0] – Phase 2: World Geography
 
 ### Hinzugefügt

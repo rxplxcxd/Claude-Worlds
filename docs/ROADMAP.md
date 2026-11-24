@@ -5,8 +5,8 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 | Phase | Name | Status |
 |---|---|---|
 | 1 | World Foundation | **Freigegeben** (Projektinhaber startete Phase 2 am 24.11.2026); iPhone-Test weiterhin offen |
-| 2 | World Geography | **Implementiert (0.3.0), Abnahme ausstehend** |
-| 3 | Living World | geplant |
+| 2 | World Geography | **Implementiert (0.3.0)**; Korrekturen nach den Designvorgaben vom 24.11.2026 geplant (Paket 2.1, wartet auf Freigabe) |
+| 3 | Living World | geplant – **ausdrücklich noch nicht freigegeben** |
 | 4 | Settlement Foundation | geplant |
 | 5 | Social Life | geplant |
 | 6 | Economy | geplant |
@@ -79,6 +79,20 @@ Planet startet ohne Siedlungen; Siedlungen nur durch Spielergründung; keine NPC
 4. Nur eine lokale Siedlung (Singleplayer); „Beitreten“ fremder Siedlungen erst mit Mehrspieler (Phase 12).
 5. Kein Tag/Nacht-Schatten auf dem Globus.
 6. Globus-Leistung auf echtem iPhone ungemessen.
+
+## Designvorgaben vom 24.11.2026 – Einordnung in die Phasen
+Verbindlich: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) · Bewertung: [TECHNICAL_ASSESSMENT.md](TECHNICAL_ASSESSMENT.md). **Nichts davon ist implementiert**; jedes Paket startet erst nach Freigabe.
+
+| Paket / Phase | Inhalte |
+|---|---|
+| **2.1 Geografie-Korrekturen** (Vorschlag, klein, vor Phase 3) | Territorien als Polygone (1 × 1 km Start), 20 km Grenzabstand geodätisch, Sperrzonen auf dem Globus, Schwierigkeitsmodell statt Sperren (±62°, Eis, Gebirge entfallen), räumlicher Index, Polar-Sonne, Auswahl „Beitreten / Gründen“ (Beitreten erklärt, aktiv ab Phase 12), Migration bestehender Territorien |
+| **Performance-Paket** (Vorschlag, vor/parallel zu Phase 3) | Messanzeige, Boden in Chunks + Atlas, Sprite-Atlanten, dynamische Auflösung, Drosselung unsichtbarer Objekte; Messung auf dem iPhone ([PERFORMANCE.md](PERFORMANCE.md) §6) |
+| **3 Living World** | Simulationskern (`advance`, Stufen S0/S1 lokal), Bedürfnisse, Tagesabläufe, Navigation ([SIMULATION_ARCHITECTURE.md](SIMULATION_ARCHITECTURE.md)) |
+| **4 Settlement Foundation** | 1-km-Siedlungsfläche in Chunks, Gründungspaket (klein, ineffizient), Gelände aus der Region, Siedlungszustand persistent (ADR-17) |
+| **7 Property & Construction** | Bauen/Verschieben/Abreißen über Befehle, Grundstücke, Zonen, Straßengraph, Eigentum, Berechtigungs-Pipeline, Räumung/Entschädigung |
+| **8 Inter-Settlement** | Territoriale Erweiterung, Annäherung, Verträge über Grenzen ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §5) |
+| **9 Government & Politics** | Gesetzes-Engine mit Ebenen, Verfahren, Abstimmungen ([LAW_ENGINE.md](LAW_ENGINE.md)) |
+| **12/13 Multiplayer** | Server-Autorität für Gründung/Bau/Gesetze/Simulation (S2/S3), Beitreten, Anti-Exploit |
 
 ## Voraussetzungen für Phase 3 (Living World)
 - Abnahme Phase 2 (insb. Planetengröße, Gründungsregeln – GEOGRAPHY_SYSTEM.md §7).

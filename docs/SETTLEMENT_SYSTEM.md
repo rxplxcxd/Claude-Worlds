@@ -28,7 +28,7 @@ Zielgröße der Startbevölkerung 20–50 NPCs, die **mit dem Gründer** kommen 
 | Transport | Lager | 2 |
 | Allgemein | – | Rest |
 
-## 3. Siedlungsgründung [Standortwahl + Bewertung IMPLEMENTIERT (Phase 2) · Beitreten, Gründungspaket GEPLANT (Phase 4/12)]
+## 3. Siedlungsgründung [Standortwahl + Bewertung IMPLEMENTIERT (Phase 2) · Beitreten, Gründungspaket GEPLANT (Phase 4/12) · Regeln überarbeitet 24.11.2026 → §8, TERRITORY_SYSTEM.md]
 Einziger Weg, wie Siedlungen entstehen.
 0. Neuer Spieler: Ist der Planet leer → nur „Siedlung gründen“. Sonst Auswahl „Bestehender Siedlung beitreten“ (Liste/Karte der Spielersiedlungen) oder „Eigene Siedlung gründen“.
 1. Standortwahl auf der Weltkarte mit **Standortbewertung** (Wasser, Klima, Gelände, Rohstoffe, Landwirtschaft, Nähe/Abstand zu Siedlungen, Verkehrswege, Territorium).
@@ -68,3 +68,37 @@ Implementiert: eigenes Haus des Gründers, Gründungsmeldung, Orientierung (Schw
 
 ## 6. Offene Fragen [OFFEN]
 Rastergröße wachsender Städte (Chunks à 32×32 Kacheln vorgeschlagen), Stadtteile als eigene Szenen?
+
+
+## 8. Ausgangszustand einer neuen Siedlung [VERBINDLICH seit 24.11.2026 · GEPLANT, Phase 4]
+Vorgabe: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §4.
+- **Siedlungsfläche höchstens 1 × 1 km** (Vorschlag: 100 × 100 Kacheln à 10 m, in Chunks à 16 × 16 Kacheln). Die heutige Vorlage (26 × 26 Kacheln ≈ 260 m) wird zum **Kern** dieser Fläche; der Rest ist freies Bauland, Feld, Wald – abgeleitet aus dem Gelände der Region.
+- **Gründungspaket:** kleine Verwaltung, wenige Wohngebäude, ein paar Straßen, Grundversorgung (Wasser, Energie, Lager, Lebensmittel) – **funktionsfähig, aber klein und ineffizient**: z. B. Behelfsbauten (Zelte, Baracken), geringe Kapazität, umständliche Wege, hoher Unterhalt, wenig Komfort. Jede Schwäche ist ein sichtbares Ausbauziel („Wasserwerk ausbauen“, „Straße pflastern“).
+- Der Start hängt von der **Gründungsschwierigkeit** ab ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §6): im Polargebiet z. B. beheizte Unterkünfte, Energie- und Lebensmittelvorräte statt Feldern.
+- **Beitreten oder Gründen** bei der Charaktererstellung: siehe [PLAYER_SYSTEM.md](PLAYER_SYSTEM.md) §3a.
+- **Gründungsregel:** 20 km Abstand zwischen Territoriumsgrenzen, geodätisch ([TERRITORY_SYSTEM.md](TERRITORY_SYSTEM.md) §3). Die Phase-2-Regeln (300 km Mittelpunktabstand, ±62°, Eis/Gebirge gesperrt, Region als Gebiet) gelten als überholt und werden ersetzt.
+
+## 9. Vollständige Gestaltungsfreiheit [VERBINDLICH seit 24.11.2026 · GEPLANT, Phase 7]
+Vorgabe: [DESIGN_DIRECTIVES.md](DESIGN_DIRECTIVES.md) §5–6. Es gibt **keine dauerhaft vorgegebene Straßen- oder Gebäudestruktur**.
+
+### 9.1 Siedlungszustand als veränderbare Daten
+Heute (0.3.0) wird das Layout bei jedem Start aus der Vorlage gelesen – Änderungen wären nicht speicherbar. Künftig:
+```
+SettlementState { settlement_id, version, area {origin, frame, size_tiles, tile_m}, chunks[] }
+Chunk           { chunk_id (x,y), version, terrain[], parcels[], buildings[], road_segments[], props[], zones[] }
+Parcel          { parcel_id, polygon (Kacheln), owner_id, zone (residential|commercial|industrial|public|agri|green), lease? }
+Building        { building_id, type, variant, footprint, orientation (normal|gespiegelt), parcel_id, owner_id,
+                  state (planned|under_construction|active|damaged|demolishing), occupants[], built_at }
+RoadNetwork     { nodes[], edges[] (type, width, Gehweg ja/nein) } → wird für die Darstellung in Kacheln gerastert
+Networks        { water[], power[] } (Leitungen/Versorgungsgebiete)
+```
+- Die Gründungsvorlage wird **einmal** in diesen Zustand kopiert; danach ist alles änderbar.
+- Straßenmobiliar bleibt **regelbasiert abgeleitet** (`StreetPlanner`) und wird bei Straßenänderungen für die betroffenen Chunks neu berechnet.
+
+### 9.2 Bauen, Verschieben, Abreißen über Befehle
+`BuildCommand · DemolishCommand · MoveCommand · RezoneCommand · ParcelSplit/Merge · RoadBuild/Remove/Reroute · InfraModify · AdminRelocate`
+→ **Berechtigungsprüfung** (Weltregeln → Eigentum → Amt → Gesetze, [LAW_ENGINE.md](LAW_ENGINE.md) §2) → Kosten/Material/Bauzeit → Ausführung als Ereignis (protokolliert, serverfähig).
+- **Planungsmodus** (Entwurfsebene) vs. **Bau** (kostet Zeit und Ressourcen); Entwürfe sind frei, Ausführung geprüft.
+- **Verschieben** = Abbau + Neubau mit Kosten (realistisch; Penzilla-Sprites erlauben 2 Ausrichtungen: normal/gespiegelt).
+- **Folgen** werden automatisch ausgelöst: Bewohner brauchen Ersatzwohnung, Arbeitsplätze ziehen um, Verträge enden, Straßen ohne Anschluss werden markiert (referenzielle Integrität).
+- **Schutz öffentlicher Infrastruktur** und bewohnter Gebäude über Standardregeln + Gesetze.

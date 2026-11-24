@@ -39,6 +39,8 @@ Zeitplan-Vorlagen je Beruf (Frühschicht, Normal, Nacht) + individuelle Abweichu
 `NavigationRegion2D` aus begehbaren Kacheln, Gebäudeeingänge als Ziele; Spieler-Tippen-zum-Gehen wird dann ebenfalls auf Pfadfindung umgestellt.
 
 ## 6. Simulations-LOD
+Verbindliche Präzisierung (24.11.2026): mehrstufige, persistente Simulation ohne Einfrieren und ohne sichtbares Nachsimulieren – Architektur in [SIMULATION_ARCHITECTURE.md](SIMULATION_ARCHITECTURE.md) (Stufen S0–S3, `advance()`, Stufenwechsel).
+
 | LOD | Wann | Umfang | Takt |
 |---|---|---|---|
 | Aktiv | sichtbar/nahe Spieler | Knoten, Navigation, Animation | jeder Frame |

@@ -156,6 +156,16 @@ Code fragt logische Schlüssel ab (`exterior.building.town_hall`). Dateien entst
 - *Entscheidung:* Nächster Startpunkt nach Großkreisdistanz (leicht verrauscht), nur innerhalb derselben Landmasse.
 - *Folgen:* Natürliche, polygonale Grenzen; Regionen springen nicht übers Meer (außer kleinen Inseln ohne eigenen Startpunkt).
 
+### Vorgeschlagene ADRs (24.11.2026, noch nicht umgesetzt – siehe TECHNICAL_ASSESSMENT.md)
+| ADR | Entscheidung (Vorschlag) |
+|---|---|
+| ADR-15 | **Territorien als sphärische Polygone** mit Version/Historie, entkoppelt von natürlichen Regionen; Gründungsprüfung geodätisch Grenze-zu-Grenze (20 km) |
+| ADR-16 | **Räumlicher Index** als Würfel-Kugel-Quadtree (Zell-Tokens, Ebene 8 ≈ 24 km) für Territorien, Siedlungen und Firestore-Abfragen |
+| ADR-17 | **Siedlungszustand als Entitäten-Datenbank in Chunks**; Vorlage nur einmal beim Gründen kopiert; Änderungen ausschließlich über Befehle |
+| ADR-18 | **Berechtigungs-Pipeline + datengetriebene Gesetzes-Engine** (Weltregeln → Eigentum → Amt → Gesetze), ausgewertet serverseitig |
+| ADR-19 | **Simulationskern mit analytischer Fortschreibung** (`advance()` über Raten + Ereignisse) und Stufen S0–S3; Server autoritativ |
+| ADR-20 | **Rendering:** Boden in Chunks/Atlas, Sprite-Atlanten, dynamische Auflösung über SubViewport, Drosselung unsichtbarer Objekte |
+
 ## 9. Zukünftige Systemtrennung [GEPLANT]
 
 ```

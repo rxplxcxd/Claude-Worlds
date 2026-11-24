@@ -15,6 +15,15 @@ uniform float territory_strength : hint_range(0.0, 1.0) = 1.0;
 uniform vec3 territory_color : source_color = vec3(1.0, 0.72, 0.2);
 uniform vec3 highlight_color : source_color = vec3(1.0, 1.0, 1.0);
 uniform vec3 light_dir_view = vec3(-0.45, 0.55, 0.7);
+// Paket 2.1: territories are 1 × 1 km squares (not regions). Up to 32 nearest
+// are passed per frame: centre (unit vector) and east axis + half size (km).
+uniform int terr_count = 0;
+uniform vec4 terr_c[32];
+uniform vec4 terr_e[32];
+uniform float radius_km = 4000.0;
+uniform float zone_km = 20.5; // founding gap + half the new start square
+uniform float zone_strength : hint_range(0.0, 1.0) = 0.0;
+uniform vec3 zone_color : source_color = vec3(0.9, 0.22, 0.2);
 
 varying vec3 obj_pos;
 
@@ -93,20 +102,54 @@ void fragment() {
 		float e_u = (ru != r && ru > 0.5) ? 1.0 - smoothstep(lw.y * 0.5, lw.y, f.y) : 0.0;
 		float edge = max(max(e_r, e_l), max(e_d, e_u));
 		vec3 info = lut(r);
-		if (info.r > 0.5) {
-			col = mix(col, territory_color, 0.34 * territory_strength);
-			float o_r = lut(rr).r < 0.5 ? e_r : 0.0;
-			float o_l = lut(rl).r < 0.5 ? e_l : 0.0;
-			float o_d = lut(rd).r < 0.5 ? e_d : 0.0;
-			float o_u = lut(ru).r < 0.5 ? e_u : 0.0;
-			float outer = max(max(o_r, o_l), max(o_d, o_u));
-			col = mix(col, territory_color, outer * territory_strength);
-		}
 		if (info.g > 0.5) {
 			col = mix(col, highlight_color, 0.18);
 			col = mix(col, highlight_color, edge);
 		} else {
 			col = mix(col, vec3(0.15, 0.13, 0.1), edge * 0.5 * border_strength);
+		}
+	}
+
+	// Territories (gold square) and founding exclusion zones (red, 20 km
+	// around every territory border). Exact local distance to each square:
+	// azimuthal frame at the territory centre; atan(|c×n|, c·n) keeps the
+	// angle precise in single precision (acos would not).
+	if (terr_count > 0) {
+		float min_d = 5000.0; // km; "far away" (finite, so derivatives stay sane)
+		for (int i = 0; i < 32; i++) {
+			if (i >= terr_count) {
+				break;
+			}
+			vec3 c = terr_c[i].xyz;
+			float cd = dot(n, c);
+			if (cd < 0.98) {
+				continue;
+			}
+			vec3 e = terr_e[i].xyz;
+			vec3 no = cross(c, e);
+			vec3 cr = cross(c, n);
+			float ang = atan(length(cr), cd);
+			vec3 proj = n - c * cd;
+			float pl = length(proj);
+			vec2 xy = pl > 1e-9 ? vec2(dot(proj, e), dot(proj, no)) / pl * ang * radius_km : vec2(0.0);
+			vec2 q = abs(xy) - vec2(terr_e[i].w);
+			float d = length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0);
+			min_d = min(min_d, d);
+		}
+		// Line/edge width = about one pixel in km; clamped so the jump at the
+		// distance cut-off (cd < 0.98) never produces a visible ring.
+		float w = clamp(fwidth(min_d), 0.001, 25.0);
+		if (zone_strength > 0.0 && min_d < zone_km + w) {
+			float inside = 1.0 - smoothstep(zone_km - w, zone_km + w, min_d);
+			col = mix(col, zone_color, 0.28 * inside * zone_strength);
+			float line = 1.0 - smoothstep(0.0, w * 1.5, abs(min_d - zone_km));
+			col = mix(col, zone_color * 0.8, line * 0.9 * zone_strength);
+		}
+		if (territory_strength > 0.0) {
+			float fill = 1.0 - smoothstep(-w, w, min_d);
+			col = mix(col, territory_color, 0.6 * fill * territory_strength);
+			float edge = 1.0 - smoothstep(0.0, w * 1.5, abs(min_d));
+			col = mix(col, territory_color * 0.7, edge * territory_strength);
 		}
 	}
 

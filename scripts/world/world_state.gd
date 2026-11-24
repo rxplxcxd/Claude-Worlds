@@ -9,8 +9,16 @@ extends Node
 ##     founder and at least one human resident.
 ##
 ## Phase 2: every settlement has a POSITION on the planet (lat/lon, region,
-## continent) and founding claims its region as the settlement's TERRITORY.
-## Saves from Phase 1 (no position) are migrated to the best free site.
+## continent). Paket 2.1 (DESIGN_DIRECTIVES.md, TERRITORY_SYSTEM.md):
+##   * Founding claims its own TERRITORY: a 1 × 1 km square (spherical
+##     polygon) – no longer a whole natural region; regions only describe
+##     nature, any number of settlements fit into one region.
+##   * New independent settlements need 20 km to every territory border
+##     (geodesic, border to border). Territories must never overlap.
+##   * One active founding per player (abuse protection).
+##   * The core area never lapses (no penalty for breaks). Expansions are
+##     stored separately (record "expansions", later phases).
+## Saves from Phase 1 (no position) and Phase 2 (region claims) are migrated.
 ##
 ## The registry is stored locally (user://). In multiplayer phases the
 ## authoritative server owns this registry and performs found_settlement();
@@ -20,6 +28,8 @@ signal settlement_founded(record: Dictionary)
 
 const GENESIS_PATH := "res://data/world/genesis.json"
 const DEFAULT_SAVE_PATH := "user://worlds_world.json"
+## 1 = Phase 1, 2 = Phase 2 (position + region claim), 3 = Paket 2.1 (polygon territories)
+const SCHEMA_VERSION := 3
 
 var world_id: String = ""
 var planet_id: String = ""
@@ -33,6 +43,8 @@ var _settlements: Array[Dictionary] = []
 var _territories: Array[Dictionary] = []
 ## Set when load_world() moved an old settlement onto the planet.
 var migrated_settlement_ids: Array[String] = []
+## Set when load_world() converted a Phase-2 region claim into a 1 km² territory.
+var migrated_territory_ids: Array[String] = []
 
 
 func _ready() -> void:
@@ -44,6 +56,7 @@ func load_world() -> void:
 	_settlements.clear()
 	_territories.clear()
 	migrated_settlement_ids.clear()
+	migrated_territory_ids.clear()
 	var genesis := _read_json(GENESIS_PATH)
 	world_id = genesis.get("world_id", "wld_prime")
 	planet_id = genesis.get("planet_id", "")
@@ -61,7 +74,34 @@ func load_world() -> void:
 			push_warning("WorldState: dropped invalid settlement record: " + _check_record(s))
 	for t in saved.get("territories", []):
 		_territories.append(t)
+	_migrate_territories()
 	_migrate_positions()
+
+
+## Phase-2 saves claimed whole regions: convert every such territory into the
+## settlement's 1 × 1 km start territory (keeps its ID and history).
+func _migrate_territories() -> void:
+	var changed := false
+	var p := Geography.planet()
+	if p == null:
+		return
+	for i in _territories.size():
+		var t: Dictionary = _territories[i]
+		if t.has("geometry"):
+			continue
+		var s := get_settlement(t.get("owner_settlement_id", ""))
+		if s.is_empty() or not s.has("position"):
+			continue
+		var nt := TerritoryGeometry.make_territory(t["territory_id"], s["settlement_id"], t.get("owner_player_id", s.get("founder_player_id", "")),
+				float(s["position"]["lat"]), float(s["position"]["lon"]), p.radius_km, int(t.get("claimed_at_unix", GameClock.get_utc_unix())))
+		nt["history"].append({"version": 2, "at_unix": int(GameClock.get_utc_unix()), "change": "migrated: region claim %s → 1 × 1 km start territory" % str(t.get("region_ids", []))})
+		nt["version"] = 2
+		_territories[i] = nt
+		_ensure_area(s)
+		migrated_territory_ids.append(nt["territory_id"])
+		changed = true
+	if changed:
+		save_world()
 
 
 ## Phase-1 saves have no position on the planet: place them on the best free
@@ -87,6 +127,9 @@ func _migrate_positions() -> void:
 func found_settlement(template_path: String, founder_player_id: String, settlement_name: String = "", site: Dictionary = {}) -> Dictionary:
 	if not Ids.has_prefix(founder_player_id, "plr"):
 		push_error("WorldState: a settlement can only be founded by a human player (got '%s')" % founder_player_id)
+		return {}
+	if not get_settlement_of(founder_player_id).is_empty():
+		push_error("WorldState: %s already lives in a settlement (one active founding per player)" % founder_player_id)
 		return {}
 	var template := _read_json(template_path)
 	if template.is_empty():
@@ -137,22 +180,33 @@ func _apply_site(record: Dictionary, site: Dictionary) -> void:
 	record["continent_name"] = p.continent(record["continent_id"]).get("name", "") if p else ""
 	record["site_score"] = site.get("score", 0)
 	record["terrain"] = sample.get("biome", "")
+	var diff: Dictionary = site.get("difficulty", {})
+	record["difficulty"] = diff.get("class", "")
+	record["difficulty_requirements"] = diff.get("requirements", [])
+	_ensure_area(record)
 
 
-## Founding claims the settlement's region (one region per settlement in
-## Phase 2; growth of territories follows with Phase 4/9).
-func _claim_territory(record: Dictionary) -> void:
-	var region_id: String = record.get("region_id", "")
-	if region_id == "" or territory_of_region(region_id) != {}:
+## Settlement area (the locally playable grid) – distinct from the territory.
+## Start: 1 × 1 km, 10 m tiles, aligned east/north at the position.
+func _ensure_area(record: Dictionary) -> void:
+	if record.has("settlement_area") or not record.has("position"):
 		return
-	var t := {
-		"territory_id": Ids.generate("ter"),
-		"owner_settlement_id": record["settlement_id"],
-		"owner_player_id": record.get("founder_player_id", ""),
-		"region_ids": [region_id],
-		"kind": "settlement",
-		"claimed_at_unix": int(GameClock.get_utc_unix()),
+	record["settlement_area"] = {
+		"origin": [record["position"]["lat"], record["position"]["lon"]],
+		"frame": "east_north", "size_m": 1000, "tile_m": 10,
+		"note": "Phase 4 fills the full area; today the founding template (~260 m) is its core.",
 	}
+
+
+## Founding claims exactly the 1 × 1 km start square (TerritoryGeometry).
+func _claim_territory(record: Dictionary) -> void:
+	if record.get("territory_id", "") != "" and not territory_of_settlement(record["settlement_id"]).is_empty():
+		return
+	var p := Geography.planet()
+	if p == null or not record.has("position"):
+		return
+	var t := TerritoryGeometry.make_territory(Ids.generate("ter"), record["settlement_id"], record.get("founder_player_id", ""),
+			float(record["position"]["lat"]), float(record["position"]["lon"]), p.radius_km, int(GameClock.get_utc_unix()))
 	_territories.append(t)
 	record["territory_id"] = t["territory_id"]
 
@@ -161,11 +215,16 @@ func get_territories() -> Array[Dictionary]:
 	return _territories
 
 
-func territory_of_region(region_id: String) -> Dictionary:
+func territory_of_settlement(settlement_id: String) -> Dictionary:
 	for t in _territories:
-		if (t.get("region_ids", []) as Array).has(region_id):
+		if t.get("owner_settlement_id", "") == settlement_id:
 			return t
 	return {}
+
+
+## Settlements whose position lies in the natural region (any number).
+func settlements_in_region(region_id: String) -> Array:
+	return _settlements.filter(func(s): return s.get("region_id", "") == region_id)
 
 
 func get_settlement(settlement_id: String) -> Dictionary:
@@ -206,7 +265,7 @@ func save_world() -> void:
 	if f == null:
 		push_warning("WorldState: could not save (%s)" % error_string(FileAccess.get_open_error()))
 		return
-	f.store_string(JSON.stringify({"world_id": world_id, "settlements": _settlements, "territories": _territories}, "  "))
+	f.store_string(JSON.stringify({"schema_version": SCHEMA_VERSION, "world_id": world_id, "settlements": _settlements, "territories": _territories}, "  "))
 
 
 ## Switches storage (used by tests so the real local world is untouched).
@@ -228,17 +287,19 @@ func _check_record(s: Dictionary) -> String:
 
 
 ## Territory invariants: every territory belongs to an existing settlement,
-## a region belongs to at most one territory.
+## has a geometry and an index cover, and territories never overlap.
 func validate_territories() -> PackedStringArray:
 	var out: PackedStringArray = []
-	var seen := {}
 	for t in _territories:
+		var id: String = t.get("territory_id", "?")
 		if get_settlement(t.get("owner_settlement_id", "")).is_empty():
-			out.append("%s has no owner settlement" % t.get("territory_id", "?"))
-		for r in t.get("region_ids", []):
-			if seen.has(r):
-				out.append("region %s claimed twice" % r)
-			seen[r] = true
+			out.append("%s has no owner settlement" % id)
+		if TerritoryGeometry.rings_of(t).is_empty():
+			out.append("%s has no geometry" % id)
+		if (t.get("cover_l8", []) as Array).is_empty():
+			out.append("%s has no index cover" % id)
+	for pair in TerritoryGeometry.overlapping_pairs(_territories):
+		out.append("territories %s and %s overlap" % pair)
 	return out
 
 

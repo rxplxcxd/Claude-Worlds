@@ -36,6 +36,21 @@ var _suggest_button: Button
 var _back_button: Button
 var _loading: Label
 var _territory_button: Button
+## Founding on an "extreme" site needs an explicit confirmation.
+var _extreme_ok: CheckBox
+
+
+## Diagnostics for PerfMonitor.
+func perf_stats() -> Dictionary:
+	if view == null:
+		return {"view": "Globus (lädt)"}
+	var vis := 0
+	for r in view.planet.regions:
+		var c: Vector2 = r["center"]
+		if view.project(c.x, c.y)["visible"]:
+			vis += 1
+	return {"view": "Globus · " + view.level, "visible_objects": vis, "total_objects": view.planet.regions.size(),
+		"territories": WorldState.get_territories().size()}
 
 
 func open(p_mode: String) -> void:
@@ -43,6 +58,7 @@ func open(p_mode: String) -> void:
 
 
 func _ready() -> void:
+	add_to_group("perf_view")
 	_layer = CanvasLayer.new()
 	_layer.layer = 20
 	add_child(_layer)
@@ -174,6 +190,12 @@ func _build_ui() -> void:
 	_name_edit.max_length = 32
 	_name_edit.custom_minimum_size = Vector2(0, 44)
 	actions.add_child(_name_edit)
+	_extreme_ok = CheckBox.new()
+	_extreme_ok.text = "Ich will diesen extremen Standort trotzdem gründen."
+	_extreme_ok.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_extreme_ok.visible = false
+	_extreme_ok.toggled.connect(func(_on: bool) -> void: _found_button.disabled = not candidate.get("valid", false) or not _extreme_ok.button_pressed)
+	actions.add_child(_extreme_ok)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	actions.add_child(row)
@@ -239,18 +261,16 @@ func _refresh_header() -> void:
 	var lvl := view.level.capitalize()
 	_title.text = "%s · %s" % [view.planet.name, lvl]
 	if mode == "found":
-		_subtitle.text = "Wähle den Ort deiner Siedlung: Tippe auf das Land. Ziehen dreht den Planeten, zwei Finger zoomen."
+		_subtitle.text = "Wähle den Ort deiner Siedlung: Tippe auf das Land. Rote Flächen = Sperrzone (unter 20 km zu einem fremden Gebiet). Ziehen dreht, zwei Finger zoomen."
 	else:
 		_subtitle.text = {"planetar": "Kontinente und Siedlungen", "kontinental": "Regionen, Gebiete und Siedlungen", "regional": "Regionen im Detail – tippe für Informationen"}.get(view.level, "")
 
 
 func _refresh_overlays() -> void:
-	var claimed := {}
-	if show_territories:
-		for t in WorldState.get_territories():
-			for r in t.get("region_ids", []):
-				claimed[r] = t
-	view.update_overlays(claimed, selected_region)
+	view.update_overlays(selected_region)
+	# Founding mode always shows the exclusion zones (where founding is not
+	# allowed); when browsing, "Gebiete" toggles territories and zones.
+	view.set_territories(WorldState.get_territories(), show_territories, mode == "found" or show_territories)
 	var markers: Array = []
 	for s in WorldState.get_settlements():
 		if s.has("position"):
@@ -304,6 +324,7 @@ func _refresh_panel(lat: float = NAN, lon: float = NAN) -> void:
 		c.queue_free()
 	var found := mode == "found"
 	_name_edit.visible = found
+	_extreme_ok.visible = false
 	_found_button.visible = found
 	_suggest_button.visible = found
 	_enter_button.visible = false
@@ -322,8 +343,7 @@ func _refresh_panel(lat: float = NAN, lon: float = NAN) -> void:
 		_found_button.disabled = true
 		return
 	var cont := p.continent(region.get("continent_id", ""))
-	var terr := WorldState.territory_of_region(selected_region)
-	var owner := WorldState.get_settlement(terr.get("owner_settlement_id", "")) if not terr.is_empty() else {}
+	var in_region: Array = WorldState.settlements_in_region(selected_region)
 	var climate: Dictionary = region["climate"]
 	t = "[b]%s[/b]\n" % region["name"]
 	t += "[color=#b9b4a8]%s · %s[/color]\n\n" % [cont.get("name", "Insel"), PlanetData.TERRAIN_LABELS.get(region["terrain"], region["terrain"])]
@@ -336,7 +356,8 @@ func _refresh_panel(lat: float = NAN, lon: float = NAN) -> void:
 		res.append("%s (%s)" % [PlanetData.RESOURCE_LABELS.get(r["type"], r["type"]), _amount(r["abundance"])])
 	t += "Rohstoffe: %s\n" % (", ".join(res) if not res.is_empty() else "kaum")
 	t += "Erschließung: %s\n" % PlanetData.DEVELOPMENT_LABELS.get(_development(region), "Wildnis")
-	t += "Gebiet: %s\n" % ("[color=#f2c230]%s[/color]" % owner.get("name", "?") if not owner.is_empty() else "frei")
+	var names: Array = in_region.map(func(st): return "[color=#f2c230]%s[/color]" % st.get("name", "?"))
+	t += "Siedlungen hier: %s\n" % (", ".join(names) if not names.is_empty() else "noch keine – die Region ist frei besiedelbar")
 	if not is_nan(lat):
 		t += "Position: %s\n" % Geo.format(lat, lon)
 	_info.text = t
@@ -353,6 +374,32 @@ func _show_rating() -> void:
 	head.add_theme_font_size_override("font_size", 17)
 	head.add_theme_color_override("font_color", UiTheme.ACCENT if valid else Color("ff8a80"))
 	_rating_box.add_child(head)
+	var gap: float = candidate.get("nearest_border_km", INF)
+	var gap_l := Label.new()
+	gap_l.text = "Abstand zur nächsten Gebietsgrenze: %s" % ("keine Siedlung in der Nähe" if gap == INF else "%s km (%s)" % [("%.1f" % gap).replace(".", ","), candidate.get("nearest_name", "")])
+	gap_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	gap_l.add_theme_font_size_override("font_size", 14)
+	_rating_box.add_child(gap_l)
+	var diff: Dictionary = candidate.get("difficulty", {})
+	if not diff.is_empty():
+		var dl := Label.new()
+		dl.text = "Schwierigkeit: %s (%s)" % [diff["label"], diff["class"]]
+		dl.add_theme_font_size_override("font_size", 16)
+		dl.add_theme_color_override("font_color", [Color("9be38a"), Color("f2c230"), Color("ffa25c"), Color("ff6b5e")][int(diff["index"])])
+		_rating_box.add_child(dl)
+		for req in diff.get("requirements", []):
+			var rl := Label.new()
+			rl.text = "• " + str(req)
+			rl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			rl.add_theme_font_size_override("font_size", 13)
+			_rating_box.add_child(rl)
+		if int(diff["index"]) >= 2:
+			var note := Label.new()
+			note.text = "Hinweis: Diese Anforderungen werden erst mit Wirtschaft und Technologie (spätere Phasen) spielwirksam. Heute startet jede Siedlung mit dem Grundpaket."
+			note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			note.add_theme_font_size_override("font_size", 12)
+			note.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+			_rating_box.add_child(note)
 	for reason in candidate.get("reasons", []):
 		var l := Label.new()
 		l.text = "• " + str(reason)
@@ -388,7 +435,10 @@ func _show_rating() -> void:
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
 		_rating_box.add_child(row)
-	_found_button.disabled = not valid
+	_extreme_ok.visible = valid and int(diff.get("index", 0)) == 3
+	if not _extreme_ok.visible:
+		_extreme_ok.button_pressed = false
+	_found_button.disabled = not valid or (_extreme_ok.visible and not _extreme_ok.button_pressed)
 
 
 func _development(region: Dictionary) -> String:

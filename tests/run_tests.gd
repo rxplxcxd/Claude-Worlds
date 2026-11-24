@@ -107,26 +107,72 @@ func _run() -> void:
 	check(absf(ll.x - 48.5) < 0.001 and absf(ll.y + 120.25) < 0.001, "lat/lon <-> 3D round trip")
 	check(absf(Geo.distance_km(0, 0, 0, 90, 4000.0) - PI * 2000.0) < 0.5, "great-circle distance")
 	check(planet.cell_of(89.9, 179.9) < planet.biome.size() and planet.cell_of(-89.9, -179.9) >= 0, "cell lookup clamps at the poles and date line")
-	# Site rating.
+	# Site rating (Paket 2.1: no geographic bans, difficulty instead).
 	var ocean_cell := -1
 	var ice_cell := -1
+	var polar_land := -1
 	for i in planet.biome.size():
 		if ocean_cell < 0 and planet.biome[i] == PlanetData.Biome.OCEAN:
 			ocean_cell = i
-		if ice_cell < 0 and planet.biome[i] == PlanetData.Biome.ICE and absf(planet.cell_lat_lon(i).x) < 60.0:
-			ice_cell = i
+		if ice_cell < 0 and planet.biome[i] == PlanetData.Biome.ICE:
+			var ill := planet.cell_lat_lon(i)
+			if planet.is_land(planet.cell_of(ill.x + 0.3, ill.y)) and planet.is_land(planet.cell_of(ill.x - 0.3, ill.y)):
+				ice_cell = i
+		if polar_land < 0 and planet.is_land(i) and absf(planet.cell_lat_lon(i).x) > 66.0:
+			polar_land = i
 	var o_ll := planet.cell_lat_lon(ocean_cell)
-	check(not geo.rate_site(o_ll.x, o_ll.y, [], [])["valid"], "founding on water is rejected")
-	if ice_cell >= 0:
-		var i_ll := planet.cell_lat_lon(ice_cell)
-		check(not geo.rate_site(i_ll.x, i_ll.y, [], [])["valid"], "founding on ice is rejected")
+	check(not geo.rate_site(o_ll.x, o_ll.y, [], [])["valid"], "founding on water is not possible (no land)")
+	check(ice_cell >= 0 and polar_land >= 0, "planet has ice and polar land to test with")
+	var i_ll := planet.cell_lat_lon(ice_cell)
+	var ice_site: Dictionary = geo.rate_site(i_ll.x, i_ll.y, [], [])
+	check(ice_site["valid"] and int(ice_site["difficulty"]["index"]) >= 2, "ice is settleable, rated %s" % ice_site["difficulty"].get("class", "?"))
+	var p_ll := planet.cell_lat_lon(polar_land)
+	var polar_site: Dictionary = geo.rate_site(p_ll.x, p_ll.y, [], [])
+	check(polar_site["valid"], "no latitude limit: polar land at %.1f° is settleable (%s)" % [p_ll.x, polar_site["difficulty"].get("class", "?")])
 	var best: Dictionary = geo.best_site([], [])
 	check(best.get("valid", false) and int(best["score"]) >= 50, "best free site is valid and well rated (%d)" % best.get("score", 0))
+	check(best["difficulty"]["class"] in ["leicht", "mittel"], "best site is an easy/medium start (%s)" % best["difficulty"]["class"])
 	var bs: Dictionary = best["sample"]
-	var near: Dictionary = geo.rate_site(bs["lat"] + 0.5, bs["lon"], [{"settlement_id": "stl_x", "position": {"lat": bs["lat"], "lon": bs["lon"]}}], [])
-	check(not near["valid"], "founding too close to another settlement is rejected")
-	var claimed: Dictionary = geo.rate_site(bs["lat"], bs["lon"], [], [{"territory_id": "ter_x", "owner_settlement_id": "stl_x", "region_ids": [bs["region_id"]]}])
-	check(not claimed["valid"], "founding inside foreign territory is rejected")
+	var R := planet.radius_km
+
+	print("[territory geometry]")
+	var sq := TerritoryGeometry.start_square(10.0, 20.0, R)
+	var sv := Geo.ring_vectors(sq)
+	check(absf(Geo.ring_area_km2(sq, R) - 1.0) < 0.01, "start territory is 1 km² (%.4f)" % Geo.ring_area_km2(sq, R))
+	check(absf(sv[0].angle_to(sv[1]) * R - 1.0) < 0.005 and absf(sv[1].angle_to(sv[2]) * R - 1.0) < 0.005, "start square sides are 1 km")
+	var pole_sq := TerritoryGeometry.start_square(89.999, 0.0, R)
+	check(absf(Geo.ring_area_km2(pole_sq, R) - 1.0) < 0.02, "start square works at the pole")
+	var far := Geo.offset(10.0, 20.0, 22.0, 0.0, R)
+	var d22 := Geo.ring_distance_km(sv, Geo.ring_vectors(TerritoryGeometry.start_square(far.x, far.y, R)), R)
+	check(absf(d22 - 21.0) < 0.05, "border-to-border distance, not centre distance (22 km centres → %.2f km)" % d22)
+	var diag := Geo.offset(10.0, 20.0, 15.0, 15.0, R)
+	var dd := Geo.ring_distance_km(sv, Geo.ring_vectors(TerritoryGeometry.start_square(diag.x, diag.y, R)), R)
+	check(absf(dd - Vector2(14.0, 14.0).length()) < 0.1, "diagonal neighbours: corner-to-corner distance (%.2f km)" % dd)
+	var a_dl := TerritoryGeometry.start_square(0.0, 179.995, R)
+	var b_dl := TerritoryGeometry.start_square(0.0, -179.75, R)
+	var expected := Geo.distance_km(0.0, 179.995, 0.0, -179.75, R) - 1.0
+	check(absf(Geo.ring_distance_km(Geo.ring_vectors(a_dl), Geo.ring_vectors(b_dl), R) - expected) < 0.05, "distance correct across the date line")
+	var near_sq := TerritoryGeometry.start_square(Geo.offset(10.0, 20.0, 0.5, 0.0, R).x, Geo.offset(10.0, 20.0, 0.5, 0.0, R).y, R)
+	check(Geo.rings_overlap(sv, Geo.ring_vectors(near_sq)) and Geo.ring_distance_km(sv, Geo.ring_vectors(near_sq), R) == 0.0, "overlapping squares are detected")
+	check(GeoIndex.token(10.0, 20.0) == GeoIndex.token(10.0, 20.0) and GeoIndex.cover(10.0, 20.0, 21.5, R).has(GeoIndex.token(10.0, 20.0)), "spatial index token and cover")
+	var t_here := TerritoryGeometry.make_territory("ter_a", "stl_a", "plr_a", bs["lat"], bs["lon"], R, 0)
+	var far_cover := GeoIndex.cover(Geo.offset(bs["lat"], bs["lon"], 900.0, 0.0, R).x, Geo.offset(bs["lat"], bs["lon"], 900.0, 0.0, R).y, 21.5, R)
+	check(not GeoIndex.shares_cell(t_here["cover_l8"], far_cover), "index skips territories 900 km away")
+	# 20-km founding rule against a territory at the best site.
+	var sts := [{"settlement_id": "stl_a", "name": "Testheim", "position": {"lat": bs["lat"], "lon": bs["lon"]}}]
+	var in_terr: Dictionary = geo.rate_site(bs["lat"], bs["lon"], sts, [t_here])
+	check(not in_terr["valid"] and in_terr["nearest_border_km"] == 0.0, "founding inside a foreign territory is rejected")
+	var too_close := Geo.offset(bs["lat"], bs["lon"], 15.0, 0.0, R)
+	var tc: Dictionary = geo.rate_site(too_close.x, too_close.y, sts, [t_here])
+	check(not tc["valid"] and absf(float(tc["nearest_border_km"]) - 14.0) < 0.1, "14 km to the border is rejected (%.2f km)" % tc["nearest_border_km"])
+	var ok_found := false
+	for ang in 16:
+		var o := Geo.offset(bs["lat"], bs["lon"], 23.0 * cos(TAU * ang / 16.0), 23.0 * sin(TAU * ang / 16.0), R)
+		var r: Dictionary = geo.rate_site(o.x, o.y, sts, [t_here])
+		if r["sample"]["land"] and r["reasons"].is_empty():
+			ok_found = float(r["nearest_border_km"]) >= 20.0
+			break
+	check(ok_found, "22 km to the border is allowed (another settlement may found there)")
 	check(world.found_settlement(tpl, "plr_test", "", {"lat": o_ll.x, "lon": o_ll.y}).is_empty() and world.is_planet_empty(), "invalid site: no settlement is founded")
 	# Migration of a Phase-1 save (no position) to the planet.
 	var old_save := {"world_id": "wld_prime", "settlements": [{"settlement_id": "stl_old", "name": "Altdorf", "founder_player_id": "plr_old", "resident_player_ids": ["plr_old"], "template_path": tpl}]}
@@ -140,6 +186,19 @@ func _run() -> void:
 	world.use_storage("user://test_world_migrate.json", false)
 	var again_pos: Dictionary = world.get_settlement("stl_old")["position"]
 	check(world.migrated_settlement_ids.is_empty() and absf(again_pos["lat"] - migrated["position"]["lat"]) < 0.0002 and absf(again_pos["lon"] - migrated["position"]["lon"]) < 0.0002, "migration happens only once, position is stable")
+	# Migration of a Phase-2 save (territory = whole region) to a 1 km² territory.
+	var p2_save := {"world_id": "wld_prime", "settlements": [{"settlement_id": "stl_p2", "name": "Zweistadt", "founder_player_id": "plr_p2", "resident_player_ids": ["plr_p2"], "template_path": tpl,
+		"position": {"lat": bs["lat"], "lon": bs["lon"]}, "region_id": bs["region_id"], "territory_id": "ter_p2"}],
+		"territories": [{"territory_id": "ter_p2", "owner_settlement_id": "stl_p2", "owner_player_id": "plr_p2", "region_ids": [bs["region_id"]], "kind": "settlement", "claimed_at_unix": 1700000000}]}
+	mf = FileAccess.open("user://test_world_migrate2.json", FileAccess.WRITE)
+	mf.store_string(JSON.stringify(p2_save))
+	mf.close()
+	world.use_storage("user://test_world_migrate2.json", false)
+	var t2: Dictionary = world.territory_of_settlement("stl_p2")
+	check(world.migrated_territory_ids.has("ter_p2") and t2.has("geometry") and not t2.has("region_ids") and absf(float(t2["area_km2"]) - 1.0) < 0.01, "Phase-2 region claim becomes a 1 km² territory (same ID)")
+	check(int(t2["version"]) == 2 and (t2["history"] as Array).size() == 2 and world.get_settlement("stl_p2").has("settlement_area"), "migration keeps history and adds the settlement area")
+	var saved_json: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("user://test_world_migrate2.json"))
+	check(int(saved_json.get("schema_version", 0)) == 3, "world save carries schema version 3")
 	world.use_storage("user://test_world_state.json", true)
 
 	print("[data]")
@@ -170,6 +229,12 @@ func _run() -> void:
 	check(wt.x > 7.8 and wt.x < 8.9, "winter sunrise around 08:20 (%.2f)" % wt.x)
 	clock.utc_offset_minutes = -300
 	check(clock.format_time() == "17:00", "other time zone (UTC-5) shows its own local time")
+	clock.latitude = 85.0
+	clock.fixed_utc_unix = float(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 6, "day": 21, "hour": 12, "minute": 0, "second": 0}))
+	var pday: String = clock.polar_state()
+	clock.fixed_utc_unix = float(Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 12, "day": 21, "hour": 12, "minute": 0, "second": 0}))
+	check(pday == "polar_day" and clock.polar_state() == "polar_night" and clock.get_night_factor() > 0.9, "polar settlements get polar day and polar night")
+	clock.latitude = 51.0
 	clock.preview_minute_of_day = 2 * 60.0
 	check(clock.get_hour() == 2 and clock.get_night_factor() > 0.9, "time-of-day preview overrides visuals")
 	clock.preview_minute_of_day = -1.0
@@ -188,8 +253,14 @@ func _run() -> void:
 	_main = load("res://scenes/main/main.tscn").instantiate()
 	get_tree().root.add_child(_main)
 	await frames(5)
+	print("[start choice]")
+	check(_main.start_choice != null and _main.globe == null and not _main.has_node("Settlement"), "without a settlement the game first asks: join or found")
+	check(_main.start_choice._join_button.disabled and not _main.start_choice._found_button.disabled, "joining is visibly unavailable (no multiplayer yet), founding is available")
+	check(_main.start_choice._other_players_settlements() == 0, "no settlements of other players exist locally (nothing faked)")
+	_main.start_choice.found_chosen.emit()
+	await frames(3)
 	print("[globe & founding]")
-	check(_main.globe != null and _main.globe.mode == "found" and not _main.has_node("Settlement"), "without a settlement the game opens the globe to found one")
+	check(_main.globe != null and _main.globe.mode == "found" and not _main.has_node("Settlement"), "'found' opens the globe in founding mode")
 	for k in 200:
 		if _main.globe.view != null and _main.globe.labels != null:
 			break
@@ -235,9 +306,41 @@ func _run() -> void:
 	check(world.validate().is_empty(), "no NPC-only settlements exist")
 	var rec: Dictionary = founded[0]
 	check(rec.has("position") and rec["region_id"] == site["region"]["region_id"] and rec["continent_id"] != "", "settlement stores lat/lon, region and continent")
-	var terr: Dictionary = world.territory_of_region(rec["region_id"])
-	check(not terr.is_empty() and terr["owner_settlement_id"] == rec["settlement_id"] and rec["territory_id"] == terr["territory_id"], "founding claims the region as territory")
-	check(world.validate_territories().is_empty(), "territory invariants hold")
+	var terr: Dictionary = world.territory_of_settlement(rec["settlement_id"])
+	check(not terr.is_empty() and rec["territory_id"] == terr["territory_id"] and absf(float(terr["area_km2"]) - 1.0) < 0.01, "founding claims a 1 × 1 km territory (not a region)")
+	check(not (terr["cover_l8"] as Array).is_empty() and (terr["history"] as Array).size() == 1 and terr["status"] == "active", "territory stores index cells, history and status")
+	check(rec.get("settlement_area", {}).get("size_m", 0) == 1000 and rec.get("difficulty", "") != "", "settlement stores its area (1 km) and difficulty")
+	check(world.validate_territories().is_empty(), "territory invariants hold (geometry, index, no overlap)")
+	check(world.found_settlement(tpl, profile.player_id, "Zweitgründung").is_empty(), "one active founding per player")
+	var region_rule: Dictionary = geo.rate_site(rec["position"]["lat"], rec["position"]["lon"], world.get_settlements(), world.get_territories())
+	check(not region_rule["valid"], "own territory now blocks founding at the same spot")
+	check(int(_main.settlement.perf_stats().get("visible_objects", 0)) > 0, "settlement reports visible objects for diagnostics")
+	# Globe in browse mode shows the 1 km territory (shader) and its zone.
+	_main.open_globe("browse")
+	for k in 200:
+		if _main.globe.view != null and _main.globe.labels != null:
+			break
+		await get_tree().process_frame
+	var mat: ShaderMaterial = _main.globe.view._material
+	check(int(mat.get_shader_parameter("terr_count")) == 1 and float(mat.get_shader_parameter("zone_strength")) == 1.0, "globe draws the territory and its 20 km exclusion zone")
+	check(absf(float(mat.get_shader_parameter("zone_km")) - 20.5) < 0.001, "zone = 20 km gap + half the new start square")
+	_main.close_globe()
+	await frames(2)
+	check(_main.globe == null and _main.settlement.visible, "closing the map returns to the settlement")
+
+	print("[diagnostics]")
+	var perf: Node = get_tree().root.get_node("PerfMonitor")
+	var fake: Array = []
+	for k in 99:
+		fake.append({"dt": 0.02, "cpu_process": 0.004, "cpu_physics": 0.001, "draw_calls": 100, "primitives": 2000, "objects_3d": 0, "visible_objects": 40, "gpu_ms": 0.0, "render_cpu_ms": 0.0})
+	fake.append({"dt": 0.05, "cpu_process": 0.004, "cpu_physics": 0.001, "draw_calls": 140, "primitives": 2000, "objects_3d": 0, "visible_objects": 40, "gpu_ms": 0.0, "render_cpu_ms": 0.0})
+	var rep: Dictionary = perf.summarize(fake)
+	check(absf(rep["fps_avg"] - 100.0 / 2.03) < 0.2 and rep["frame_ms_max"] == 50.0 and rep["frame_ms_p95"] == 20.0 and rep["fps_1pct_low"] == 20.0, "measurement summary: average, p95, max, 1 % low")
+	check(rep["draw_calls_max"] == 140.0 and absf(rep["cpu_process_ms_avg"] - 4.0) < 0.01, "measurement summary: draw calls and CPU time")
+	perf.set_overlay_visible(true)
+	await frames(20)
+	check(perf._label.text.contains("Siedlung") and perf._label.text.contains("Draw Calls"), "overlay shows live values in the settlement view")
+	perf.set_overlay_visible(false)
 	check(settlement.data.region_name == rec["region_name"], "HUD region comes from the planet")
 	check(absf(clock.latitude - clampf(rec["position"]["lat"], -60.0, 60.0)) < 0.01, "sun latitude follows the settlement position")
 

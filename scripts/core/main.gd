@@ -14,6 +14,9 @@ const SETTLEMENT_SCENE := preload("res://scenes/settlement/settlement.tscn")
 var settlement: SettlementScene
 var editor: CharacterEditor
 var globe: GlobeScreen
+## "Beitreten oder Gründen" (Paket 2.1).
+var start_choice: StartChoice
+var _choice_layer: CanvasLayer
 var _editor_layer: CanvasLayer
 
 @onready var hud: Hud = $HUD
@@ -33,7 +36,7 @@ func _ready() -> void:
 		open_character_editor("create")
 	elif needs_founding():
 		hud.visible = false
-		open_globe("found")
+		open_start_choice()
 	else:
 		_start_world()
 
@@ -41,6 +44,24 @@ func _ready() -> void:
 ## The player has no settlement yet: they must found one (empty planet rule).
 func needs_founding() -> bool:
 	return WorldState.get_settlement_of(LocalProfile.player_id).is_empty()
+
+
+## New player without a settlement: choose between joining (marked as not
+## yet available – no shared world exists) and founding (globe).
+func open_start_choice() -> void:
+	if start_choice:
+		return
+	_choice_layer = CanvasLayer.new()
+	_choice_layer.layer = 25
+	add_child(_choice_layer)
+	start_choice = StartChoice.new()
+	start_choice.name = "StartChoice"
+	_choice_layer.add_child(start_choice)
+	start_choice.found_chosen.connect(func() -> void:
+		_choice_layer.queue_free()
+		_choice_layer = null
+		start_choice = null
+		open_globe("found"))
 
 
 func open_globe(mode: String) -> void:
@@ -112,7 +133,7 @@ func _on_character_confirmed(appearance: Dictionary, name_text: String) -> void:
 	_close_editor()
 	if settlement == null:
 		if needs_founding():
-			open_globe("found")
+			open_start_choice()
 		else:
 			hud.visible = true
 			_start_world()

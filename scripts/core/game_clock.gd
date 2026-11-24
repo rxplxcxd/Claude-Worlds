@@ -200,6 +200,22 @@ func get_sun_times() -> Vector2:
 	return Vector2(noon - half, noon + half)
 
 
+## "" normally, "polar_day" (sun never sets) or "polar_night" (never rises)
+## for the current date and latitude – the whole planet is settleable, so
+## polar settlements get real polar days and nights.
+func polar_state() -> String:
+	var d := local_datetime()
+	var doy := _day_of_year(int(d.get("year", 2026)), int(d.get("month", 1)), int(d.get("day", 1)))
+	var decl := deg_to_rad(23.44) * sin(TAU * (284.0 + doy) / 365.0)
+	var lat := deg_to_rad(clampf(latitude, -89.99, 89.99))
+	var c := (sin(deg_to_rad(-0.83)) - sin(lat) * sin(decl)) / (cos(lat) * cos(decl))
+	if c > 1.0:
+		return "polar_night"
+	if c < -1.0:
+		return "polar_day"
+	return ""
+
+
 ## 0 = full daylight, 1 = deep night (smooth over civil twilight).
 func get_night_factor() -> float:
 	return 1.0 - smoothstep(-8.0, 4.0, get_sun_altitude())

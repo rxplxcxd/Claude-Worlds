@@ -84,7 +84,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_toggle_menu()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_debug"):
-		_set_debug_visible(not _debug_label.visible)
+		_set_debug_visible(not PerfMonitor.overlay_visible)
 	elif visible and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_M:
 		map_requested.emit()
 	elif event.is_action_pressed("zoom_in"):
@@ -96,12 +96,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
-	if _debug_label.visible:
-		_debug_label.text = "FPS %d · Draw calls %d · Objekte %d · %s" % [
-			Engine.get_frames_per_second(),
-			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
-			Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
-			str(get_viewport().get_visible_rect().size.round())]
+	pass # performance values: PerfMonitor (scripts/debug/perf_monitor.gd)
 
 
 # --- building -------------------------------------------------------------
@@ -360,6 +355,17 @@ func _make_button(text: String, tooltip: String, icon_key: String = "") -> Butto
 	return b
 
 
+## Sunrise (0) / sunset (1) text, honest about polar day and night.
+static func _sun_text(which: int) -> String:
+	match GameClock.polar_state():
+		"polar_day":
+			return "Polartag – die Sonne geht nicht unter"
+		"polar_night":
+			return "Polarnacht – die Sonne geht nicht auf"
+	var t := GameClock.get_sun_times()
+	return _fmt_hours(t.x if which == 0 else t.y)
+
+
 ## Keeps the info panel clear of the clock column on narrow screens.
 static func _fmt_hours(h: float) -> String:
 	if h < 0.0:
@@ -487,12 +493,12 @@ func _toggle_menu() -> void:
 		+ "Touch: Joystick unten links · Tippen = dorthin gehen · Ziehen = Kamera · zwei Finger = Zoom · orange Taste = benutzen / ansprechen\n"
 		+ "Tastatur: WASD/Pfeile · Klick = gehen · Maus ziehen = Kamera · Mausrad/+/− = Zoom · E = benutzen · C = zentrieren · F3 = FPS\n\n"
 		+ "[b]Asset-Status[/b]\n%d von %d Asset-Einträgen integriert · %d Platzhalter · %d Art-Direction-Verstöße\n\n" % [s["resolved"], s["total"], s["placeholders"], s["violations"]]
-		+ "[b]Zeit[/b]\nEchtzeit · Zeitzone %s (%s, UTC%+d:%02d%s) · Sonnenaufgang %s, Sonnenuntergang %s (Näherung für 51° N)\n\n" % [
+		+ "[b]Zeit[/b]\nEchtzeit · Zeitzone %s (%s, UTC%+d:%02d%s) · Sonnenaufgang %s, Sonnenuntergang %s (Breite der Siedlung)\n\n" % [
 			GameClock.timezone_name if GameClock.timezone_name != "" else "unbekannt", GameClock.timezone_abbr,
 			GameClock.utc_offset_minutes / 60, absi(GameClock.utc_offset_minutes) % 60, ", Sommerzeit" if GameClock.is_dst else "",
-			_fmt_hours(GameClock.get_sun_times().x), _fmt_hours(GameClock.get_sun_times().y)]
+			_sun_text(0), _sun_text(1)]
 		+ "[b]Grafik[/b]\nAußenwelt, Figur & Oberfläche: Penzilla (penzilla.itch.io) – lizenziert\n\n"
-		+ "[b]Projekt[/b]\nVersion %s · Phase 1 (World Foundation) · Godot %s\nSpieler-ID (lokal): %s" % [
+		+ "[b]Projekt[/b]\nVersion %s · Phase 2 + Paket 2.1 · Godot %s\nSpieler-ID (lokal): %s" % [
 			ProjectSettings.get_setting("application/config/version", "?"),
 			Engine.get_version_info().get("string", "?"), LocalProfile.player_id])
 	_menu.visible = true
@@ -530,7 +536,9 @@ func _set_preview(minute_of_day: float) -> void:
 	_update_clock()
 
 
+## The diagnostic overlay lives in PerfMonitor (works on the globe too).
 func _set_debug_visible(on: bool) -> void:
-	_debug_label.visible = on
+	_debug_label.visible = false
+	PerfMonitor.set_overlay_visible(on)
 	if bool(LocalProfile.get_setting("show_debug", false)) != on:
 		LocalProfile.set_setting("show_debug", on)

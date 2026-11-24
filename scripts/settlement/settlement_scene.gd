@@ -53,7 +53,7 @@ func _ready() -> void:
 	data.apply_record(record)
 	# The sun follows the settlement's latitude on the planet (day length).
 	if record.has("position"):
-		GameClock.latitude = clampf(float(record["position"]["lat"]), -60.0, 60.0)
+		GameClock.latitude = float(record["position"]["lat"])
 	var problems := data.validate()
 	for p in problems:
 		push_warning("Settlement layout: " + p)
@@ -81,6 +81,7 @@ func _ready() -> void:
 	player.moved_by_input.connect(camera.recenter)
 
 	_setup_occlusion()
+	add_to_group("perf_view")
 	GameClock.minute_changed.connect(_on_minute)
 	_on_minute(0)
 	# Deferred: sibling nodes (HUD) are ready by then.
@@ -94,6 +95,21 @@ func _ready() -> void:
 
 
 ## Blocks/unblocks direct control (e.g. while the character editor is open).
+## Diagnostics for PerfMonitor: world objects whose position lies in (or
+## close to) the camera view. The ground is one drawing with all tiles.
+func perf_stats() -> Dictionary:
+	var vis := 0
+	var total := 0
+	if camera:
+		var rect := Rect2(camera.get_screen_center_position() - get_viewport_rect().size * 0.5 / camera.zoom, get_viewport_rect().size / camera.zoom).grow(160)
+		for c in objects.get_children():
+			total += 1
+			if c is Node2D and rect.has_point((c as Node2D).global_position):
+				vis += 1
+	return {"view": "Siedlung", "visible_objects": vis, "total_objects": total,
+		"ground_tiles_drawn": data.size.x * data.size.y if data else 0, "npcs": npcs.size()}
+
+
 func set_input_enabled(on: bool) -> void:
 	if player:
 		player.input_enabled = on

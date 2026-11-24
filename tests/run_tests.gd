@@ -63,6 +63,85 @@ func _run() -> void:
 	check(world.found_settlement(tpl, "npc_abc123").is_empty(), "an NPC cannot found a settlement")
 	check(world.is_planet_empty(), "rejected foundings leave the planet empty")
 
+	print("[geography]")
+	var geo: Node = get_tree().root.get_node("Geography")
+	var planet: PlanetData = geo.planet()
+	check(planet != null, "baked planet loads (data/world/planet)")
+	check(planet.continents.size() >= 4 and planet.continents.size() <= 7, "planet has 4-7 continents (%d)" % planet.continents.size())
+	check(planet.regions.size() >= 100, "planet has many regions (%d)" % planet.regions.size())
+	var land_without_region := 0
+	var land_cells := 0
+	for i in planet.biome.size():
+		if planet.is_land(i):
+			land_cells += 1
+			if planet.region_of[i] == 0 or planet.continent_of[i] == 0:
+				land_without_region += 1
+	var land_share := float(land_cells) / planet.biome.size()
+	check(land_without_region == 0, "every land cell belongs to a region and a continent")
+	check(land_share > 0.2 and land_share < 0.5, "sensible land/sea ratio (%.0f%% of cells)" % (land_share * 100.0))
+	var region_ids := {}
+	var in_continents := 0
+	var all_wild := true
+	for r in planet.regions:
+		region_ids[r["region_id"]] = true
+		all_wild = all_wild and r["development"] == "wild" and r["territory_id"] == ""
+	check(all_wild, "genesis: every region is wild and unclaimed (nature only)")
+	for c in planet.continents:
+		in_continents += (c["region_ids"] as Array).size()
+	check(region_ids.size() == planet.regions.size() and in_continents == planet.regions.size(), "region IDs unique, every region on a continent")
+	var terrain_kinds := {}
+	for r in planet.regions:
+		terrain_kinds[r["terrain"]] = true
+	check(terrain_kinds.size() >= 6, "varied terrain (%s)" % ", ".join(terrain_kinds.keys()))
+	# Determinism: regenerating from genesis gives byte-identical baked files.
+	var spec: Dictionary = genesis["planet"].duplicate()
+	spec["planet_id"] = genesis["planet_id"]
+	spec["planet_name"] = genesis["planet_name"]
+	var regen := PlanetGenerator.new().generate(spec)
+	regen.save_to(ProjectSettings.globalize_path("user://planet_check"))
+	var bake_same := FileAccess.get_file_as_bytes("user://planet_check/planet_cells.bin") == FileAccess.get_file_as_bytes("res://data/world/planet/planet_cells.bin") \
+			and FileAccess.get_file_as_string("user://planet_check/planet.json") == FileAccess.get_file_as_string("res://data/world/planet/planet.json")
+	check(bake_same, "baked planet matches the generator (seed %d, v%d)" % [planet.seed, planet.generator_version])
+	# Coordinates.
+	var ll := Geo.from_vec3(Geo.to_vec3(48.5, -120.25))
+	check(absf(ll.x - 48.5) < 0.001 and absf(ll.y + 120.25) < 0.001, "lat/lon <-> 3D round trip")
+	check(absf(Geo.distance_km(0, 0, 0, 90, 4000.0) - PI * 2000.0) < 0.5, "great-circle distance")
+	check(planet.cell_of(89.9, 179.9) < planet.biome.size() and planet.cell_of(-89.9, -179.9) >= 0, "cell lookup clamps at the poles and date line")
+	# Site rating.
+	var ocean_cell := -1
+	var ice_cell := -1
+	for i in planet.biome.size():
+		if ocean_cell < 0 and planet.biome[i] == PlanetData.Biome.OCEAN:
+			ocean_cell = i
+		if ice_cell < 0 and planet.biome[i] == PlanetData.Biome.ICE and absf(planet.cell_lat_lon(i).x) < 60.0:
+			ice_cell = i
+	var o_ll := planet.cell_lat_lon(ocean_cell)
+	check(not geo.rate_site(o_ll.x, o_ll.y, [], [])["valid"], "founding on water is rejected")
+	if ice_cell >= 0:
+		var i_ll := planet.cell_lat_lon(ice_cell)
+		check(not geo.rate_site(i_ll.x, i_ll.y, [], [])["valid"], "founding on ice is rejected")
+	var best: Dictionary = geo.best_site([], [])
+	check(best.get("valid", false) and int(best["score"]) >= 50, "best free site is valid and well rated (%d)" % best.get("score", 0))
+	var bs: Dictionary = best["sample"]
+	var near: Dictionary = geo.rate_site(bs["lat"] + 0.5, bs["lon"], [{"settlement_id": "stl_x", "position": {"lat": bs["lat"], "lon": bs["lon"]}}], [])
+	check(not near["valid"], "founding too close to another settlement is rejected")
+	var claimed: Dictionary = geo.rate_site(bs["lat"], bs["lon"], [], [{"territory_id": "ter_x", "owner_settlement_id": "stl_x", "region_ids": [bs["region_id"]]}])
+	check(not claimed["valid"], "founding inside foreign territory is rejected")
+	check(world.found_settlement(tpl, "plr_test", "", {"lat": o_ll.x, "lon": o_ll.y}).is_empty() and world.is_planet_empty(), "invalid site: no settlement is founded")
+	# Migration of a Phase-1 save (no position) to the planet.
+	var old_save := {"world_id": "wld_prime", "settlements": [{"settlement_id": "stl_old", "name": "Altdorf", "founder_player_id": "plr_old", "resident_player_ids": ["plr_old"], "template_path": tpl}]}
+	var mf := FileAccess.open("user://test_world_migrate.json", FileAccess.WRITE)
+	mf.store_string(JSON.stringify(old_save))
+	mf.close()
+	world.use_storage("user://test_world_migrate.json", false)
+	var migrated: Dictionary = world.get_settlement("stl_old")
+	check(migrated.has("position") and migrated.get("region_id", "") != "" and migrated.get("territory_id", "") != "", "Phase-1 save gets a position, region and territory")
+	check(world.migrated_settlement_ids.has("stl_old") and world.validate_territories().is_empty(), "migration is recorded, territories valid")
+	world.use_storage("user://test_world_migrate.json", false)
+	var again_pos: Dictionary = world.get_settlement("stl_old")["position"]
+	check(world.migrated_settlement_ids.is_empty() and absf(again_pos["lat"] - migrated["position"]["lat"]) < 0.0002 and absf(again_pos["lon"] - migrated["position"]["lon"]) < 0.0002, "migration happens only once, position is stable")
+	world.use_storage("user://test_world_state.json", true)
+
 	print("[data]")
 	var data := SettlementData.load_from_file(tpl)
 	check(data != null, "founding template loads")
@@ -109,6 +188,33 @@ func _run() -> void:
 	_main = load("res://scenes/main/main.tscn").instantiate()
 	get_tree().root.add_child(_main)
 	await frames(5)
+	print("[globe & founding]")
+	check(_main.globe != null and _main.globe.mode == "found" and not _main.has_node("Settlement"), "without a settlement the game opens the globe to found one")
+	for k in 200:
+		if _main.globe.view != null and _main.globe.labels != null:
+			break
+		await get_tree().process_frame
+	var gview: GlobeView = _main.globe.view
+	check(gview != null and gview.camera.is_current(), "globe view is built and its camera is current")
+	gview.focus(20.0, 30.0, 3.0, true)
+	await frames(1)
+	var center_pick := gview.pick(Vector2(480, 270) + gview.screen_shift)
+	check(absf(center_pick.x - 20.0) < 1.5 and absf(angle_difference(deg_to_rad(center_pick.y), deg_to_rad(30.0))) < deg_to_rad(1.5), "tap in the centre picks the point under the camera (%.1f, %.1f)" % [center_pick.x, center_pick.y])
+	check(is_nan(gview.pick(Vector2(5, 5)).x), "tap into space picks nothing")
+	var gprobe: Dictionary = gview.project(25.0, 40.0)
+	var back := gview.pick(gprobe["pos"])
+	check(absf(back.x - 25.0) < 0.6 and absf(back.y - 40.0) < 0.6, "label position and picking agree (%.1f, %.1f)" % [back.x, back.y])
+	check(gview.level == "planetar", "far view = planetary zoom level")
+	gview.focus(20.0, 30.0, 2.0, true)
+	check(gview.level == "kontinental", "closer = continental zoom level")
+	gview.focus(20.0, 30.0, 1.3, true)
+	check(gview.level == "regional", "closest = regional zoom level")
+	var site: Dictionary = geo.best_site(world.get_settlements(), world.get_territories())
+	_main.globe.select_point(site["sample"]["lat"], site["sample"]["lon"])
+	check(_main.globe.candidate.get("valid", false) and _main.globe.selected_region == site["region"]["region_id"], "selecting a point rates it as founding site")
+	_main.found_from_globe(_main.globe.candidate, "")
+	await frames(5)
+	check(_main.globe == null and _main.has_node("Settlement"), "founding on the globe enters the new settlement")
 	var settlement: SettlementScene = _main.get_node("Settlement")
 	var hud: Hud = _main.get_node("HUD")
 	var player: Player = settlement.player
@@ -127,6 +233,13 @@ func _run() -> void:
 	check(Ids.has_prefix(settlement.data.ids.get("settlement_id", ""), "stl") and settlement.data.is_founded(), "founded settlement has generated ID")
 	check(not settlement.data.notice_board.get("text", "").contains("{settlement}"), "template tokens are filled in")
 	check(world.validate().is_empty(), "no NPC-only settlements exist")
+	var rec: Dictionary = founded[0]
+	check(rec.has("position") and rec["region_id"] == site["region"]["region_id"] and rec["continent_id"] != "", "settlement stores lat/lon, region and continent")
+	var terr: Dictionary = world.territory_of_region(rec["region_id"])
+	check(not terr.is_empty() and terr["owner_settlement_id"] == rec["settlement_id"] and rec["territory_id"] == terr["territory_id"], "founding claims the region as territory")
+	check(world.validate_territories().is_empty(), "territory invariants hold")
+	check(settlement.data.region_name == rec["region_name"], "HUD region comes from the planet")
+	check(absf(clock.latitude - clampf(rec["position"]["lat"], -60.0, 60.0)) < 0.01, "sun latitude follows the settlement position")
 
 	print("[street planning]")
 	var planner := StreetPlanner.new(settlement.data)

@@ -13,6 +13,8 @@ signal world_pinched(factor: float, center: Vector2)
 signal modal_changed(open: bool)
 ## The player wants to change their character (menu).
 signal edit_character_requested
+## The player wants to see the world map (globe).
+signal map_requested
 
 
 var root: Control
@@ -83,6 +85,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("toggle_debug"):
 		_set_debug_visible(not _debug_label.visible)
+	elif visible and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_M:
+		map_requested.emit()
 	elif event.is_action_pressed("zoom_in"):
 		EventBus.camera_zoom_step.emit(1)
 	elif event.is_action_pressed("zoom_out"):
@@ -161,6 +165,10 @@ func _build_top_right() -> void:
 	var menu := _make_button("Menü", "Menü", "ui.icon.menu")
 	menu.pressed.connect(_toggle_menu)
 	buttons.add_child(menu)
+	var map := _make_button("Karte", "Weltkarte von Aurel (Globus)")
+	map.name = "MapButton"
+	map.pressed.connect(func() -> void: map_requested.emit())
+	buttons.add_child(map)
 	var center := _make_button("Fokus", "Kamera auf Spielfigur zentrieren")
 	center.pressed.connect(func() -> void: EventBus.camera_recenter_requested.emit())
 	buttons.add_child(center)
@@ -183,7 +191,7 @@ func _build_bottom() -> void:
 
 	_hint_label = Label.new()
 	_hint_label.name = "DesktopHint"
-	_hint_label.text = "WASD/Pfeile: gehen · Klick: dorthin gehen · Ziehen: Kamera · Mausrad: Zoom · E: benutzen · Esc: Menü"
+	_hint_label.text = "WASD/Pfeile: gehen · Klick: dorthin gehen · Ziehen: Kamera · Mausrad: Zoom · E: benutzen · M: Karte · Esc: Menü"
 	_hint_label.add_theme_color_override("font_color", Color(UiTheme.TEXT, 0.75))
 	_hint_label.add_theme_font_size_override("font_size", 13)
 	_hint_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
@@ -448,6 +456,8 @@ func _on_settlement_ready(summary: Dictionary) -> void:
 			show_toast("Du hast %s gegründet – die erste Siedlung auf %s." % [settlement, summary.get("planet_name", "")])
 		else:
 			show_toast("Du hast %s gegründet." % settlement)
+	elif summary.get("migrated", false):
+		show_toast("%s hat jetzt einen festen Ort auf %s: %s (%s). Tippe auf „Karte“." % [settlement, summary.get("planet_name", ""), summary.get("region_name", ""), summary.get("continent_name", "")])
 	else:
 		show_toast("Willkommen zurück in %s." % settlement)
 

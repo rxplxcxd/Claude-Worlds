@@ -87,6 +87,9 @@ func apply_record(record: Dictionary) -> void:
 	founder_player_id = record.get("founder_player_id", "")
 	founded_at_game_minutes = float(record.get("founded_at_game_minutes", -1.0))
 	order_on_planet = int(record.get("order_on_planet", 0))
+	# Phase 2: the region comes from the chosen place on the planet.
+	if record.get("region_name", "") != "":
+		region_name = record["region_name"]
 	for list in [buildings, props]:
 		for entry in list:
 			for key in ["name", "text", "function"]:

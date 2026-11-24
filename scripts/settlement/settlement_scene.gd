@@ -17,6 +17,8 @@ var data: SettlementData
 var record: Dictionary = {}
 ## True when this launch created the settlement (first start).
 var just_founded := false
+## Set by Main when the player just founded it on the globe.
+var founded_now := false
 var player: Player
 var camera: CameraRig
 var interactions: InteractionService
@@ -43,11 +45,15 @@ func _ready() -> void:
 	if record.is_empty():
 		push_error("SettlementScene: founding failed")
 		return
+	just_founded = just_founded or founded_now
 	data = SettlementData.load_from_file(record.get("template_path", founding_template))
 	if data == null:
 		push_error("SettlementScene: could not load template")
 		return
 	data.apply_record(record)
+	# The sun follows the settlement's latitude on the planet (day length).
+	if record.has("position"):
+		GameClock.latitude = clampf(float(record["position"]["lat"]), -60.0, 60.0)
 	var problems := data.validate()
 	for p in problems:
 		push_warning("Settlement layout: " + p)
@@ -82,6 +88,8 @@ func _ready() -> void:
 	summary["just_founded"] = just_founded
 	summary["planet_name"] = WorldState.planet_name
 	summary["settlements_on_planet"] = WorldState.get_settlements().size()
+	summary["continent_name"] = record.get("continent_name", "")
+	summary["migrated"] = WorldState.migrated_settlement_ids.has(record.get("settlement_id", ""))
 	EventBus.settlement_ready.emit.call_deferred(summary)
 
 

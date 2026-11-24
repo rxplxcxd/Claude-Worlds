@@ -117,7 +117,21 @@ func _build_props() -> void:
 		var p := Prop.new()
 		p.setup(data.props[i], GroundLayer._hash(i, 99))
 		objects.add_child(p)
+	_plant_crops()
 	_scatter_vegetation()
+
+
+## One crop plant per field tile (only with the real Penzilla plants; the
+## placeholder ground already draws crop rows).
+func _plant_crops() -> void:
+	if AssetRegistry.get_texture("exterior.prop.crop") == null:
+		return
+	for y in data.size.y:
+		for x in data.size.x:
+			if data.get_tile(x, y) == "field":
+				var p := Prop.new()
+				p.setup({"kind": "crop", "grid_v": Vector2(x + 0.5, y + 0.55)}, GroundLayer._hash(x, y))
+				objects.add_child(p)
 
 
 ## Deterministic vegetation on free grass cells (seeded, reproducible).

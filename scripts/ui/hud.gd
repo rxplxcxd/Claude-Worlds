@@ -34,6 +34,7 @@ var _menu: PanelContainer
 var _menu_text: RichTextLabel
 var _debug_label: Label
 var _hint_label: Label
+var _info_panel: PanelContainer
 var _open_info: Dictionary = {}
 var _speed_index := 0
 var _focused: Node = null
@@ -70,6 +71,8 @@ func _ready() -> void:
 	GameClock.minute_changed.connect(func(_m: int) -> void: _update_clock())
 	_update_clock()
 	_set_debug_visible(bool(LocalProfile.get_setting("show_debug", false)))
+	get_viewport().size_changed.connect(_layout_hud)
+	_layout_hud.call_deferred()
 	_apply_speed(SPEEDS.find(float(LocalProfile.get_setting("time_speed", 1.0))))
 
 
@@ -117,9 +120,11 @@ func _build_info_panel() -> void:
 	_status_label = Label.new()
 	_status_label.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
 	_status_label.add_theme_font_size_override("font_size", 14)
+	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(_status_label)
+	_info_panel = panel
 	var summary := AssetRegistry.get_status_summary()
-	if summary["placeholders"] > 0:
+	if summary["world_placeholders"] > 0:
 		var badge := Label.new()
 		badge.name = "PlaceholderBadge"
 		badge.text = "Platzhaltergrafik · Penzilla-Assets ausstehend"
@@ -155,7 +160,7 @@ func _build_top_right() -> void:
 	buttons.add_theme_constant_override("separation", 8)
 	buttons.size_flags_horizontal = Control.SIZE_SHRINK_END
 	col.add_child(buttons)
-	var menu := _make_button("Menü", "Menü")
+	var menu := _make_button("Menü", "Menü", "ui.icon.menu")
 	menu.pressed.connect(_toggle_menu)
 	buttons.add_child(menu)
 	var center := _make_button("Fokus", "Kamera auf Spielfigur zentrieren")
@@ -235,7 +240,7 @@ func _build_interaction_panel() -> void:
 	_panel_subtitle.add_theme_color_override("font_color", UiTheme.ACCENT)
 	_panel_subtitle.add_theme_font_size_override("font_size", 14)
 	titles.add_child(_panel_subtitle)
-	var close := _make_button("×", "Schließen")
+	var close := _make_button("×", "Schließen", "ui.icon.close")
 	close.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	close.pressed.connect(close_panel)
 	head.add_child(close)
@@ -267,7 +272,7 @@ func _build_menu() -> void:
 	title.add_theme_font_size_override("font_size", 24)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
-	var close := _make_button("×", "Schließen")
+	var close := _make_button("×", "Schließen", "ui.icon.close")
 	close.pressed.connect(_toggle_menu)
 	head.add_child(close)
 	_menu_text = RichTextLabel.new()
@@ -303,14 +308,30 @@ func _build_debug() -> void:
 	_debug_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 8)
 
 
-func _make_button(text: String, tooltip: String) -> Button:
+func _make_button(text: String, tooltip: String, icon_key: String = "") -> Button:
 	var b := Button.new()
 	b.text = text
 	b.tooltip_text = tooltip
 	b.custom_minimum_size = Vector2(52, 52)
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_size_override("font_size", 22 if text.length() <= 2 else 16)
+	var icon := AssetRegistry.get_texture(icon_key) if icon_key != "" else null
+	if icon:
+		b.icon = icon
+		b.text = ""
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	return b
+
+
+## Keeps the info panel clear of the clock column on narrow screens.
+func _layout_hud() -> void:
+	if _info_panel == null:
+		return
+	var vp := root.get_viewport_rect().size
+	var w := clampf(vp.x - 260.0, 180.0, 460.0)
+	_info_panel.custom_minimum_size = Vector2(0, 0)
+	_status_label.custom_minimum_size = Vector2(minf(w - 32.0, 420.0), 0)
+	_info_panel.reset_size()
 
 
 # --- behaviour ------------------------------------------------------------
@@ -331,10 +352,10 @@ func open_panel(info: Dictionary) -> void:
 	for a in info.get("actions", []):
 		var b := _make_button(a.get("label", "?"), "")
 		b.add_theme_font_size_override("font_size", 17)
-		var accent := UiTheme.panel_style(Color(UiTheme.ACCENT, 0.92))
-		accent.shadow_size = 0
-		b.add_theme_stylebox_override("normal", accent)
-		b.add_theme_stylebox_override("hover", accent)
+		b.add_theme_stylebox_override("normal", UiTheme.accent_style(false))
+		b.add_theme_stylebox_override("hover", UiTheme.accent_style(false))
+		b.add_theme_stylebox_override("pressed", UiTheme.accent_style(true))
+		b.add_theme_constant_override("outline_size", 0)
 		b.add_theme_color_override("font_color", UiTheme.ACCENT_DARK)
 		b.add_theme_color_override("font_hover_color", UiTheme.ACCENT_DARK)
 		var action_id: String = a.get("id", "")
@@ -385,7 +406,8 @@ func _on_settlement_ready(summary: Dictionary) -> void:
 	var settlement: String = summary.get("name", "")
 	_name_label.text = settlement
 	var founder := "von dir gegründet" if summary.get("founder_player_id", "") == LocalProfile.player_id else "gegründet"
-	_status_label.text = "%s · %s · %s" % [summary.get("region_name", ""), summary.get("development_status", ""), founder]
+	_status_label.text = "%s · %s\n%s" % [summary.get("region_name", ""), summary.get("development_status", ""), founder]
+	_layout_hud()
 	if summary.get("just_founded", false):
 		if int(summary.get("order_on_planet", 0)) == 1:
 			show_toast("Du hast %s gegründet – die erste Siedlung auf %s." % [settlement, summary.get("planet_name", "")])
@@ -420,6 +442,7 @@ func _toggle_menu() -> void:
 		+ "Touch: Joystick unten links · Tippen = dorthin gehen · Ziehen = Kamera · zwei Finger = Zoom · gelbe Taste = benutzen\n"
 		+ "Tastatur: WASD/Pfeile · Klick = gehen · Maus ziehen = Kamera · Mausrad/+/− = Zoom · E = benutzen · C = zentrieren · F3 = FPS\n\n"
 		+ "[b]Asset-Status[/b]\n%d von %d Asset-Einträgen integriert · %d Platzhalter · %d Art-Direction-Verstöße\n\n" % [s["resolved"], s["total"], s["placeholders"], s["violations"]]
+		+ "[b]Grafik[/b]\nAußenwelt, Figur & Oberfläche: Penzilla (penzilla.itch.io) – lizenziert\n\n"
 		+ "[b]Projekt[/b]\nVersion %s · Phase 1 (World Foundation) · Godot %s\nSpieler-ID (lokal): %s" % [
 			ProjectSettings.get_setting("application/config/version", "?"),
 			Engine.get_version_info().get("string", "?"), LocalProfile.player_id])

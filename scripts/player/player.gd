@@ -111,6 +111,8 @@ func get_focused_interactable() -> Interactable:
 
 func try_interact() -> void:
 	if _focused:
+		_face_towards(_focused.global_position)
+		_visual.play_interact()
 		interaction_requested.emit(_focused)
 
 
@@ -166,7 +168,16 @@ func _update_focus() -> void:
 func _arrive_and_interact() -> void:
 	var it := _pending_interaction
 	cancel_move_target()
+	_face_towards(it.global_position)
+	_visual.play_interact()
 	interaction_requested.emit(it)
+
+
+func _face_towards(world_pos: Vector2) -> void:
+	var d := world_pos - global_position
+	if d.length_squared() > 1.0:
+		facing = Iso.facing_index(d)
+		_visual.set_motion(0.0, facing)
 
 
 static func _ellipse(r: float, y_scale: float, segments: int) -> PackedVector2Array:

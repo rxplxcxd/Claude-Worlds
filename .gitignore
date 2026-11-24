@@ -10,3 +10,6 @@ build/
 # Never commit secrets
 .env
 *.keystore
+
+# Processed purchased assets (not redistributed in the public repo; see docs/ASSET_INVENTORY.md)
+assets/penzilla/

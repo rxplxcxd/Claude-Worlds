@@ -122,11 +122,11 @@ func _run() -> void:
 	check(player.global_position.distance_to(start) < 0.5, "player stops without input")
 
 	print("[tap to move]")
-	player.global_position = Iso.grid_to_world(Vector2(12.5, 13.5))
+	player.global_position = Iso.grid_to_world(Vector2(12.5, 18.5))
 	await frames(2)
 	settlement.camera.snap_to_target()
 	await frames(1)
-	var goal := Iso.grid_to_world(Vector2(12.5, 16.2))
+	var goal := Iso.grid_to_world(Vector2(12.5, 21.4))
 	var screen := _world_to_screen(settlement.camera, goal)
 	settlement.handle_tap(screen)
 	var d0 := player.global_position.distance_to(goal)
@@ -135,18 +135,18 @@ func _run() -> void:
 
 	print("[collision]")
 	# Walk into the town hall from the south; must not end inside it.
-	player.global_position = Iso.grid_to_world(Vector2(10.5, 11.6))
+	player.global_position = Iso.grid_to_world(Vector2(11.5, 9.8))
 	await frames(2)
 	Input.action_press("move_up")
 	await frames(60)
 	Input.action_release("move_up")
 	var g := Iso.world_to_grid(player.global_position)
-	check(not (g.x > 9.1 and g.x < 11.9 and g.y > 8.1 and g.y < 10.9), "building blocks the player")
+	check(not (g.x > 10.1 and g.x < 11.9 and g.y > 7.1 and g.y < 8.9), "building blocks the player")
 
 	print("[interaction]")
 	var opened: Array = []
 	bus.interaction_opened.connect(func(info: Dictionary) -> void: opened.append(info))
-	player.global_position = Iso.grid_to_world(Vector2(12.2, 12.4))
+	player.global_position = Iso.grid_to_world(Vector2(10.95, 11.05))
 	await frames(4)
 	var focused := player.get_focused_interactable()
 	check(focused != null and focused.kind == "notice_board", "notice board gets focus when near")
@@ -155,17 +155,17 @@ func _run() -> void:
 	await frames(3)
 	check(opened.size() == 1 and opened[0].get("title", "") == "Lichtfeld" and String(opened[0].get("text", "")).contains("von dir gegründet"), "notice board names you as founder")
 	check(hud.is_panel_open(), "HUD panel is open")
-	player.global_position = Iso.grid_to_world(Vector2(20.0, 13.5))
+	player.global_position = Iso.grid_to_world(Vector2(18.5, 14.5))
 	await frames(4)
 	check(not hud.is_panel_open(), "panel closes when walking away")
 
 	# Tap on a building -> walk there and open it.
 	opened.clear()
-	player.global_position = Iso.grid_to_world(Vector2(7.5, 19.2))
+	player.global_position = Iso.grid_to_world(Vector2(10.4, 16.8))
 	await frames(2)
 	settlement.camera.snap_to_target()
 	await frames(1)
-	var home_pos := Iso.grid_to_world(Vector2(6.0, 17.0)) + Vector2(0, -30)
+	var home_pos := Iso.grid_to_world(Vector2(11.5, 15.5)) + Vector2(0, -20)
 	settlement.handle_tap(_world_to_screen(settlement.camera, home_pos))
 	await frames(150)
 	check(opened.size() == 1 and opened[0].get("id", "") == "bld_player_home", "tapping a building walks there and opens it")
@@ -205,6 +205,10 @@ func _run() -> void:
 	_touch(0, world_pt, false)
 	await get_tree().process_frame
 	check(taps.size() == 1, "touch tap on world reaches gesture surface")
+	# The tap may have started a walk to an object; stop it and close panels.
+	settlement.player.cancel_move_target()
+	hud.close_panel()
+	await get_tree().process_frame
 	_touch(0, world_pt + Vector2(-40, 0), true)
 	_touch(1, world_pt + Vector2(40, 0), true)
 	await get_tree().process_frame
@@ -234,7 +238,7 @@ func _run() -> void:
 	_drag(0, jr.get_center() + Vector2(50, 0), Vector2(50, 0))
 	await get_tree().process_frame
 	check(stick_vectors.size() > 0 and stick_vectors.back().x > 0.5, "joystick reports drag direction")
-	player.global_position = Iso.grid_to_world(Vector2(12.2, 12.4))
+	player.global_position = Iso.grid_to_world(Vector2(10.95, 11.05))
 	await frames(4)
 	var interacts := [0]
 	bus.interact_pressed.connect(func() -> void: interacts[0] += 1)

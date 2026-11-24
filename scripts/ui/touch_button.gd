@@ -7,8 +7,8 @@ extends PanelContainer
 signal activated
 
 var label: Label
-var _style_normal: StyleBoxFlat
-var _style_pressed: StyleBoxFlat
+var _style_normal: StyleBox
+var _style_pressed: StyleBox
 
 
 func _init(text: String = "") -> void:
@@ -19,8 +19,8 @@ func _init(text: String = "") -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
-	_style_normal = UiTheme.panel_style(Color(UiTheme.ACCENT, 0.92))
-	_style_pressed = UiTheme.panel_style(Color(UiTheme.ACCENT.darkened(0.25), 0.95))
+	_style_normal = UiTheme.accent_style(false)
+	_style_pressed = UiTheme.accent_style(true)
 	add_theme_stylebox_override("panel", _style_normal)
 	label.add_theme_color_override("font_color", UiTheme.ACCENT_DARK)
 

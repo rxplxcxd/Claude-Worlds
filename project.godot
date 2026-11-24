@@ -34,6 +34,12 @@ window/handheld/orientation=6
 
 pointing/emulate_mouse_from_touch=true
 
+[importer_defaults]
+
+texture={
+"mipmaps/generate": true
+}
+
 [layer_names]
 
 2d_physics/layer_1="world"
@@ -50,4 +56,5 @@ renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.0705882, 0.0901961, 0.12549, 1)
 anti_aliasing/quality/msaa_2d=0
+textures/canvas_textures/default_texture_filter=3
 textures/vram_compression/import_etc2_astc=true

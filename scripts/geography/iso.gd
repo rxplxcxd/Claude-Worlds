@@ -1,16 +1,21 @@
 class_name Iso
 extends RefCounted
-## Isometric (2:1 dimetric) projection helpers.
+## Isometric projection helpers, matching the Penzilla Giant City Builder
+## grid (512 x 292 px per tile, i.e. a 1.753:1 diamond).
 ##
 ## Grid space:  x grows towards screen bottom-right, y towards bottom-left.
 ## World space: Godot 2D pixels. One tile = TILE_W x TILE_H diamond.
 ## Height (z) is drawn as a vertical screen offset of -z pixels.
 
 const TILE_W := 128.0
-const TILE_H := 64.0
+const TILE_H := 73.0
+## Width of one tile in the original Penzilla artwork.
+const SRC_TILE_W := 512.0
+## World units per original artwork pixel (0.25).
+const WORLD_PER_SRC_PX := TILE_W / SRC_TILE_W
 ## Screen-space vertical movement is scaled so walking "up" covers the same
 ## ground distance as walking "sideways".
-const MOVE_Y_SCALE := 0.55
+const MOVE_Y_SCALE := TILE_H / TILE_W
 
 
 static func grid_to_world(g: Vector2) -> Vector2:

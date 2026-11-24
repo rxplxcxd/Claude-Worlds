@@ -2,10 +2,10 @@ class_name PlayerVisual
 extends Node2D
 ## Player appearance.
 ##
-## If "character.player" (Penzilla Ultimate Protagonist, SpriteFrames) is
-## registered, an AnimatedSprite2D plays "idle_<dir>" / "walk_<dir>".
-## Otherwise a PLACEHOLDER figure is drawn: body, head, facing and a walk bob,
-## so movement, scale and facing can be tested before the real sprites exist.
+## With the Penzilla Ultimate Protagonist sheets imported ("character.player",
+## kind "sheet8"), an AnimatedSprite2D is built at runtime: each sheet has 5
+## rows (s, sw, w, nw, n); east-facing directions are mirrored, giving 8
+## directions. Otherwise a PLACEHOLDER figure is drawn.
 
 const BODY := Color("2f7f8f")
 const PANTS := Color("3b3f4a")
@@ -18,16 +18,73 @@ var _phase := 0.0
 var _sprite: AnimatedSprite2D
 
 
+## facing index (Iso.facing_index) -> [sheet row, mirrored]
+const FACING_ROWS := [[2, true], [3, true], [4, false], [3, false], [2, false], [1, false], [0, false], [1, true]]
+
+var _interacting := false
+
+
 func _ready() -> void:
-	var frames := AssetRegistry.get_resource("character.player") as SpriteFrames
+	var frames := _build_sheet_frames()
 	if frames:
 		_sprite = AnimatedSprite2D.new()
+		_sprite.name = "Sprite"
 		_sprite.sprite_frames = frames
-		var e := AssetRegistry.get_entry("character.player")
-		var anchor: Array = e.get("anchor", [0, 0])
-		_sprite.offset = Vector2(float(anchor[0]), float(anchor[1]))
-		_sprite.scale = Vector2.ONE * float(e.get("scale", 1.0))
+		_sprite.centered = false
+		var entry := AssetRegistry.get_entry("character.player")
+		var world_per_src: float = Iso.WORLD_PER_SRC_PX * float(entry.get("world_scale", 1.0))
+		var frame_file: float = frames.get_frame_texture("idle_s", 0).get_width()
+		_sprite.scale = Vector2.ONE * world_per_src * float(entry.get("frame_src_px", 460)) / frame_file
+		var feet: Array = entry.get("feet_src_px", [230, 426])
+		_sprite.position = -Vector2(float(feet[0]), float(feet[1])) * world_per_src
+		_sprite.animation_finished.connect(func() -> void: _interacting = false)
 		add_child(_sprite)
+		_sprite.play("idle_s")
+
+
+## Builds SpriteFrames from the Penzilla sheets, or returns null.
+func _build_sheet_frames() -> SpriteFrames:
+	var entry := AssetRegistry.get_entry("character.player")
+	if entry.get("kind", "") != "sheet8" or not AssetRegistry.is_allowed("character.player"):
+		return null
+	var rows: Array = entry.get("rows", ["s", "sw", "w", "nw", "n"])
+	var fps: Dictionary = entry.get("fps", {})
+	var frames := SpriteFrames.new()
+	frames.remove_animation("default")
+	for anim in (entry.get("sheets", {}) as Dictionary).keys():
+		var path: String = entry["sheets"][anim]
+		if not ResourceLoader.exists(path):
+			return null if anim in ["idle", "walk"] else frames
+		var tex := load(path) as Texture2D
+		var cell := float(tex.get_height()) / rows.size()
+		var cols := int(round(tex.get_width() / cell))
+		for r in rows.size():
+			var anim_name: String = "%s_%s" % [anim, rows[r]]
+			frames.add_animation(anim_name)
+			frames.set_animation_speed(anim_name, float(fps.get(anim, 10)))
+			frames.set_animation_loop(anim_name, anim != "interact")
+			for c in cols:
+				var atlas := AtlasTexture.new()
+				atlas.atlas = tex
+				atlas.region = Rect2(c * cell, r * cell, cell, cell)
+				frames.add_frame(anim_name, atlas)
+	return frames
+
+
+## Plays the one-shot interact animation (if available).
+func play_interact() -> void:
+	if _sprite and _sprite.sprite_frames.has_animation("interact_s"):
+		_interacting = true
+		_play_dir("interact", _facing)
+
+
+func _play_dir(anim: String, facing: int) -> void:
+	var rule: Array = FACING_ROWS[clampi(facing, 0, 7)]
+	var rows: Array = AssetRegistry.get_entry("character.player").get("rows", ["s", "sw", "w", "nw", "n"])
+	var anim_name: String = "%s_%s" % [anim, rows[rule[0]]]
+	_sprite.flip_h = rule[1]
+	if _sprite.sprite_frames.has_animation(anim_name) and _sprite.animation != anim_name:
+		_sprite.play(anim_name)
 
 
 func is_placeholder() -> bool:
@@ -38,9 +95,10 @@ func set_motion(speed01: float, facing: int) -> void:
 	_speed01 = speed01
 	_facing = facing
 	if _sprite:
-		var anim := ("walk_" if speed01 > 0.05 else "idle_") + Iso.facing_name(facing)
-		if _sprite.sprite_frames.has_animation(anim) and _sprite.animation != anim:
-			_sprite.play(anim)
+		if _interacting and speed01 < 0.05:
+			return
+		_interacting = false
+		_play_dir("walk" if speed01 > 0.05 else "idle", facing)
 		return
 	queue_redraw()
 

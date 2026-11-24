@@ -73,6 +73,8 @@ func _parse(d: Dictionary) -> void:
 	for p in d.get("props", []):
 		var entry: Dictionary = p.duplicate(true)
 		entry["grid_v"] = _vec(p.get("grid", [0, 0]))
+		if p.has("footprint"):
+			entry["footprint_v"] = _vec(p["footprint"])
 		props.append(entry)
 	for sc in d.get("scatter", []):
 		scatter.append(sc)

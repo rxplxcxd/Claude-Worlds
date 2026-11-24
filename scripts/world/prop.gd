@@ -8,13 +8,22 @@ extends StaticBody2D
 ## Collision radius per kind in world pixels (0 = walk-through).
 const SOLID_RADIUS := {
 	"tree": 12.0, "lamp": 5.0, "bench": 14.0, "well": 30.0, "notice_board": 12.0,
-	"market_stall": 26.0, "crates": 16.0, "solar_panel": 26.0, "bush": 0.0,
+	"market_stall": 16.0, "crates": 16.0, "solar_panel": 26.0, "bush": 0.0,
+	"fountain": 70.0, "cart": 16.0, "wheelbarrow": 12.0, "electrical_box": 16.0,
+	"electrical_tower": 14.0, "mailbox": 8.0, "trash_can": 8.0, "hydrant": 6.0,
+	"water_tower": 22.0, "garden": 0.0, "crop": 0.0,
 }
 
 var kind: String = "tree"
 var variant: float = 0.0
 var _sprite: Sprite2D
 var _glow: Sprite2D
+var _halo: Sprite2D
+var _lamp_off_info: Dictionary = {}
+var _lamp_on_info: Dictionary = {}
+var _lit := false
+## Sprite anchor relative to the node origin (footprint bottom vertex).
+var _anchor_shift := Vector2.ZERO
 
 
 func setup(entry: Dictionary, p_variant: float = 0.0) -> void:
@@ -25,7 +34,18 @@ func setup(entry: Dictionary, p_variant: float = 0.0) -> void:
 	collision_layer = 1
 	collision_mask = 0
 	var r: float = SOLID_RADIUS.get(kind, 0.0)
-	if r > 0.0:
+	# Props with a footprint (fountain, garden): node origin = footprint centre,
+	# collision = footprint diamond; the sprite anchor is its bottom vertex.
+	var footprint: Vector2 = entry.get("footprint_v", Vector2.ZERO)
+	var diamond := PackedVector2Array()
+	if footprint != Vector2.ZERO:
+		for c in Iso.rect_corners(-footprint * 0.5, footprint):
+			diamond.append(c)
+		if r > 0.0:
+			var body := CollisionPolygon2D.new()
+			body.polygon = _scaled(diamond, 0.8)
+			add_child(body)
+	elif r > 0.0:
 		# Ellipse flattened to the ground plane.
 		var shape := CollisionPolygon2D.new()
 		var pts := PackedVector2Array()
@@ -38,30 +58,61 @@ func setup(entry: Dictionary, p_variant: float = 0.0) -> void:
 	if entry.has("name"):
 		var poly := PackedVector2Array()
 		var rr := maxf(r, 16.0) + 26.0
-		for i in 12:
-			var a := TAU * i / 12
-			poly.append(Vector2(cos(a) * rr, sin(a) * rr * 0.6))
+		var approach := Vector2(0, rr * 0.6)
+		if diamond.size() > 0:
+			poly = _scaled(diamond, 1.3)
+			approach = diamond[2] + Vector2(0, 12)
+		else:
+			for i in 12:
+				var a := TAU * i / 12
+				poly.append(Vector2(cos(a) * rr, sin(a) * rr * 0.6))
 		var it := Interactable.create(entry.get("id", "prp_" + kind), entry.get("name", kind), poly)
 		it.kind = entry.get("interaction", "info")
 		it.text = entry.get("text", "")
 		it.actions = entry.get("actions", [])
-		it.approach_offset = Vector2(0, rr * 0.6)
+		it.approach_offset = approach
 		add_child(it)
 
-	var tex := AssetRegistry.get_texture("exterior.prop." + kind)
-	if tex:
+	if diamond.size() > 0:
+		_anchor_shift = diamond[2]
+	var sprite_variant := int(entry.get("variant", int(p_variant * 1000.0)))
+	_lamp_off_info = AssetRegistry.get_sprite("exterior.prop." + kind, sprite_variant)
+	if not _lamp_off_info.is_empty():
 		_sprite = Sprite2D.new()
-		_sprite.texture = tex
-		_sprite.offset = Vector2(0, -tex.get_height() * 0.5)
+		_sprite.name = "Sprite"
+		_sprite.centered = false
+		_apply_sprite(_lamp_off_info)
 		add_child(_sprite)
+		if kind == "lamp":
+			_lamp_on_info = AssetRegistry.get_sprite("exterior.prop.lamp_on")
 	if kind == "lamp":
 		_add_glow()
 	queue_redraw()
 
 
 func _process(_delta: float) -> void:
+	var night := GameClock.get_night_factor()
 	if _glow:
-		_glow.modulate.a = GameClock.get_night_factor() * 0.85
+		_glow.modulate.a = night * 0.85
+	if _halo:
+		_halo.modulate.a = night
+	var lit := night > 0.35
+	if _sprite and lit != _lit and not _lamp_on_info.is_empty():
+		_lit = lit
+		_apply_sprite(_lamp_on_info if lit else _lamp_off_info)
+
+
+func _apply_sprite(info: Dictionary) -> void:
+	_sprite.texture = info["texture"]
+	_sprite.scale = Vector2.ONE * float(info["scale"])
+	_sprite.position = info["offset"] + _anchor_shift
+
+
+static func _scaled(poly: PackedVector2Array, f: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p in poly:
+		out.append(p * f)
+	return out
 
 
 func _add_glow() -> void:
@@ -75,16 +126,27 @@ func _add_glow() -> void:
 	t.fill_to = Vector2(0.5, 0.0)
 	t.width = 128
 	t.height = 128
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	# Light pool on the ground.
 	_glow = Sprite2D.new()
 	_glow.texture = t
 	_glow.scale = Vector2(2.2, 1.3)
 	_glow.position = Vector2(0, -6)
-	var mat := CanvasItemMaterial.new()
-	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	_glow.material = mat
 	_glow.show_behind_parent = true
 	_glow.modulate.a = 0.0
 	add_child(_glow)
+	# Halo around the lamp head (only with the real lamp sprite).
+	if _sprite:
+		_halo = Sprite2D.new()
+		_halo.texture = t
+		_halo.scale = Vector2(0.45, 0.45)
+		var top := _sprite.position.y + _sprite.texture.get_height() * _sprite.scale.y * 0.08
+		_halo.position = Vector2(0, top + 6.0)
+		_halo.material = mat
+		_halo.modulate.a = 0.0
+		add_child(_halo)
 	set_process(true)
 
 
@@ -105,6 +167,10 @@ func _draw() -> void:
 		"market_stall": _draw_market_stall()
 		"crates": _draw_crates()
 		"solar_panel": _draw_solar_panel()
+		"fountain": _draw_well()
+		"crop": _draw_bush()
+		"electrical_tower", "water_tower": _draw_lamp()
+		"cart", "wheelbarrow", "electrical_box", "mailbox", "trash_can", "hydrant": _draw_crates()
 
 
 func _shadow(rx: float) -> void:

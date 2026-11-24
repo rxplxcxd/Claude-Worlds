@@ -1,0 +1,352 @@
+{
+  "_comment": "Which files from the purchased Penzilla packs are used, and where the processed copies go. Only file NAMES are listed here; the assets themselves are not stored in the public repository (see docs/ASSET_INVENTORY.md). Run tools/assets/import_penzilla.py to (re)generate assets/penzilla/. Optional third value per file: its own downscale factor.",
+  "file_scale": 0.5,
+  "packs": {
+    "gcb": "GiantCityBuilder.zip",
+    "up": "Ultimate_Protagonist.zip",
+    "gui": "Basic_GUI_Bundle.zip",
+    "rpg": "Isometric_RPG_Buildings.zip",
+    "interior": "Top-Down_Retro_Interior.zip"
+  },
+  "files": {
+    "tiles/grass.png": [
+      "gcb",
+      "Tiles/Grass.png"
+    ],
+    "tiles/dirt.png": [
+      "gcb",
+      "Tiles/Dirt.png"
+    ],
+    "tiles/low_dirt.png": [
+      "gcb",
+      "Tiles/LowDirt.png"
+    ],
+    "tiles/water.png": [
+      "gcb",
+      "Tiles/Water.png"
+    ],
+    "tiles/concrete.png": [
+      "gcb",
+      "Tiles/Concreet.png"
+    ],
+    "tiles/road_1.png": [
+      "gcb",
+      "Tiles/Road_Tile1.png"
+    ],
+    "tiles/road_2.png": [
+      "gcb",
+      "Tiles/Road_Tile2.png"
+    ],
+    "tiles/road_3.png": [
+      "gcb",
+      "Tiles/Road_Tile3.png"
+    ],
+    "tiles/road_4.png": [
+      "gcb",
+      "Tiles/Road_Tile4.png"
+    ],
+    "tiles/road_5.png": [
+      "gcb",
+      "Tiles/Road_Tile5.png"
+    ],
+    "tiles/road_6.png": [
+      "gcb",
+      "Tiles/Road_Tile6.png"
+    ],
+    "tiles/road_7.png": [
+      "gcb",
+      "Tiles/Road_Tile7.png"
+    ],
+    "tiles/road_8.png": [
+      "gcb",
+      "Tiles/Road_Tile8.png"
+    ],
+    "tiles/road_9.png": [
+      "gcb",
+      "Tiles/Road_Tile9.png"
+    ],
+    "tiles/path_1.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile1.png"
+    ],
+    "tiles/path_2.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile2.png"
+    ],
+    "tiles/path_3.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile3.png"
+    ],
+    "tiles/path_4.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile4.png"
+    ],
+    "tiles/path_5.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile5.png"
+    ],
+    "tiles/path_6.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile6.png"
+    ],
+    "tiles/path_7.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile7.png"
+    ],
+    "tiles/path_8.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile8.png"
+    ],
+    "tiles/path_9.png": [
+      "gcb",
+      "Tiles/GrassRoad_Tile9.png"
+    ],
+    "buildings/town_hall.png": [
+      "gcb",
+      "Public/Public_Townhall.png"
+    ],
+    "buildings/trade_post.png": [
+      "gcb",
+      "Shopping/Groceries_Market.png"
+    ],
+    "buildings/water_works.png": [
+      "gcb",
+      "Public/Industrial_WaterPlant.png"
+    ],
+    "buildings/clinic.png": [
+      "gcb",
+      "Public/Doctor_Office.png"
+    ],
+    "buildings/emergency_post.png": [
+      "gcb",
+      "Public/Emergency_FireStation.png"
+    ],
+    "buildings/energy_station.png": [
+      "gcb",
+      "Public/Industrial_PowerPlant.png"
+    ],
+    "buildings/workshop.png": [
+      "gcb",
+      "Shopping/Workplace_Handyman_OneFloor.png"
+    ],
+    "buildings/farm_shop.png": [
+      "gcb",
+      "Shopping/Shop_Veggies_OneFloor.png"
+    ],
+    "buildings/depot.png": [
+      "gcb",
+      "Public/Recycling.png"
+    ],
+    "buildings/player_home.png": [
+      "gcb",
+      "Houses/Green/House_Type11.png"
+    ],
+    "buildings/house_1.png": [
+      "gcb",
+      "Houses/Blue/House_Type1.png"
+    ],
+    "buildings/house_2.png": [
+      "gcb",
+      "Houses/Red/House_Type5.png"
+    ],
+    "buildings/house_3.png": [
+      "gcb",
+      "Houses/Yellow/House_Type3.png"
+    ],
+    "buildings/house_4.png": [
+      "gcb",
+      "Houses/White/House_Type7.png"
+    ],
+    "buildings/house_5.png": [
+      "gcb",
+      "Houses/Brown/House_Type10.png"
+    ],
+    "buildings/house_6.png": [
+      "gcb",
+      "Houses/Grey/House_Type12.png"
+    ],
+    "props/fountain.png": [
+      "gcb",
+      "Public/Park_Fountain.png"
+    ],
+    "props/garden.png": [
+      "gcb",
+      "Houses/Garden_Rustic.png"
+    ],
+    "props/tree_1.png": [
+      "gcb",
+      "Plants/Tree1.png"
+    ],
+    "props/tree_2.png": [
+      "gcb",
+      "Plants/Tree3.png"
+    ],
+    "props/tree_3.png": [
+      "gcb",
+      "Plants/Tree5.png"
+    ],
+    "props/tree_4.png": [
+      "gcb",
+      "Plants/Tree7.png"
+    ],
+    "props/tree_5.png": [
+      "gcb",
+      "Plants/Tree9.png"
+    ],
+    "props/tree_6.png": [
+      "gcb",
+      "Plants/Tree11.png"
+    ],
+    "props/tree_7.png": [
+      "gcb",
+      "Plants/Tree13.png"
+    ],
+    "props/tree_8.png": [
+      "gcb",
+      "Plants/Tree16.png"
+    ],
+    "props/pine_1.png": [
+      "gcb",
+      "Plants/Pine1.png"
+    ],
+    "props/pine_2.png": [
+      "gcb",
+      "Plants/Pine3.png"
+    ],
+    "props/pine_3.png": [
+      "gcb",
+      "Plants/Pine5.png"
+    ],
+    "props/bush_1.png": [
+      "gcb",
+      "Plants/Plant3.png"
+    ],
+    "props/bush_2.png": [
+      "gcb",
+      "Plants/Plant5.png"
+    ],
+    "props/bush_3.png": [
+      "gcb",
+      "Plants/Weeds1.png"
+    ],
+    "props/bush_4.png": [
+      "gcb",
+      "Plants/Weeds3.png"
+    ],
+    "props/crop_1.png": [
+      "gcb",
+      "Plants/Plant9.png"
+    ],
+    "props/crop_2.png": [
+      "gcb",
+      "Plants/Plant11.png"
+    ],
+    "props/lamp_on.png": [
+      "gcb",
+      "DecorItems/StreetLampOn.png"
+    ],
+    "props/lamp_off.png": [
+      "gcb",
+      "DecorItems/StreetLampOff.png"
+    ],
+    "props/bench.png": [
+      "gcb",
+      "DecorItems/Seat.png"
+    ],
+    "props/notice_board.png": [
+      "gcb",
+      "DecorItems/SignMap.png"
+    ],
+    "props/market_stall.png": [
+      "gcb",
+      "DecorItems/AppleCrate.png"
+    ],
+    "props/crates.png": [
+      "gcb",
+      "DecorItems/Boxes1.png"
+    ],
+    "props/cart.png": [
+      "gcb",
+      "DecorItems/Cart2.png"
+    ],
+    "props/wheelbarrow.png": [
+      "gcb",
+      "DecorItems/WheelBarrel.png"
+    ],
+    "props/electrical_box.png": [
+      "gcb",
+      "DecorItems/ElectricalBox1.png"
+    ],
+    "props/electrical_tower.png": [
+      "gcb",
+      "DecorItems/ElectricalTower.png"
+    ],
+    "props/mailbox.png": [
+      "gcb",
+      "DecorItems/Mailbox.png"
+    ],
+    "props/trash_can.png": [
+      "gcb",
+      "DecorItems/TrashCan.png"
+    ],
+    "props/hydrant.png": [
+      "gcb",
+      "DecorItems/FireHydrant.png"
+    ],
+    "props/water_tower.png": [
+      "gcb",
+      "DecorItems/Watertower.png"
+    ],
+    "character/player_idle.png": [
+      "up",
+      "AnimationSheets/PremadeCharacters/Character1/Character1_Idle.png"
+    ],
+    "character/player_walk.png": [
+      "up",
+      "AnimationSheets/PremadeCharacters/Character1/Character1_Walk.png"
+    ],
+    "character/player_run.png": [
+      "up",
+      "AnimationSheets/PremadeCharacters/Character1/Character1_Run.png"
+    ],
+    "character/player_interact.png": [
+      "up",
+      "AnimationSheets/PremadeCharacters/Character1/Character1_Interact.png"
+    ],
+    "gui/panel.png": [
+      "gui",
+      "ButtonsIcons/IconButton_Large_Background_Rounded.png",
+      0.25
+    ],
+    "gui/button.png": [
+      "gui",
+      "ButtonsIcons/IconButton_Large_Rounded.png",
+      0.25
+    ],
+    "gui/button_pressed.png": [
+      "gui",
+      "ButtonsIcons/IconButton_Large_Blue_Rounded.png",
+      0.25
+    ],
+    "gui/button_accent.png": [
+      "gui",
+      "ButtonsIcons/IconButton_Large_Orange_Rounded.png",
+      0.25
+    ],
+    "gui/icon_menu.png": [
+      "gui",
+      "Icons/Icon_Small_WhiteOutline_Menu.png",
+      0.25
+    ],
+    "gui/icon_close.png": [
+      "gui",
+      "Icons/Icon_Small_WhiteOutline_X.png",
+      0.25
+    ],
+    "gui/icon_pause.png": [
+      "gui",
+      "Icons/Icon_Small_WhiteOutline_Pause.png",
+      0.25
+    ]
+  }
+}

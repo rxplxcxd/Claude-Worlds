@@ -57,14 +57,17 @@ func setup(entry: Dictionary) -> void:
 	it.approach_offset = (_corners[3] + _corners[2]) * 0.5 + Iso.grid_to_world(Vector2(0, 0.6))
 	add_child(it)
 
-	var tex := AssetRegistry.get_texture("exterior.building." + building_type)
-	if tex:
-		var e := AssetRegistry.get_entry("exterior.building." + building_type)
+	# Penzilla sprite: its anchor (footprint bottom vertex) sits on the
+	# bottom corner of the footprint diamond.
+	var variant := int(entry.get("variant", absi(hash(building_id))))
+	var info := AssetRegistry.get_sprite("exterior.building." + building_type, variant)
+	if not info.is_empty():
 		_sprite = Sprite2D.new()
-		_sprite.texture = tex
-		var anchor: Array = e.get("anchor", [0, 0])
-		_sprite.offset = Vector2(float(anchor[0]), float(anchor[1]))
-		_sprite.scale = Vector2.ONE * float(e.get("scale", 1.0))
+		_sprite.name = "Sprite"
+		_sprite.texture = info["texture"]
+		_sprite.centered = false
+		_sprite.scale = Vector2.ONE * float(info["scale"])
+		_sprite.position = _corners[2] + info["offset"]
 		add_child(_sprite)
 	queue_redraw()
 

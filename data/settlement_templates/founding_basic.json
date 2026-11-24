@@ -12,122 +12,695 @@
   "region_name": "Ostmark-Ebene",
   "stage": "founding_settlement",
   "development_status": "Gründungssiedlung",
-  "size": [28, 28],
-  "spawn": [12.6, 12.4],
+  "size": [
+    24,
+    24
+  ],
+  "spawn": [
+    11.2,
+    11.3
+  ],
   "ground": {
     "base": "grass",
     "rects": [
-      {"tile": "field", "rect": [2, 2, 7, 6]},
-      {"tile": "sand", "rect": [21, 1, 6, 6]},
-      {"tile": "water", "rect": [22, 2, 4, 4]},
-      {"tile": "road", "rect": [1, 13, 26, 2]},
-      {"tile": "road", "rect": [13, 1, 2, 26]},
-      {"tile": "plaza", "rect": [11, 11, 6, 6]},
-      {"tile": "path", "rect": [10, 11, 1, 1]},
-      {"tile": "path", "rect": [6, 12, 1, 1]},
-      {"tile": "path", "rect": [10, 5, 1, 7]},
-      {"tile": "path", "rect": [17, 11, 1, 2]},
-      {"tile": "path", "rect": [21, 11, 1, 2]},
-      {"tile": "path", "rect": [19, 5, 1, 8]},
-      {"tile": "path", "rect": [5, 15, 1, 1]},
-      {"tile": "path", "rect": [6, 18, 7, 1]},
-      {"tile": "path", "rect": [9, 15, 1, 3]},
-      {"tile": "path", "rect": [4, 18, 1, 4]},
-      {"tile": "path", "rect": [15, 18, 9, 1]},
-      {"tile": "path", "rect": [15, 19, 1, 6]},
-      {"tile": "path", "rect": [21, 15, 1, 3]},
-      {"tile": "path", "rect": [18, 15, 1, 1]}
+      {
+        "tile": "sand",
+        "rect": [
+          5,
+          2,
+          5,
+          5
+        ]
+      },
+      {
+        "tile": "water",
+        "rect": [
+          6,
+          3,
+          3,
+          3
+        ]
+      },
+      {
+        "tile": "field",
+        "rect": [
+          14,
+          2,
+          6,
+          3
+        ]
+      },
+      {
+        "tile": "road",
+        "rect": [
+          2,
+          12,
+          20,
+          1
+        ]
+      },
+      {
+        "tile": "road",
+        "rect": [
+          12,
+          2,
+          1,
+          20
+        ]
+      },
+      {
+        "tile": "road",
+        "rect": [
+          13,
+          17,
+          8,
+          1
+        ]
+      },
+      {
+        "tile": "plaza",
+        "rect": [
+          10,
+          10,
+          5,
+          5
+        ]
+      },
+      {
+        "tile": "path",
+        "rect": [
+          9,
+          13,
+          1,
+          8
+        ]
+      },
+      {
+        "tile": "path",
+        "rect": [
+          21,
+          7,
+          1,
+          5
+        ]
+      },
+      {
+        "tile": "path",
+        "rect": [
+          13,
+          6,
+          2,
+          1
+        ]
+      }
     ]
   },
   "buildings": [
-    {"id": "bld_town_hall", "type": "town_hall", "name": "Gemeindehaus", "grid": [9, 8], "footprint": [3, 3], "height": 112, "roof": "flat",
-     "color": "#d8c7a3", "roof_color": "#7b6f63", "accent": "#3f6f8f",
-     "function": "Verwaltung & Siedlungsleitung",
-     "text": "Sitz der Siedlungsleitung von {settlement}. Hier werden später Entscheidungen, Genehmigungen und Bürgerversammlungen organisiert.\n\n[i]Verwaltung und Politik folgen ab Phase 4 bzw. Phase 9.[/i]"},
-    {"id": "bld_trade_post", "type": "trade_post", "name": "Handelsposten", "grid": [16, 8], "footprint": [3, 3], "height": 78, "roof": "gable",
-     "color": "#c9a27a", "roof_color": "#8d3b2f", "accent": "#e0b04a",
-     "function": "Handel & Tausch",
-     "text": "Von hier aus wird {settlement} künftig mit anderen Siedlungen handeln – sobald weitere Menschen auf Aurel eigene Siedlungen gründen.\n\n[i]Wirtschaft und Handel folgen ab Phase 6 bzw. Phase 8.[/i]"},
-    {"id": "bld_depot", "type": "depot", "name": "Lagerhaus", "grid": [20, 9], "footprint": [3, 2], "height": 70, "roof": "gable",
-     "color": "#a7a59b", "roof_color": "#5d6a70", "accent": "#c78a3b",
-     "function": "Lager & Logistik",
-     "text": "Gemeinsames Lager der Siedlung für Vorräte, Werkzeuge und Baumaterial.\n\n[i]Lagerbestände folgen ab Phase 6.[/i]"},
-    {"id": "bld_water_works", "type": "water_works", "name": "Wasserwerk", "grid": [19, 3], "footprint": [2, 2], "height": 132, "roof": "flat",
-     "color": "#b9c6c9", "roof_color": "#6d8790", "accent": "#3d8fb8",
-     "function": "Wasserversorgung",
-     "text": "Pumpt und filtert Wasser aus dem Teich. Ohne sauberes Wasser kann keine Siedlung wachsen.\n\n[i]Versorgungssysteme folgen ab Phase 4.[/i]"},
-    {"id": "bld_greenhouse", "type": "greenhouse", "name": "Gewächshaus", "grid": [9, 3], "footprint": [3, 2], "height": 58, "roof": "gable",
-     "color": "#cfe3d4", "roof_color": "#9fd0c0", "accent": "#5b8c5a",
-     "function": "Lebensmittelproduktion",
-     "text": "Gewächshaus und Felder sollen {settlement} mit frischem Gemüse versorgen.\n\n[i]Produktion folgt ab Phase 4/6.[/i]"},
-    {"id": "bld_house_1", "type": "house", "name": "Wohnhaus Birkenweg 1", "grid": [5, 10], "footprint": [2, 2], "height": 62, "roof": "gable",
-     "color": "#e6d6bf", "roof_color": "#a2493a", "accent": "#6b4e3a",
-     "function": "Wohnen",
-     "text": "Ein einfaches Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]"},
-    {"id": "bld_house_2", "type": "house", "name": "Wohnhaus Birkenweg 2", "grid": [8, 15], "footprint": [2, 2], "height": 62, "roof": "gable",
-     "color": "#d9cbb4", "roof_color": "#4f6d7a", "accent": "#6b4e3a",
-     "function": "Wohnen",
-     "text": "Ein einfaches Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]"},
-    {"id": "bld_player_home", "type": "player_home", "name": "Dein Haus", "grid": [5, 16], "footprint": [2, 2], "height": 66, "roof": "gable",
-     "color": "#efe2c6", "roof_color": "#3f7a5a", "accent": "#e0b04a",
-     "function": "Wohnsitz der Gründerin / des Gründers",
-     "text": "Dein eigenes Haus – hier hast du {settlement} gegründet. Hier kannst du dich ausruhen.\n\n[i]Innenräume folgen in einer späteren Phase (Interior-Assets).[/i]",
-     "actions": [{"id": "rest", "label": "Bis zum Morgen ausruhen"}]},
-    {"id": "bld_clinic", "type": "clinic", "name": "Sanitätsstation", "grid": [9, 19], "footprint": [2, 2], "height": 66, "roof": "flat",
-     "color": "#f1f1ee", "roof_color": "#9aa3a6", "accent": "#c0392b",
-     "function": "Medizinische Grundversorgung",
-     "text": "Erste Hilfe und medizinische Grundversorgung für die Bewohner.\n\n[i]Gesundheit und Notdienste folgen ab Phase 4.[/i]"},
-    {"id": "bld_energy", "type": "energy_station", "name": "Energiestation", "grid": [3, 20], "footprint": [2, 2], "height": 56, "roof": "flat",
-     "color": "#c7ccd1", "roof_color": "#59626b", "accent": "#f2c230",
-     "function": "Energieversorgung",
-     "text": "Speichert den Strom der Solarfelder und verteilt ihn an die Siedlung.\n\n[i]Energieversorgung folgt ab Phase 4/7.[/i]"},
-    {"id": "bld_workshop", "type": "workshop", "name": "Werkstatt & Bauhof", "grid": [17, 16], "footprint": [3, 2], "height": 70, "roof": "gable",
-     "color": "#b9946f", "roof_color": "#5a4a3e", "accent": "#d07a2d",
-     "function": "Bau & Instandhaltung",
-     "text": "Hier werden Werkzeuge repariert und Bauprojekte vorbereitet.\n\n[i]Bau und Instandhaltung folgen ab Phase 7.[/i]"},
-    {"id": "bld_emergency", "type": "emergency_post", "name": "Notfall- & Brandschutzposten", "grid": [21, 15], "footprint": [2, 2], "height": 70, "roof": "flat",
-     "color": "#d9d2c6", "roof_color": "#7a2e2a", "accent": "#c0392b",
-     "function": "Sicherheit, Brand- & Notfallschutz",
-     "text": "Hier wird Ausrüstung für Brände und Notfälle bereitgehalten.\n\n[i]Sicherheit und Notdienste folgen ab Phase 4/11.[/i]"},
-    {"id": "bld_house_3", "type": "house", "name": "Wohnhaus Am Teich 1", "grid": [16, 20], "footprint": [2, 2], "height": 62, "roof": "gable",
-     "color": "#e3d1b5", "roof_color": "#a2493a", "accent": "#6b4e3a",
-     "function": "Wohnen", "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]"},
-    {"id": "bld_house_4", "type": "house", "name": "Wohnhaus Am Teich 2", "grid": [19, 20], "footprint": [2, 2], "height": 62, "roof": "gable",
-     "color": "#d4c7ae", "roof_color": "#6e5a8a", "accent": "#6b4e3a",
-     "function": "Wohnen", "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]"},
-    {"id": "bld_house_5", "type": "house", "name": "Wohnhaus Am Teich 3", "grid": [22, 20], "footprint": [2, 2], "height": 62, "roof": "gable",
-     "color": "#ead9bd", "roof_color": "#4f6d7a", "accent": "#6b4e3a",
-     "function": "Wohnen", "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]"},
-    {"id": "bld_house_6", "type": "house", "name": "Wohnhaus Am Teich 4", "grid": [16, 23], "footprint": [2, 2], "height": 62, "roof": "gable",
-     "color": "#dccbb0", "roof_color": "#a2493a", "accent": "#6b4e3a",
-     "function": "Wohnen", "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]"}
+    {
+      "id": "bld_town_hall",
+      "type": "town_hall",
+      "name": "Gemeindehaus",
+      "grid": [
+        10,
+        7
+      ],
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 112,
+      "roof": "flat",
+      "color": "#d8c7a3",
+      "roof_color": "#7b6f63",
+      "accent": "#3f6f8f",
+      "function": "Verwaltung & Siedlungsleitung",
+      "text": "Sitz der Siedlungsleitung von {settlement}. Hier werden später Entscheidungen, Genehmigungen und Bürgerversammlungen organisiert.\n\n[i]Verwaltung und Politik folgen ab Phase 4 bzw. Phase 9.[/i]"
+    },
+    {
+      "id": "bld_trade_post",
+      "type": "trade_post",
+      "name": "Handelsposten",
+      "grid": [
+        7,
+        10
+      ],
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 60,
+      "roof": "gable",
+      "color": "#c9a27a",
+      "roof_color": "#8d3b2f",
+      "accent": "#e0b04a",
+      "function": "Handel & Tausch",
+      "text": "Von hier aus wird {settlement} künftig mit anderen Siedlungen handeln – sobald weitere Menschen auf Aurel eigene Siedlungen gründen.\n\n[i]Wirtschaft und Handel folgen ab Phase 6 bzw. Phase 8.[/i]"
+    },
+    {
+      "id": "bld_clinic",
+      "type": "clinic",
+      "name": "Sanitätsstation",
+      "grid": [
+        3,
+        10
+      ],
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 66,
+      "roof": "flat",
+      "color": "#f1f1ee",
+      "roof_color": "#9aa3a6",
+      "accent": "#c0392b",
+      "function": "Medizinische Grundversorgung",
+      "text": "Erste Hilfe und medizinische Grundversorgung für die Bewohner.\n\n[i]Gesundheit und Notdienste folgen ab Phase 4.[/i]"
+    },
+    {
+      "id": "bld_water_works",
+      "type": "water_works",
+      "name": "Wasserwerk",
+      "grid": [
+        10,
+        3
+      ],
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 100,
+      "roof": "flat",
+      "color": "#b9c6c9",
+      "roof_color": "#6d8790",
+      "accent": "#3d8fb8",
+      "function": "Wasserversorgung",
+      "text": "Pumpt und filtert Wasser aus dem Teich. Ohne sauberes Wasser kann keine Siedlung wachsen.\n\n[i]Versorgungssysteme folgen ab Phase 4.[/i]"
+    },
+    {
+      "id": "bld_emergency",
+      "type": "emergency_post",
+      "name": "Notfall- & Brandschutzposten",
+      "grid": [
+        16,
+        10
+      ],
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 90,
+      "roof": "flat",
+      "color": "#d9d2c6",
+      "roof_color": "#7a2e2a",
+      "accent": "#c0392b",
+      "function": "Sicherheit, Brand- & Notfallschutz",
+      "text": "Hier wird Ausrüstung für Brände und Notfälle bereitgehalten.\n\n[i]Sicherheit und Notdienste folgen ab Phase 4/11.[/i]"
+    },
+    {
+      "id": "bld_energy",
+      "type": "energy_station",
+      "name": "Energiestation",
+      "grid": [
+        19,
+        6
+      ],
+      "footprint": [
+        2,
+        2
+      ],
+      "height": 80,
+      "roof": "flat",
+      "color": "#c7ccd1",
+      "roof_color": "#59626b",
+      "accent": "#f2c230",
+      "function": "Energieversorgung",
+      "text": "Erzeugt und verteilt den Strom für die Siedlung.\n\n[i]Energieversorgung folgt ab Phase 4/7.[/i]"
+    },
+    {
+      "id": "bld_workshop",
+      "type": "workshop",
+      "name": "Werkstatt & Bauhof",
+      "grid": [
+        19,
+        11
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 60,
+      "roof": "gable",
+      "color": "#b9946f",
+      "roof_color": "#5a4a3e",
+      "accent": "#d07a2d",
+      "function": "Bau & Instandhaltung",
+      "text": "Hier werden Werkzeuge repariert und Bauprojekte vorbereitet.\n\n[i]Bau und Instandhaltung folgen ab Phase 7.[/i]"
+    },
+    {
+      "id": "bld_depot",
+      "type": "depot",
+      "name": "Lager & Wertstoffhof",
+      "grid": [
+        19,
+        9
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 56,
+      "roof": "gable",
+      "color": "#a7a59b",
+      "roof_color": "#5d6a70",
+      "accent": "#c78a3b",
+      "function": "Lager, Logistik & Wiederverwertung",
+      "text": "Gemeinsames Lager der Siedlung. Was nicht mehr gebraucht wird, wird hier sortiert und wiederverwertet.\n\n[i]Lagerbestände folgen ab Phase 6.[/i]"
+    },
+    {
+      "id": "bld_farm_shop",
+      "type": "farm_shop",
+      "name": "Gemüsehof",
+      "grid": [
+        15,
+        6
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 52,
+      "roof": "gable",
+      "color": "#cfe3d4",
+      "roof_color": "#9fd0c0",
+      "accent": "#5b8c5a",
+      "function": "Lebensmittelproduktion",
+      "text": "Hier wird geerntet, was auf den Feldern nebenan wächst, und an die Bewohner von {settlement} verteilt.\n\n[i]Produktion folgt ab Phase 4/6.[/i]"
+    },
+    {
+      "id": "bld_player_home",
+      "type": "player_home",
+      "name": "Dein Haus",
+      "grid": [
+        11,
+        15
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 66,
+      "roof": "gable",
+      "color": "#efe2c6",
+      "roof_color": "#3f7a5a",
+      "accent": "#e0b04a",
+      "function": "Wohnsitz der Gründerin / des Gründers",
+      "text": "Dein eigenes Haus – hier hast du {settlement} gegründet. Hier kannst du dich ausruhen.\n\n[i]Innenräume folgen in einer späteren Phase (Interior-Assets).[/i]",
+      "actions": [
+        {
+          "id": "rest",
+          "label": "Bis zum Morgen ausruhen"
+        }
+      ]
+    },
+    {
+      "id": "bld_house_1",
+      "type": "house",
+      "name": "Wohnhaus Birkenweg 1",
+      "grid": [
+        11,
+        17
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#a2493a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 0
+    },
+    {
+      "id": "bld_house_2",
+      "type": "house",
+      "name": "Wohnhaus Birkenweg 2",
+      "grid": [
+        11,
+        19
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#4f6d7a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 1
+    },
+    {
+      "id": "bld_house_3",
+      "type": "house",
+      "name": "Wohnhaus Am Pfad 1",
+      "grid": [
+        8,
+        15
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#6e5a8a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 2
+    },
+    {
+      "id": "bld_house_4",
+      "type": "house",
+      "name": "Wohnhaus Am Pfad 2",
+      "grid": [
+        8,
+        17
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#a2493a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 3
+    },
+    {
+      "id": "bld_house_5",
+      "type": "house",
+      "name": "Wohnhaus Am Pfad 3",
+      "grid": [
+        8,
+        19
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#4f6d7a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 4
+    },
+    {
+      "id": "bld_house_6",
+      "type": "house",
+      "name": "Wohnhaus Sonnenstraße 1",
+      "grid": [
+        14,
+        16
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#6e5a8a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 5
+    },
+    {
+      "id": "bld_house_7",
+      "type": "house",
+      "name": "Wohnhaus Sonnenstraße 2",
+      "grid": [
+        16,
+        16
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#a2493a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 1
+    },
+    {
+      "id": "bld_house_8",
+      "type": "house",
+      "name": "Wohnhaus Sonnenstraße 3",
+      "grid": [
+        18,
+        16
+      ],
+      "footprint": [
+        1,
+        1
+      ],
+      "height": 62,
+      "roof": "gable",
+      "color": "#e6d6bf",
+      "roof_color": "#4f6d7a",
+      "accent": "#6b4e3a",
+      "function": "Wohnen",
+      "text": "Ein Wohnhaus, noch unbewohnt.\n\n[i]Bewohner folgen in späteren Phasen.[/i]",
+      "variant": 3
+    }
   ],
   "props": [
-    {"kind": "well", "grid": [14, 14], "name": "Dorfbrunnen", "text": "Der Brunnen ist der Mittelpunkt von {settlement} – hier wurde zuerst nach Wasser gegraben.", "actions": [{"id": "drink", "label": "Wasser trinken"}]},
-    {"kind": "notice_board", "grid": [12.2, 11.6], "name": "Schwarzes Brett", "interaction": "notice_board"},
-    {"kind": "bench", "grid": [11.7, 15.6]},
-    {"kind": "bench", "grid": [16.3, 12.4]},
-    {"kind": "lamp", "grid": [11.3, 11.3]},
-    {"kind": "lamp", "grid": [16.7, 11.3]},
-    {"kind": "lamp", "grid": [11.3, 16.7]},
-    {"kind": "lamp", "grid": [16.7, 16.7]},
-    {"kind": "lamp", "grid": [6.5, 12.5]},
-    {"kind": "lamp", "grid": [21.5, 12.5]},
-    {"kind": "lamp", "grid": [12.5, 6.5]},
-    {"kind": "lamp", "grid": [12.5, 21.5]},
-    {"kind": "market_stall", "grid": [15.6, 11.8], "name": "Marktstand", "text": "Ein improvisierter Marktstand – noch ohne Händler.\n\n[i]Kaufen und Verkaufen folgt ab Phase 6.[/i]"},
-    {"kind": "crates", "grid": [19.6, 11.6]},
-    {"kind": "crates", "grid": [22.6, 11.4]},
-    {"kind": "solar_panel", "grid": [2.5, 23.0]},
-    {"kind": "solar_panel", "grid": [4.0, 23.0]},
-    {"kind": "solar_panel", "grid": [5.5, 23.0]},
-    {"kind": "solar_panel", "grid": [2.5, 24.6]},
-    {"kind": "solar_panel", "grid": [4.0, 24.6]},
-    {"kind": "solar_panel", "grid": [5.5, 24.6]}
+    {
+      "kind": "fountain",
+      "grid": [
+        12.5,
+        12.5
+      ],
+      "footprint": [
+        2,
+        2
+      ],
+      "name": "Dorfbrunnen",
+      "text": "Der Brunnen ist der Mittelpunkt von {settlement} – hier wurde zuerst nach Wasser gegraben.",
+      "actions": [
+        {
+          "id": "drink",
+          "label": "Wasser trinken"
+        }
+      ]
+    },
+    {
+      "kind": "notice_board",
+      "grid": [
+        10.55,
+        10.6
+      ],
+      "name": "Schwarzes Brett",
+      "interaction": "notice_board"
+    },
+    {
+      "kind": "garden",
+      "grid": [
+        10.5,
+        15.5
+      ],
+      "footprint": [
+        1,
+        1
+      ]
+    },
+    {
+      "kind": "bench",
+      "grid": [
+        10.5,
+        14.4
+      ]
+    },
+    {
+      "kind": "bench",
+      "grid": [
+        14.4,
+        10.5
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        10.15,
+        10.15
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        14.85,
+        10.15
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        10.15,
+        14.85
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        14.85,
+        14.85
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        12.9,
+        7.5
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        7.5,
+        12.9
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        12.9,
+        17.9
+      ]
+    },
+    {
+      "kind": "lamp",
+      "grid": [
+        17.5,
+        12.9
+      ]
+    },
+    {
+      "kind": "market_stall",
+      "grid": [
+        14.3,
+        14.2
+      ],
+      "name": "Marktstand",
+      "text": "Ein improvisierter Marktstand – noch ohne Händler.\n\n[i]Kaufen und Verkaufen folgt ab Phase 6.[/i]"
+    },
+    {
+      "kind": "cart",
+      "grid": [
+        14.5,
+        13.2
+      ]
+    },
+    {
+      "kind": "crates",
+      "grid": [
+        9.5,
+        11.4
+      ]
+    },
+    {
+      "kind": "wheelbarrow",
+      "grid": [
+        18.6,
+        11.7
+      ]
+    },
+    {
+      "kind": "electrical_box",
+      "grid": [
+        18.6,
+        8.4
+      ]
+    },
+    {
+      "kind": "electrical_box",
+      "grid": [
+        21.6,
+        6.4
+      ]
+    },
+    {
+      "kind": "electrical_tower",
+      "grid": [
+        22.5,
+        4.5
+      ]
+    },
+    {
+      "kind": "water_tower",
+      "grid": [
+        9.6,
+        2.4
+      ]
+    },
+    {
+      "kind": "hydrant",
+      "grid": [
+        15.6,
+        12.9
+      ]
+    },
+    {
+      "kind": "mailbox",
+      "grid": [
+        10.6,
+        16.7
+      ]
+    },
+    {
+      "kind": "mailbox",
+      "grid": [
+        13.6,
+        16.7
+      ]
+    },
+    {
+      "kind": "trash_can",
+      "grid": [
+        9.4,
+        14.6
+      ]
+    }
   ],
   "scatter": [
-    {"kind": "tree", "count": 70, "seed": 7, "margin": 0},
-    {"kind": "bush", "count": 40, "seed": 21, "margin": 1}
+    {
+      "kind": "tree",
+      "count": 55,
+      "seed": 7,
+      "margin": 0
+    },
+    {
+      "kind": "bush",
+      "count": 30,
+      "seed": 21,
+      "margin": 1
+    }
   ],
   "notice_board": {
     "title": "{settlement}",

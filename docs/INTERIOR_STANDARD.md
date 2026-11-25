@@ -20,7 +20,8 @@ Die Lösung liegt auf Systemebene: Die Innenräume verwenden jetzt die Projektio
 | Rückwand | frontale Fläche über der Oberkante des Bodens, mit dunkler Mauerkappe |
 | Seitenwände | schmale Kappen (8 px) |
 | Vorderwand | aufgeschnitten zu einer niedrigen Kappe; der Eingang ist eine 2 Kacheln breite Lücke darin |
-| Innenwände | waagerechte Wände sind frontale Flächen (y-sortiert mit Figuren), senkrechte Wände schmale Streifen; Türen als Penzilla-Türgrafik, die beim Annähern aufgeht |
+| Innenwände | waagerechte Wände sind frontale Flächen (y-sortiert mit Figuren), senkrechte Wände schmale Streifen; Höhe je Wand einstellbar (`wall_tiles`) |
+| Türen | Typen `single` (2 Kacheln, Penzilla in Häusern, eigene antike Tür im Concordium), `double` (Doppeltür) und `gate` (Bronzetor, 4 Kacheln, langsam). Sie gehen bei Annäherung von Spieler oder NPC auf, mit 4 Phasen. Die Kollision folgt dem Öffnungsgrad: zu = Sperre, ab 60 % offen = Durchgang |
 | Runde Räume | volle Wandflächen nur im oberen Band (2 Reihen), die Rundung als Kappe |
 
 ## 3. Möbel und Gegenstände
@@ -58,3 +59,44 @@ Die Lösung liegt auf Systemebene: Die Innenräume verwenden jetzt die Projektio
 | OpenGameArt Interior 16×16 (CC0) | gerade Draufsicht | zu wenig Inhalt, nicht verwendet |
 
 Externe Recherche: Weitere freie Pakete gibt es zwar (itch.io, OpenGameArt), sie sind aber meist kostenpflichtig oder haben andere Pixeldichten bzw. Stile. Ich habe nichts gekauft. Fehlende Stücke sind eigene Grafik mit exakt dieser Perspektive.
+
+## 7. Ebenen, Treppen, Laufraster, Sitzplätze (seit 0.10.0)
+- **Ebenen** (`levels`): erhöhte, begehbare Flächen wie Galerien.
+  - Je Ebene: Rechtecke mit Höhe `z` in Kacheln, Boden- und Wandtextur, Brüstungen `rails` = [Rechteck-Index, Kante].
+  - Gezeichnet werden die Oberfläche, die Vorderwand nach Süden (nicht an Fugen zur Nachbarfläche) und eine Kante zum offenen Rand.
+  - Der Raum darunter ist massiv.
+- **Treppen** (`stairs`): Rechteck, Richtung (`north`, `west`, `east` = steigt nach …), Ziel-Ebene.
+  - Stufen etwa 0,4 Kacheln hoch, Wangen auf beiden Seiten.
+  - Treppen werden an ihrer Nordkante sortiert, Figuren auf den Stufen sind sichtbar.
+- **Ebenenkollision** (`InteriorScene.carry`):
+  - am Boden sperrt der Sockel der Galerie (Ebene 2),
+  - auf der Galerie sperren ihre Ränder (Ebene 3), nur nicht am Treppenaustritt,
+  - auf der Treppe gelten nur die Wangen.
+  - Die Figur wird um die Laufhöhe angehoben gezeichnet. Gilt für Spieler und NPCs gleichermaßen.
+- **Laufraster** (`build_nav`): 4 Zellen je Kachel (8 px).
+  - Höhe je Zelle aus Räumen, Ebenen und Treppen. Wände, Möbel und Brüstungen sind gesperrt, um den Figurradius (9 px) vergrößert.
+  - Türen zählen als passierbar, weil sie sich öffnen.
+  - `reachable()` füllt ab einem Punkt; Schritte über 0,5 Kacheln Höhenunterschied sind ausgeschlossen.
+- **Sitzplätze:** Stücke mit `seat` (eindeutige ID), `row` und `sector` landen im Register `seats`, mit Position, Standfläche und Zugangspunkt `stand` (freie Laufzelle daneben).
+  - `nearest_seat()` bietet „Platz nehmen“ an.
+- **Gedrehte Stücke** (`anchor`, `footprint` im Atlas): Die Grafik ist um den Ankerpunkt gedreht gerendert und sitzt mittig auf einer kompakten Standfläche. Beispiel: die Delegiertenplätze, in 15°-Stufen zum Rostrum gedreht.
+
+## 8. Dynamischer Innenraumgenerator (`scripts/interior/interior_generator.gd`)
+- **Eingabe:** Gebäudetyp, Grundfläche in Kacheln, Seed, Wohlstand.
+  - Typen: `house`, `shop`, `office`, `clinic`, `workshop`, `palace`.
+  - Grundfläche von 8 × 7 bis 60 × 60.
+- **Schlüssel:** `gen:<typ>:<b>x<t>:<seed>:<wohlstand %>`. `InteriorScene.create(key)` und `resolve(key)` nehmen ihn direkt.
+  - Gleicher Schlüssel und gleiche `VERSION` ergeben genau denselben Innenraum.
+  - Ein Gebäude speichert nur diesen Schlüssel; das ist die Persistenz. Eine neue Generator-Version ändert ältere Schlüssel nicht, weil `VERSION` Teil des Seeds ist.
+- **Aufbau:** Der Grundriss wird in Ost-West-Bänder geteilt, passend zur Kamera, die nach Norden blickt.
+  - Vorne liegt die Halle bzw. der Wohnraum um den Eingang, daneben Seitenräume.
+  - Ab etwa 150 Kacheln folgen Flure (3 Kacheln) und hintere Raumreihen. Große Grundrisse bekommen mehrere Flure, ein Palast einen Innenhof.
+  - Türen sitzen in den waagerechten Wänden; die Halle öffnet sich breit zum Flur. Generierte Innenwände sind 2 Kacheln hoch, damit man in die hinteren Räume sieht.
+- **Möblierung:** Regeln je Raumart (Rückwand, Mitte, Seiten, Ecken, Wand) mit Mindestwohlstand.
+  - Laufwege bleiben frei: Abstand um jedes Stück, freie Flächen vor Türen und am Eingang, keine Wandstücke über Türen.
+- **Prüfung:** Ein eigenes Belegungsraster prüft, ob alle Räume vom Eingang erreichbar sind. Wenn nicht, werden zuletzt gesetzte Stücke entfernt.
+  - Die Tests bauen zusätzlich jeden Innenraum mit dem echten Laufraster.
+- **Nur eigene Grafik:** funktioniert in jedem Build.
+- **Grenzen:**
+  - Die Siedlungsgebäude behalten ihre handgemachten Innenräume. Den Generator nutzt künftig, was keine eigene Einrichtung hat, z. B. in Phase 7 (Bau).
+  - Er erzeugt rechteckige Grundrisse ohne Ausschnitte.

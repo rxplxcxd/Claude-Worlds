@@ -53,6 +53,8 @@ var _blockers: Array = []               # [{rect (world px), kind}] – walls, f
 var seats: Dictionary = {}              # seat id -> {pos (px), row, sector}
 var levels: Dictionary = {}             # level id -> {z (tiles), rects (tiles)}
 var stairs: Array = []                  # [{rect (tiles), dir, z}]
+var _occluders: Array = []              # [{node, rect (px, as drawn), sort_y}] – fade when in front of the player
+const GHOST_ALPHA := 0.2
 # walk grid (NAV_RES cells per tile): height in tiles, -1 = blocked / outside
 const LAYER_SOLID := 1
 const LAYER_LEVEL_BASE := 2
@@ -93,6 +95,8 @@ static func atlas_data() -> Dictionary:
 
 ## Resolves aliases ("house_1" → "house_small").
 static func resolve(p_key: String) -> Dictionary:
+	if InteriorGenerator.is_generated_key(p_key):
+		return InteriorGenerator.layout_for_key(p_key)
 	var l: Dictionary = layouts().get(p_key, {})
 	var guard := 0
 	while l.has("alias") and guard < 4:
@@ -407,6 +411,8 @@ func _build_partitions() -> void:
 				_rect_poly(null, Rect2(Vector2(0, -wh - CAP), Vector2(T, CAP)), Vector2.ZERO, holder, CAP_COLOR)
 				_add_rect(body, Rect2(Vector2(along * T, a.y * T - 10), Vector2(T, 14)))
 			objects.add_child(holder)
+			if not vertical:
+				_register_occluder(holder)
 		for dd in p.get("doors", []):
 			_add_inner_door(Vector2(float(dd[0]), float(dd[1])), str(dd[2]) if dd.size() > 2 else "single", vertical, body)
 
@@ -467,6 +473,8 @@ func _add_inner_door(cell: Vector2, type: String, vertical: bool, body: StaticBo
 		"frames": frames, "open": 0.0, "target": 0.0, "spec": spec, "collision": col, "state": -1, "type": type, "vertical": vertical}
 	_doors.append(d)
 	_set_door_frame(d, 0)
+	if not vertical:
+		_register_occluder(holder)
 
 
 func _set_door_frame(d: Dictionary, frame: int) -> void:
@@ -502,18 +510,75 @@ func nearest_seat(p_px: Vector2, max_d := T * 1.2) -> String:
 	return best
 
 
+## Registers a drawn part that may hide the player (walls, galleries, tall pieces).
+func _register_occluder(holder: Node2D) -> void:
+	var r := Rect2()
+	var first := true
+	for c in holder.get_children():
+		var cr := Rect2()
+		if c is Polygon2D:
+			var pts: PackedVector2Array = (c as Polygon2D).polygon
+			if pts.is_empty():
+				continue
+			cr = Rect2(pts[0], Vector2.ZERO)
+			for p in pts:
+				cr = cr.expand(p)
+			cr.position += (c as Polygon2D).position
+		elif c is Sprite2D and (c as Sprite2D).texture:
+			var sp := c as Sprite2D
+			var sz: Vector2 = sp.region_rect.size if sp.region_enabled else sp.texture.get_size()
+			cr = Rect2(sp.position, sz * sp.scale)
+		else:
+			continue
+		r = cr if first else r.merge(cr)
+		first = false
+	if first:
+		return
+	r.position += holder.position
+	_occluders.append({"node": holder, "rect": r, "sort_y": holder.position.y})
+
+
+## Parts drawn in front of the player that cover it become faint (ghosted),
+## so the player – and the level they are on – stays visible.
+func _fade_occluders(focus: Node2D, delta: float) -> void:
+	if _occluders.is_empty():
+		return
+	var pr := Rect2()
+	var have := focus != null
+	if have:
+		var lift := float(focus.get_meta("walk_h", 0.0)) * T
+		pr = Rect2(focus.position + Vector2(-16, -lift - 72), Vector2(32, 76))
+	for o in _occluders:
+		var n: Node2D = o["node"]
+		var target := 1.0
+		if have and float(o["sort_y"]) > focus.position.y + 1.0 and (o["rect"] as Rect2).intersects(pr):
+			target = GHOST_ALPHA
+		var a := move_toward(n.modulate.a, target, delta * 5.0)
+		if a != n.modulate.a:
+			n.modulate.a = a
+
+
+## Parts currently ghosted (tests).
+func ghosted_count() -> int:
+	return _occluders.filter(func(o): return (o["node"] as Node2D).modulate.a < 0.99).size()
+
+
 ## How far a door is open (0..1); for tests and NPC logic.
 func door_states() -> Array:
 	return _doors.map(func(d): return {"type": d["type"], "open": d["open"], "blocking": not (d["collision"] as CollisionPolygon2D).disabled, "pos": d["pos"]})
 
 
 func _process(delta: float) -> void:
-	if _doors.is_empty():
-		return
 	var people: Array = []
+	var focus: Node2D = null
 	for n in objects.get_children():
 		if n is Player or n is CharacterRig or n is CharacterBody2D:
 			people.append(n.position)
+			if focus == null and (n is Player or str(n.name) == "Walker"):
+				focus = n
+	_fade_occluders(focus, delta)
+	if _doors.is_empty():
+		return
 	for d in _doors:
 		var near := INF
 		for p in people:
@@ -560,12 +625,26 @@ func _build_levels() -> void:
 			top.position = Vector2(0, rr.position.y * T - 0.5)
 			_rect_poly(floor_tex, Rect2(Vector2(rr.position.x * T, 0.5 - z * T), rr.size * T), rr.position * SRC_TILE, top)
 			objects.add_child(top)
-			# front face (south edge) down to the floor
-			var face := Node2D.new()
-			face.position = Vector2(0, rr.end.y * T)
-			_rect_poly(face_tex, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, z * T)), Vector2(rr.position.x * SRC_TILE, 0), face, Color(0.86, 0.84, 0.82))
-			_rect_poly(null, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, 3)), Vector2.ZERO, face, CAP_COLOR)
-			objects.add_child(face)
+			_register_occluder(top)
+			# front face (south edge) down to the floor – not where the level continues
+			var joined := false
+			for rj in rects.size():
+				if rj != ri and absf((rects[rj] as Rect2).position.y - rr.end.y) < 0.05 and (rects[rj] as Rect2).position.x <= rr.position.x + 0.05 and (rects[rj] as Rect2).end.x >= rr.end.x - 0.05:
+					joined = true
+			if not joined:
+				var face := Node2D.new()
+				face.position = Vector2(0, rr.end.y * T)
+				_rect_poly(face_tex, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, z * T)), Vector2(rr.position.x * SRC_TILE, 0), face, Color(0.86, 0.84, 0.82))
+				_rect_poly(null, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, 3)), Vector2.ZERO, face, CAP_COLOR)
+				objects.add_child(face)
+				_register_occluder(face)
+			# cornice along the open north edge: the drop into the hall reads as an edge
+			var lip := Node2D.new()
+			lip.position = Vector2(0, rr.position.y * T - 0.4)
+			_rect_poly(null, Rect2(Vector2(rr.position.x * T, 0.4 - z * T), Vector2(rr.size.x * T, 4)), Vector2.ZERO, lip, Color("b9ad9c"))
+			_rect_poly(null, Rect2(Vector2(rr.position.x * T, 4.4 - z * T), Vector2(rr.size.x * T, 1)), Vector2.ZERO, lip, OUTLINE)
+			objects.add_child(lip)
+			_register_occluder(lip)
 			_add_rect(body, Rect2(rr.position * T, rr.size * T), "level_base")
 			var joins: Array = stair_rects.duplicate()
 			for rj in rects.size():
@@ -591,7 +670,8 @@ func _build_levels() -> void:
 			_add_rect(rails, Rect2(Vector2(r.position.x * T, r.end.y * T), Vector2(r.size.x * T, th)), "rail")
 		var n := maxi(2, int(ceil(z / 0.4)))
 		var holder := Node2D.new()
-		holder.position = Vector2(0, r.end.y * T + 0.25)
+		# sorted at the flight's north edge: figures on (or south of) the steps are drawn over them
+		holder.position = Vector2(0, r.position.y * T - 0.25)
 		for k in n:
 			var h := z * float(k + 1) / float(n)
 			var seg: Rect2
@@ -601,13 +681,14 @@ func _build_levels() -> void:
 				seg = Rect2(Vector2(r.end.x - r.size.x * float(k + 1) / n, r.position.y), Vector2(r.size.x / n, r.size.y))
 			else:
 				seg = Rect2(Vector2(r.position.x + r.size.x * float(k) / n, r.position.y), Vector2(r.size.x / n, r.size.y))
-			var tread := Rect2(Vector2(seg.position.x * T, seg.position.y * T - h * T - r.end.y * T), seg.size * T)
+			var tread := Rect2(Vector2(seg.position.x * T, seg.position.y * T - h * T - r.position.y * T + 0.25), seg.size * T)
 			_rect_poly(null, tread, Vector2.ZERO, holder, Color("e8dfcf").darkened(0.04 * (k % 2)))
 			var riser_h := z / n * T
 			if dir == "north":
 				_rect_poly(null, Rect2(Vector2(tread.position.x, tread.end.y), Vector2(tread.size.x, riser_h)), Vector2.ZERO, holder, Color("c9bba6"))
 			_rect_poly(null, Rect2(Vector2(tread.position.x, tread.position.y), Vector2(tread.size.x, 1.5)), Vector2.ZERO, holder, Color("b9ad9c"))
 		objects.add_child(holder)
+		_register_occluder(holder)
 
 
 ## Thin barriers around a level (layer LEVEL_EDGE: only figures up on the
@@ -710,6 +791,7 @@ func _add_rail(rr: Rect2, z: float, edge: String) -> void:
 		_rect_poly(null, Rect2(Vector2(ex - 3, (rr.position.y - rr.end.y) * T + top_y - rail_h), Vector2(6, rr.size.y * T)), Vector2.ZERO, holder, col)
 		_rect_poly(null, Rect2(Vector2(ex - 3, (rr.position.y - rr.end.y) * T + top_y - rail_h), Vector2(1, rr.size.y * T)), Vector2.ZERO, holder, OUTLINE)
 	objects.add_child(holder)
+	_register_occluder(holder)
 
 
 # --- walk grid -----------------------------------------------------------------------------
@@ -918,6 +1000,8 @@ func _build_items() -> void:
 				_add_rect(body, Rect2(g * T + Vector2(2, 2), fp * T - Vector2(4, 4)))
 				placed.append({"id": id, "rect": Rect2(g, fp)})
 			objects.add_child(holder)
+			if lift < 0.0 and size.y > T * 2.2:
+				_register_occluder(holder)
 		item_nodes.append(holder)
 		if e.has("seat"):
 			seats[str(e["seat"])] = {"pos": Vector2((g.x + fp.x * 0.5) * T, (g.y + fp.y * 0.6) * T), "rect": Rect2(g, fp), "row": int(e.get("row", 0)), "sector": int(e.get("sector", 0))}

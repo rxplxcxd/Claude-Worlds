@@ -1616,6 +1616,14 @@ func _test_world_council() -> void:
 	check(at.call(Vector2(4.0, 4.0)), "peristyle walkway around the rotunda reachable")
 	check(at.call(Vector2(25.0, -6.0)) and at.call(Vector2(42.0, -6.0)) and at.call(Vector2(60.0, -40.0)), "all three water terraces reachable over the stair flights")
 	check(at.call(Vector2(76.0, 71.0)) and at.call(Vector2(38.5, 41.5)) and at.call(Vector2(31.0, 41.5)), "theatre garden reachable (stoa passage, path to the theatre)")
+	check(at.call(Vector2(44.0, 46.0)) and at.call(Vector2(57.0, 52.0)), "theatre: the aisle leads down the rows to the orchestra")
+	check(at.call(Vector2(65.0, -10.0)) and at.call(Vector2(65.0, -11.0)), "tholos reached over the footbridge across the pool")
+	check(at.call(Vector2(25.0, -70.5)), "castellum (Wasserschloss) door reachable beside the north pavilion")
+	var unreached := []
+	for door in CouncilSiteView.DOORS:
+		if not at.call(door["at"]):
+			unreached.append(door["key"])
+	check(unreached.is_empty() and CouncilSiteView.DOORS.size() >= 8, "every building's door is reachable from the gate (%d doors) %s" % [CouncilSiteView.DOORS.size(), str(unreached)])
 	check(v.screen_dir_to_grid(Vector2(1, 0)).normalized().distance_to(Vector2(1, -1).normalized()) < 0.01, "screen right = grid (+x, -y)")
 	var k := v.depth_key(Vector2(3, 4))
 	check(is_equal_approx(k, 20700.0), "depth key = (x + y + 200) * 100")
@@ -1751,4 +1759,169 @@ func _test_interior_standard() -> void:
 	check(str(live._context.get("kind", "")) == "exit", "inside, the way out is offered right at the entrance")
 	live.leave_interior()
 	check(live.interior == null, "leaving returns to the site")
+	# doors: rendered with the scene in 4 phases (exact shape, size and occlusion)
+	var patched: Array = CouncilSiteView.DOORS.filter(func(d): return d.has("patch"))
+	check(patched.size() >= 4 and patched.all(func(d): return live._door_patches.has(d["patch"]) and (live._door_patches[d["patch"]]["frames"] as Array).size() == 4),
+		"every door (chamber gate, castellum, refuge, guest house) has 4 rendered opening phases plus x-ray patches")
+	live.set_door_phase("chamber", 3)
+	check(live.door_phase("chamber") == 3 and (live._door_patches["chamber"]["over"] as Sprite2D).texture == live._door_patches["chamber"]["frames"][3], "door phases swap the patch art")
+	live.set_door_phase("chamber", 0)
+	# ghosting: at a door the parts in front of it become faint
+	live.pos_m = Vector2(-16.0, 9.2)
+	live.height_m = live.surface_height(live.pos_m)
+	live._place_figure()
+	var gm := (live._door_patches["chamber"]["over"] as Sprite2D).material as ShaderMaterial
+	check(live._ghost_door == "chamber" and (gm.get_shader_parameter("ghost_b_radius") as Vector2).x > 0.0, "at the chamber door the portico in front of it is ghosted (x-ray of the gate)")
+	live.pos_m = Vector2(-16.0, 70.0)
+	live.height_m = live.surface_height(live.pos_m)
+	live._place_figure()
+	check(live._ghost_door == "" and (gm.get_shader_parameter("ghost_b_radius") as Vector2).x == 0.0, "away from doors nothing is x-rayed")
 	live.queue_free()
+	await _test_council_chamber()
+	await _test_interior_generator()
+
+
+## The Great Council Chamber: >= 1000 delegate places, galleries as a real
+## level, doors synced with collisions, everything reachable.
+func _test_council_chamber() -> void:
+	print("[great council chamber]")
+	var l := InteriorScene.resolve("concordium_chamber")
+	var t0 := Time.get_ticks_msec()
+	var it := InteriorScene.create("concordium_chamber", [], 1, 1.0)
+	it.position = Vector2(0, 90000)
+	add_child(it)
+	await get_tree().process_frame
+	var ms := Time.get_ticks_msec() - t0
+	check(it.seats.size() >= 1000, "at least 1000 delegate places (%d)" % it.seats.size())
+	var ids := {}
+	var rows := {}
+	var dup := false
+	for id in it.seats:
+		dup = dup or ids.has(id)
+		ids[id] = true
+		rows[int(it.seats[id]["row"])] = true
+	check(not dup and rows.size() >= 12, "seats have unique ids, rows (%d) and sectors – ready for the council system (phase 10)" % rows.size())
+	check(it.layout_problems().is_empty(), "chamber layout without overlaps %s" % str(it.layout_problems().slice(0, 3)))
+	var R := it.reachable(it.spawn_point)
+	var lost := 0
+	for id in it.seats:
+		var sp: Vector2 = it.seats[id]["stand"]
+		if sp.x < 0.0 or not R.has(it.nav_index(sp)):
+			lost += 1
+	check(lost == 0, "every delegate place can be reached from the entrance (%d unreachable)" % lost)
+	var gal := Vector2(30, 58.5) * InteriorScene.T
+	check(it.levels.has("gallery") and absf(it.nav_height(gal) - 4.0) < 0.01 and R.has(it.nav_index(gal)), "the gallery is a real raised level (4 tiles), reached over its stairs")
+	check(R.has(it.nav_index(Vector2(4, 30) * InteriorScene.T)) and R.has(it.nav_index(Vector2(116, 30) * InteriorScene.T)), "west and east galleries reachable")
+	check(not R.has(it.nav_index(Vector2(30, 52) * InteriorScene.T + Vector2(0, 0))) or it.nav_height(Vector2(30, 52) * InteriorScene.T) == 0.0, "the hall floor stays below the gallery (no jump between levels)")
+	# wherever gallery and floor meet (outside the stairs) both collisions are there:
+	# the gallery edge for figures up on it, the base for figures below
+	var edges: Array = it._blockers.filter(func(bk): return bk["kind"] == "edge").map(func(bk): return (bk["rect"] as Rect2).grow(10.0))
+	var bases: Array = it._blockers.filter(func(bk): return bk["kind"] == "level_base").map(func(bk): return bk["rect"])
+	var open_jumps := 0
+	var pairs := 0
+	for j in it.nav_size.y - 1:
+		for i in it.nav_size.x - 1:
+			var k := j * it.nav_size.x + i
+			for k2 in [k + 1, k + it.nav_size.x]:
+				if it.nav_h[k] >= 0.0 and it.nav_h[k2] >= 0.0 and absf(it.nav_h[k] - it.nav_h[k2]) > InteriorScene.STEP_MAX:
+					pairs += 1
+					var up: int = k if it.nav_h[k] > it.nav_h[k2] else k2
+					var lo: int = k2 if up == k else k
+					var pu := (Vector2(up % it.nav_size.x, up / it.nav_size.x) + Vector2(0.5, 0.5)) * InteriorScene.T / InteriorScene.NAV_RES
+					var pl := (Vector2(lo % it.nav_size.x, lo / it.nav_size.x) + Vector2(0.5, 0.5)) * InteriorScene.T / InteriorScene.NAV_RES
+					var guarded := edges.any(func(r): return (r as Rect2).has_point((pu + pl) * 0.5)) and bases.any(func(r): return (r as Rect2).has_point(pu))
+					if not guarded:
+						open_jumps += 1
+	check(pairs > 0 and open_jumps == 0, "gallery edges: every drop to the floor is guarded by edge and base collisions (%d edge cells)" % pairs)
+	var gate: Array = it.door_states().filter(func(d): return d["type"] == "gate")
+	check(gate.size() == 1 and gate[0]["blocking"], "monumental bronze gate between vestibule and hall, closed it blocks")
+	check(ms < 3000, "chamber builds quickly (%d ms) – no black screen on mobile" % ms)
+	# door opening synced with collision, also for NPCs
+	var npc := CharacterBody2D.new()
+	var sh := CollisionShape2D.new()
+	sh.shape = CircleShape2D.new()
+	(sh.shape as CircleShape2D).radius = 9.0
+	npc.add_child(sh)
+	it.objects.add_child(npc)
+	npc.position = gate[0]["pos"] + Vector2(0, InteriorScene.T * 2.0)
+	for f in 90:
+		it._process(1.0 / 30.0)
+	var g2: Array = it.door_states().filter(func(d): return d["type"] == "gate")
+	check(float(g2[0]["open"]) > 0.95 and not g2[0]["blocking"], "the gate opens for an approaching figure (NPC) and then lets it through")
+	npc.position = Vector2(60, 30) * InteriorScene.T
+	for f in 120:
+		it._process(1.0 / 30.0)
+	g2 = it.door_states().filter(func(d): return d["type"] == "gate")
+	check(float(g2[0]["open"]) < 0.05 and g2[0]["blocking"], "and closes again behind it (collision back on)")
+	# a figure on the gallery is drawn lifted and collides with the gallery edges
+	var body := CharacterBody2D.new()
+	var rig := Node2D.new()
+	body.add_child(rig)
+	it.objects.add_child(body)
+	body.position = gal
+	var hh := it.carry(body, rig)
+	check(absf(hh - 4.0) < 0.01 and is_equal_approx(rig.position.y, -4.0 * InteriorScene.T) and body.collision_mask & InteriorScene.LAYER_LEVEL_EDGE != 0, "on the gallery: drawn 4 tiles up, gallery edges collide")
+	body.position = Vector2(60, 30) * InteriorScene.T
+	it.carry(body, rig)
+	check(body.collision_mask & InteriorScene.LAYER_LEVEL_BASE != 0 and is_equal_approx(rig.position.y, 0.0), "on the floor: gallery base collides, drawn at floor level")
+	check(str(l.get("label", "")) == "Großer Ratssaal" and it.nearest_seat(it.seats.values()[0]["pos"]) != "", "a seat can be taken at its place")
+	# upper level / walls in front of the player become faint
+	var walker := CharacterBody2D.new()
+	walker.name = "Walker"
+	it.objects.add_child(walker)
+	walker.position = Vector2(30, 54.2) * InteriorScene.T      # on the floor just behind the south gallery
+	body.queue_free()
+	for f in 30:
+		it._process(1.0 / 30.0)
+	check(it.ghosted_count() > 0, "the gallery in front of the player turns faint, so the player sees where they are (%d parts)" % it.ghosted_count())
+	walker.position = Vector2(60, 20) * InteriorScene.T
+	for f in 30:
+		it._process(1.0 / 30.0)
+	check(it.ghosted_count() == 0, "in the open hall nothing is faded")
+	it.queue_free()
+
+
+## Generated interiors: deterministic, valid, connected – from small houses to palaces.
+func _test_interior_generator() -> void:
+	print("[interior generator]")
+	var fails := []
+	var n := 0
+	for type in InteriorGenerator.TYPES:
+		for sz in [Vector2i(8, 7), Vector2i(14, 10), Vector2i(24, 16), Vector2i(36, 28), Vector2i(50, 50)]:
+			for sd in [1, 2]:
+				n += 1
+				var key := InteriorGenerator.key_for(type, sz, sd, 0.45 * sd)
+				var l := InteriorScene.resolve(key)
+				if l.is_empty() or not InteriorGenerator.unreachable_rooms(l).is_empty():
+					fails.append(key)
+					continue
+				var it := InteriorScene.create(key, [], sd, 0.5)
+				it.position = Vector2(0, 120000)
+				add_child(it)
+				await get_tree().process_frame
+				var R := it.reachable(it.spawn_point)
+				var ok := it.layout_problems().is_empty()
+				for r in l["rooms"]:
+					var c := Vector2(r["rect"][0], r["rect"][1])
+					var found := false
+					for j in range(int(float(r["rect"][1]) * InteriorScene.NAV_RES), int((float(r["rect"][1]) + float(r["rect"][3])) * InteriorScene.NAV_RES)):
+						for i in range(int(c.x * InteriorScene.NAV_RES), int((c.x + float(r["rect"][2])) * InteriorScene.NAV_RES)):
+							if R.has(j * it.nav_size.x + i):
+								found = true
+								break
+						if found:
+							break
+					ok = ok and found
+				if not ok:
+					fails.append(key)
+				it.queue_free()
+	check(fails.is_empty(), "%d generated interiors (6 types, 8×7 … 50×50): no overlaps, every room reachable %s" % [n, str(fails.slice(0, 4))])
+	var a := JSON.stringify(InteriorGenerator.generate("palace", Vector2i(40, 32), 7, 0.8))
+	check(a == JSON.stringify(InteriorGenerator.generate("palace", Vector2i(40, 32), 7, 0.8)), "generation is reproducible (same key, same interior)")
+	check(a != JSON.stringify(InteriorGenerator.generate("palace", Vector2i(40, 32), 8, 0.8)), "another seed gives another interior")
+	var big := InteriorGenerator.generate("palace", Vector2i(40, 32), 3, 0.9)
+	var kinds: Array = big["rooms"].map(func(r): return r["kind"])
+	check(kinds.has("corridor") and kinds.has("hall") and kinds.size() >= 8, "a palace gets a hall, corridors and many rooms (%d)" % kinds.size())
+	var small := InteriorGenerator.generate("house", Vector2i(9, 8), 3, 0.5)
+	check(not small["rooms"].map(func(r): return r["kind"]).has("corridor") and small["rooms"].size() >= 2, "a small house: living room and back rooms, no corridor")
+	check(InteriorScene.layout_available(InteriorGenerator.key_for("house", Vector2i(12, 10), 1)), "generated interiors need only own art (work in every build)")

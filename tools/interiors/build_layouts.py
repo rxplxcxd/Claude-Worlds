@@ -411,7 +411,7 @@ def chamber_layout():
             dict(P([40, 62], [40, 70], doors=[[40, 64.5, 'double']]), wall_tiles=5),
             dict(P([80, 62], [80, 70], doors=[[80, 64.5, 'double']]), wall_tiles=5),
         ],
-        'levels': [{'id': 'gallery', 'z': 4.0, 'floor': 'marble_floor', 'face': 'wall_marble',
+        'levels': [{'id': 'gallery', 'z': 4.0, 'floor': 'mosaic', 'face': 'wall_marble',
                     'rects': [[0, 12, 8, 43], [0, 55, 44, 7], [112, 12, 8, 43], [76, 55, 44, 7]],
                     'rails': [[0, 'east'], [1, 'north'], [2, 'west'], [3, 'north']]}],
         'stairs': [{'rect': [44, 56.5, 8, 5], 'dir': 'west', 'level': 'gallery'},

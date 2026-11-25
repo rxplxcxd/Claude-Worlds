@@ -8,7 +8,7 @@ extends Node2D
 ## Not walkable yet: the bounds stay at the settlement area; walking out and
 ## building there come with territory expansions (Phase 7).
 
-const LEVEL_H := 20.0
+const LEVEL_H := 30.0
 const FAR_COLORS := {"desert": Color("c9b07a"), "ice": Color("dfe6ec"), "tundra": Color("a7b39a"), "mountain": Color("7d8a63"), "forest": Color("4f7a3e"), "hills": Color("6f9a4f"), "plain": Color("6f9a4f")}
 
 var terrain: Dictionary = {}
@@ -67,8 +67,8 @@ func _draw_cells(ci: CanvasItem, list: Array) -> void:
 
 func _tile(ci: CanvasItem, c: Vector2i, tile: String, lvl: int) -> void:
 	var key: String = {"grass": "exterior.tile.grass", "meadow": "exterior.tile.grass", "dirt": "exterior.tile.dirt", "sand": "exterior.tile.concrete",
-		"water": "exterior.tile.water", "snow": "exterior.tile.concrete", "rock": "exterior.tile.concrete", "earth": "exterior.tile.low_dirt"}.get(tile, "exterior.tile.grass")
-	var mod: Color = {"meadow": Color(1.03, 1.02, 0.9), "sand": Color(1.0, 0.9, 0.68), "snow": Color(1.12, 1.14, 1.2), "rock": Color(0.62, 0.6, 0.58), "earth": Color(0.85, 0.8, 0.75)}.get(tile, Color.WHITE)
+		"water": "exterior.tile.water", "snow": "exterior.tile.concrete", "rock": "exterior.tile.dirt", "earth": "exterior.tile.low_dirt"}.get(tile, "exterior.tile.grass")
+	var mod: Color = {"meadow": Color(1.03, 1.02, 0.9), "sand": Color(1.08, 0.92, 0.62), "snow": Color(1.12, 1.14, 1.2), "rock": Color(0.78, 0.74, 0.72), "earth": Color(0.72, 0.64, 0.58)}.get(tile, Color.WHITE)
 	var sprite := AssetRegistry.get_sprite(key, 0)
 	var bottom := Iso.grid_to_world(Vector2(c.x + 1, c.y + 1)) + Vector2(0, -lvl * LEVEL_H)
 	if sprite.is_empty():

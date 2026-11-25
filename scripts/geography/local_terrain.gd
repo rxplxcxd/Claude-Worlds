@@ -138,7 +138,8 @@ static func generate(record: Dictionary, size: Vector2i, ring: int = 12) -> Dict
 					var hh := (out_d - 1) * along * clampf(rise / 900.0, 0.5, 1.6) * 0.7 + (n - 0.5) * 1.2
 					h = clampi(int(round(hh)), 0, 5)
 					if h >= 3:
-						tile = "snow" if (climate["temperature_c"] - h * 3.0 < 2.0) else "rock"
+						# about 6.5 °C colder per 1000 m: snow caps on the higher steps
+						tile = "snow" if (climate["temperature_c"] - h * 2.5 < 4.0) else "rock"
 					elif h >= 1:
 						tile = "rock" if n > 0.55 else tile
 			# shore: water beyond a beach on the side of the real water

@@ -57,3 +57,13 @@ Dieselbe Logik läuft lokal: beim Start `advance(eigene Siedlung, jetzt)`; ander
 - Ereignisstürme (viele Fristen gleichzeitig) → Batch-Verarbeitung, Prioritäten.
 - Serverkosten bei Tausenden Siedlungen → S3 strikt ereignisbasiert, Auswertung nur bei Bedarf.
 - Uhrzeit: nur Serverzeit (UTC); lokale Zeitzonen nur für Darstellung und Siedlungsregeln ([ARCHITECTURE.md](ARCHITECTURE.md) §4).
+
+
+## 9. Umsetzung seit 0.6.0 (v0.1): Weltautorität
+- `scripts/world/world_authority.gd` – **WorldAuthority**: Weltuhr, Befehle (validiert, idempotent über `command_id`, protokolliert in `record.authority.log`), Detailstufen je Siedlung, Snapshots, Zustands-Hash.
+- `WorldClient` (Schnittstelle) → `LocalWorldClient` (Entwicklungsadapter, gleicher Prozess) und `RemoteWorldClient` (Platzhalter Phase 12).
+- Befehle heute: `set_policy`, `set_priorities`, `close_path`/`open_path` (Verwaltung), `leave_settlement`, `delete_account` (Pseudonymisierung), `join_settlement` (bis Phase 8 gesperrt).
+- **Stufen:** S1 (geöffnete Siedlung: Mikro + Tagesschritt), S2 (Region des Spielers: Tagesschritt alle 5 min), S3 (übrige: Tagesschritt beim Zugriff). Der Tagesschritt (`SettlementCore.day_step`) ist in allen Stufen identisch – getestet: volle Detailstufe = nur Tagesschritte (gleicher Zustand nach 3 Wochen).
+- **Tests:** 5 Jahre offline mit Entscheidungen eines anderen Spielers (alle 1 826 Tage simuliert), gleicher Zustands-Hash auf zwei Autoritäten mit unterschiedlichen Grafikprofilen und Takten, Neustart = Fortsetzung, Gründer-Löschung, Verfall nur bei echter Leere.
+- **Server später:** dieselben Klassen laufen headless in einem Simulationsdienst; Firestore speichert Snapshots (Siedlungsdatensatz) + Befehlsprotokoll; Clients senden nur Befehle (FIREBASE_SCHEMA.md §6). Keine kostenpflichtigen Dienste beauftragt.
+- **Leistung (headless, Desktop-CPU):** Tagesschritt ≈ 3 ms je Siedlung (30 NPCs) → 5 Jahre ≈ 6 s; 1 000 Siedlungen × 1 Tag ≈ 3 s. Mikro: ≈ 280 µs je NPC-Entscheidung.

@@ -87,3 +87,13 @@ Spielrelevante Werte (Geld, Ressourcen, Eigentum, Verträge, Abstimmungen) schre
 
 ## 5. Offene Fragen [OFFEN]
 Godot-Anbindung im Web: JavaScriptBridge zum Firebase-JS-SDK vs. REST-API (Empfehlung: JS-SDK über `JavaScriptBridge` für Auth/Realtime; Server per WebSocket). Serverplattform (Cloud Run/Container mit Godot-Headless oder eigener Simulationskern).
+
+
+## 6. Weltautorität und Firestore [VORBEREITET 0.6.0 – Umsetzung Phase 12/13]
+Firestore ist **Speicher**, nicht der Simulationsserver:
+| Pfad (Vorschlag) | Inhalt | Schreiber |
+|---|---|---|
+| `worlds/{w}/settlements/{s}` | Snapshot des Siedlungsdatensatzes (`npcs`, `core`, `lifecycle`, `visual_states`, `nav_changes`, `region_factors`, `climate`) | nur der Simulationsdienst |
+| `worlds/{w}/settlements/{s}/log/{seq}` | Befehle (`command_id`, Absender, Art, Daten, Zeit) | nur der Simulationsdienst (nach Prüfung) |
+| `worlds/{w}/commands/{command_id}` | eingehende Befehle der Clients | Clients (nur eigene, Security Rules) |
+Ablauf: Client schreibt Befehl → Dienst prüft (`WorldAuthority.submit`: Rechte, Regeln, Idempotenz) → wendet an, schreibt Protokoll + Snapshot → Clients lesen Snapshots. Kontolöschung ersetzt Spieler-IDs in Siedlungsdaten durch Pseudonyme (`plr_deleted_…`).

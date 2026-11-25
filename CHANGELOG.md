@@ -2,6 +2,29 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.6.0] = Produktversion **v0.1** – Architekturkorrekturen, Living World vertieft, Phase 4, Gameplay-Polishing (25.11.2026)
+
+### Hinzugefügt
+- **Sichtbare Versionsnummer v0.1** (Ladebildschirm, Menü) aus einer Quelle (`data/version.json`, VERSIONING.md); Build-Commit im Web-Build.
+- **Weltautorität** (`WorldAuthority`, `WorldClient`, `LocalWorldClient`, `RemoteWorldClient`-Platzhalter): Befehle, Protokoll, Idempotenz, Detailstufen S1/S2/S3, Snapshots, Zustands-Hash; Kontolöschung mit Pseudonymisierung.
+- **Siedlungs-Tagesschritt** (`SettlementCore`): Gesundheit, Fehlzeiten, Betriebsmodelle mit rotierenden Dienstplänen und Vertretung, Unfälle, Versorgung, Gebäudezustand, Brände, Beschäftigung, Altern, Sterblichkeit, Zuzug, Lebenszyklus.
+- **Phase 4**: Startbevölkerung 30 (per Simulation), Grundversorgung mit Wirkung im Alltag, Standort-Ressourcen, Verwaltung im Rathaus (Befehle), Stellen und Einstellungen, Gebäudekarten, Bevölkerungsverlauf, Verfall verlassener Siedlungen.
+- **Persönlichkeit** (9 Merkmale + Chronotyp + Vorlieben) mit messbaren Wirkungen; gewichtete Zufallsauswahl mit Seed.
+- **Navigation**: Sperren/Öffnen mit Versionen, gezielte Cache-Invalidierung, Umplanung unterwegs, eindeutige Stehplätze, Ausweichen.
+- **Animation & Interaktion**: alle Penzilla-Animationen geprüft, 10 weitere importiert, 28 eigene Clips, ein System für Spieler und NPCs, Objektaktionen (Brunnen, Briefkasten, Bank, Mülleimer, Kisten, Haltestelle, Möbel).
+- **Türen**: Öffnungsbilder für alle Gebäude (Einzel-, Doppel-, Schiebetür, Rolltor), synchron zum Durchgehen; Navigation zur gezeichneten Tür; Interaktionsfläche nur an der Tür.
+- **Innenräume** (isometrisch): Spielerhaus, Bäckerei, Gemischtwaren, Schmiede, Rathaus, Praxis (L-förmig), Hofladen, Werkstatt; Personal im Dienst.
+- **Umland** aus den Planetendaten (Küste, See, Fluss, Gebirge, Wald, Wüste, Schnee) und Klimadaten je Siedlung.
+- **Farbpalette** mit 167 Kleidungsfarben (Rampen-Shader), Ladenbeschreibungen nach Geschäftsart.
+
+### Behoben
+- Links/Rechts-Laufanimation vertauscht (Spieler und NPCs; Penzilla-Zeilen blicken nach links).
+- Globus: Beschriftungen/Pins/Antippen im Hochformat versetzt („größere unsichtbare Kugel“); Land/Wasser-Erkennung an Küsten; versehentliche Auswahl beim Zoomen; Vorschlag nur einmal.
+- Straßenlaternen zu klein; Parkplatz der Praxis nicht begehbar; Schwarz wurde violett; Hinweis „Wirtschaft (Phase 5)“ → Phase 6.
+
+### Geändert
+- Speicherschema: Siedlungsdatensatz um `core`, `lifecycle`, `authority`, `nav_changes`, `region_factors`, `climate` erweitert (automatische Migration). Siedlungszeit = feste Zeitverschiebung der Gründung (gleich für alle Geräte).
+
 ## [0.5.0] – Phase 3: Living World
 
 ### Hinzugefügt

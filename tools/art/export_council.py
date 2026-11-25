@@ -39,7 +39,8 @@ if GRID_ONLY:
 else:
   img, buf = ir.render(sc, mats, px, ss=SS, line_px=(1.5, 1.2, 0.8),
                      shade_fn=cm.overgrowth(1.0 if stage <= 1 else (0.35 if stage == 2 else 0.0)), log=log)
-if not GRID_ONLY:
+def encode(img, buf):
+  """Colour (uint8) and depth/ground/water tile data for a rendered image."""
   H, W = img.shape[:2]
   sx0, sy1 = buf['origin']
   # world position of each final pixel (from the centre sub-sample's depth)
@@ -52,10 +53,9 @@ if not GRID_ONLY:
   fin = np.isfinite(depth)
   pos = o + np.where(fin, depth, 0)[..., None] * ir.VIEW
   key = pos[..., 0] + pos[..., 1]
-  # ink/contour pixels have no own sample when the centre sub-sample missed:
-  # give them the key of the nearest covered pixel
   alpha = img[..., 3]
-  if (~fin & (alpha > 0)).any():
+  miss = (~fin & (alpha > 0)).any()
+  if miss:
       from scipy import ndimage
       _, (iy, ix) = ndimage.distance_transform_edt(~fin, return_indices=True)
       key = key[iy, ix]
@@ -65,22 +65,26 @@ if not GRID_ONLY:
   dimg = np.zeros((H, W, 4), np.uint8)
   dimg[..., 0] = (enc >> 8).astype(np.uint8)
   dimg[..., 1] = (enc & 255).astype(np.uint8)
-  # B = ground flag (128) + water code: 1 still water surface, 2 falling water
   mids = buf['mat']
   water_ids = [i for i, n in enumerate(buf['mat_names']) if n.startswith('water')]
   is_water = np.isin(mids, water_ids)
-  if (~fin & (alpha > 0)).any():
-      is_water = is_water[iy, ix]
   nz = np.abs(buf['normal'][..., 2])
-  if (~fin & (alpha > 0)).any():
+  if miss:
+      is_water = is_water[iy, ix]
       nz = nz[iy, ix]
   code = np.where(is_water & (nz > 0.6), 1, np.where(is_water, 2, 0))
-  # ink outlines keep code 0 (contours do not shimmer)
   ink = (np.abs(img[..., :3] - ir.INK[None, None, :]).sum(-1) < 0.05)
   code[ink] = 0
   dimg[..., 2] = np.where(ground, 128, 0) + code
   dimg[..., 3] = np.where(alpha > 0.0, 255, 0)
-  cimg = np.clip(img * 255 + 0.5, 0, 255).astype(np.uint8)
+  return np.clip(img * 255 + 0.5, 0, 255).astype(np.uint8), dimg
+
+
+if not GRID_ONLY:
+  H, W = img.shape[:2]
+  sx0, sy1 = buf['origin']
+  cimg_full, dimg = encode(img, buf)
+  cimg = cimg_full
   tiles = []
   for r in range(0, H, TILE):
       for c in range(0, W, TILE):
@@ -100,6 +104,78 @@ else:
   sx0, sy1 = site_old['origin_m']
   W, H = site_old['size']
   tiles = site_old['tiles']
+
+
+def render_patch(scene, c0, r0, c1, r1):
+  """Renders pixels [r0:r1, c0:c1] of the site image exactly on its pixel grid."""
+  pad = 2.0
+  frame = (sx0 + c0 / px + pad, sy1 - r1 / px + pad, sx0 + c1 / px - pad, sy1 - r0 / px - pad)
+  im, bf = ir.render(scene, mats, px, ss=SS, line_px=(1.5, 1.2, 0.8), frame=frame,
+                     shade_fn=cm.overgrowth(1.0 if stage <= 1 else (0.35 if stage == 2 else 0.0)), log=lambda m: None)
+  return encode(im[:r1 - r0, :c1 - c0], {k: (v[:r1 - r0, :c1 - c0] if isinstance(v, np.ndarray) and v.ndim >= 2 else v) for k, v in bf.items()})
+
+
+def xray(scene, d):
+  """The scene without the parts standing in front of a door (columns,
+  statues, trees): what the view shows, faintly, behind ghosted parts."""
+  out_n = -np.array(d['inward'] + [0.0][:0], float)[:2]
+  h0 = np.array(d['hinges'][0], float)
+  zfloor = d['z'][0]
+  keep = []
+  for so in scene.solids:
+      if so.aabb is None:
+          keep.append(so)
+          continue
+      lo, hi = so.aabb
+      lo2, hi2 = np.asarray(lo)[:2], np.asarray(hi)[:2]
+      c = (lo2 + hi2) / 2.0
+      in_front = float(np.dot(c - h0, out_n)) > 0.8 and float(hi[2]) > zfloor + 1.2
+      near = np.linalg.norm(np.clip(h0, lo2, hi2) - h0) < 22.0
+      if in_front and near and not str(so.part or '').startswith('door_') and so.part != 'ground':
+          continue
+      keep.append(so)
+  x = ir.Scene()
+  x.solids = keep
+  return x
+
+
+door_patches = []
+if not GRID_ONLY and not os.environ.get('WC_NO_DOORS'):
+  ddir = os.path.join(out, 'doors')
+  os.makedirs(ddir, exist_ok=True)
+  for name, d in wc.DOORS.items():
+      hs = [np.array(h + [0.0]) for h in d['hinges']]
+      w = d.get('width', 0.0) or float(np.linalg.norm(np.array(d['hinges'][1]) - np.array(d['hinges'][0]))) / 2.0
+      pts = []
+      for h in hs:
+          for dx in (-w - 1.0, w + 1.0):
+              for dy in (-w - 1.0, w + 1.0):
+                  for z in (d['z'][0] - 0.5, d['z'][1] + 1.6):
+                      pts.append(h + np.array([dx, dy, z]))
+      uv = np.array([ir.CAM.project(p) for p in pts])
+      m = 12
+      c0 = max(0, int((uv[:, 0].min() - sx0) * px) - m); c1 = min(W, int((uv[:, 0].max() - sx0) * px) + m)
+      r0 = max(0, int((sy1 - uv[:, 1].max()) * px) - m); r1 = min(H, int((sy1 - uv[:, 1].min()) * px) + m)
+      M = 16                                   # rendered margin, cropped (contours at the frame edge)
+      e = {'name': name, 'x': c0, 'y': r0, 'w': c1 - c0, 'h': r1 - r0, 'frames': len(wc.DOOR_PHASES),
+           'hinges': d['hinges'], 'inward': d['inward']}
+      for k, ang in enumerate(wc.DOOR_PHASES):
+          scn = wc.build(stage, {name: ang})
+          for variant, sx in (('', scn), ('_xray', xray(scn, wc.DOORS[name]))):
+              cimg_p, dimg_p = render_patch(sx, max(0, c0 - M), max(0, r0 - M), min(W, c1 + M), min(H, r1 + M))
+              oc, orr = c0 - max(0, c0 - M), r0 - max(0, r0 - M)
+              cimg_p = cimg_p[orr:orr + r1 - r0, oc:oc + c1 - c0]
+              dimg_p = dimg_p[orr:orr + r1 - r0, oc:oc + c1 - c0]
+              if k == 0 and variant == '':
+                  cimg_p = cimg_full[r0:r1, c0:c1]          # identical to the site image
+                  dimg_p = dimg[r0:r1, c0:c1]
+              Image.fromarray(cimg_p, 'RGBA').save(os.path.join(ddir, f'{name}_{k}{variant}.png'), optimize=True)
+              Image.fromarray(dimg_p, 'RGBA').save(os.path.join(ddir, f'{name}_{k}{variant}_depth.png'), optimize=True)
+          log(f"door {name}: phase {k} ({ang:.0f}°) {c1 - c0}x{r1 - r0} px")
+      door_patches.append(e)
+  sc = wc.build(stage)                           # closed doors for the walk grid
+elif GRID_ONLY:
+  door_patches = site_old.get('doors', [])
 
 # walk grid: top surfaces per 1 m cell
 X0, Y0, X1, Y1 = -84, -84, 84, 84
@@ -142,6 +218,7 @@ site = {
     "spawn": [float(wc.RC[0]), 83.4],
     "height_m": float(max(so.aabb[1][2] for so in sc.solids)),
     "fx": wc.FX,
+    "doors": door_patches,
     "removed_plants": len(wc.REMOVED_PLANTS),
     "site_frame": {"x_axis": "east", "y_axis": "south"},
     "points": {"forum": [float(wc.RC[0]) + 6.0, 60.0], "portico": [float(wc.RC[0]), 26.0], "theatre": [44.0, 44.0], "terraces": [40.0, -12.0]},

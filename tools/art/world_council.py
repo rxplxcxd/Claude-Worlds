@@ -31,6 +31,12 @@ DOMES = {}                 # material name -> centre (ribs per dome)
 MOSAICS = {}
 CASTELLUM = []
 THOLOS = []
+# Animated doors (site metres): leaves turn about their hinges by DOOR_ANGLE[name]
+# (degrees, 0 = closed, inward). export_council.py renders each door in
+# DOOR_PHASES as patches of the site image; the view swaps them.
+DOORS = {}
+DOOR_ANGLE = {}
+DOOR_PHASES = (0.0, 30.0, 58.0, 84.0)
 REMOVED_PLANTS = []
 FX = []                    # animated effects (site metres): fountain jets, veils, splashes
 PODIUM_Z = 6.0
@@ -109,9 +115,72 @@ def arch_cutters(axis, along0, along1, spacing, width, z0, spring, depth0, depth
     return cuts
 
 
-def build(stage: int = 1):
+def door(sc, name, hinge_a, hinge_b, z0, z1, inward, mat='bronze', thick=0.28, lunette=None, through=None, dark=None):
+    """A (double) door between two hinge points: one leaf if hinge_b is None.
+    inward: unit vector into the building. through: cutter that opens the
+    wall behind the door; dark: box of darkness behind the doorway."""
+    a = DOOR_ANGLE.get(name, 0.0)
+    ha = np.array(hinge_a, float)
+    hb = np.array(hinge_b, float) if hinge_b is not None else None
+    n = np.array(inward, float)
+    span = (hb - ha) if hb is not None else None
+    DOORS[name] = {'hinges': [list(map(float, ha))] + ([list(map(float, hb))] if hb is not None else []),
+                   'z': [z0, z1], 'inward': list(map(float, n)), 'mat': mat}
+    leaves = []
+    if hb is not None:
+        w = np.linalg.norm(span) / 2.0
+        d = span / np.linalg.norm(span)
+        leaves = [(ha, d), (hb, -d)]
+    else:
+        w = float(DOORS[name].setdefault('width', 0.0))
+    for h, d in leaves if hb is not None else []:
+        t = math.radians(a)
+        dirv = d * math.cos(t) + n * math.sin(t)
+        c = h + dirv * (w / 2.0) + n * (thick / 2.0)
+        ang = math.atan2(dirv[1], dirv[0])
+        sc.add(oriented_box(c[0], c[1], z0, z1, w / 2.0 - 0.03, thick / 2.0, ang, mat, f'door_{name}'))
+        # two raised panels and a ring handle on the outer face
+        for zz0, zz1 in ((z0 + (z1 - z0) * 0.08, z0 + (z1 - z0) * 0.45), (z0 + (z1 - z0) * 0.53, z0 + (z1 - z0) * 0.92)):
+            pc = c - n * (thick / 2.0 + 0.03)
+            sc.add(oriented_box(pc[0], pc[1], zz0, zz1, w / 2.0 - 0.28, 0.035, ang, 'gold' if mat == 'bronze' else mat, f'door_{name}'))
+    if lunette:
+        cx, cy, zc, r, axis = lunette
+        if axis == 'y':
+            sc.add(hcyl('y', cy - 0.06, cy + 0.06, cx, zc, r, mat, f'door_{name}_lunette', cuts=[box(cx - r - 1, cy - 1, zc - r - 1, cx + r + 1, cy + 1, zc)]))
+        else:
+            sc.add(hcyl('x', cx - 0.06, cx + 0.06, cy, zc, r, mat, f'door_{name}_lunette', cuts=[box(cx - 1, cy - r - 1, zc - r - 1, cx + 1, cy + r + 1, zc)]))
+    if through is not None:
+        DOORS[name]['through'] = through
+    if dark is not None:
+        sc.add(dark)
+
+
+def single_door(sc, name, hinge, width, along, z0, z1, inward, mat='bronze', **kw):
+    """One leaf of `width` from `hinge` along the unit vector `along`."""
+    a = DOOR_ANGLE.get(name, 0.0)
+    h = np.array(hinge, float)
+    d = np.array(along, float)
+    n = np.array(inward, float)
+    thick = kw.pop('thick', 0.22)
+    t = math.radians(a)
+    dirv = d * math.cos(t) + n * math.sin(t)
+    c = h + dirv * (width / 2.0) + n * (thick / 2.0)
+    ang = math.atan2(dirv[1], dirv[0])
+    sc.add(oriented_box(c[0], c[1], z0, z1, width / 2.0 - 0.03, thick / 2.0, ang, mat, f'door_{name}'))
+    for zz0, zz1 in ((z0 + (z1 - z0) * 0.1, z0 + (z1 - z0) * 0.46), (z0 + (z1 - z0) * 0.54, z0 + (z1 - z0) * 0.9)):
+        pc = c - n * (thick / 2.0 + 0.03)
+        sc.add(oriented_box(pc[0], pc[1], zz0, zz1, width / 2.0 - 0.25, 0.03, ang, 'gold' if mat == 'bronze' else mat, f'door_{name}'))
+    door(sc, name, hinge, None, z0, z1, inward, mat, **kw)
+    DOORS[name]['width'] = width
+    DOORS[name]['along'] = list(map(float, d))
+
+
+def build(stage: int = 1, door_angles=None):
     INSCRIPTIONS.clear()
     FX.clear()
+    DOORS.clear()
+    DOOR_ANGLE.clear()
+    DOOR_ANGLE.update(door_angles or {})
     sc = Scene()
     ruin = stage <= 1
     rng = np.random.default_rng(7)
@@ -135,11 +204,19 @@ def build(stage: int = 1):
         a = 2 * math.pi * k / 24
         if not (-1.2 < a < 2.7 or a > 2 * math.pi - 1.2):
             continue
+        if k == 6:          # front centre: the great bronze door (below)
+            continue
         cxw = rx + math.cos(a) * 24.0
         cyw = ry + math.sin(a) * 24.0
         cuts.append(oriented_box(cxw, cyw, PODIUM_Z + 3.0, PODIUM_Z + 10.5, 1.6, 1.1, a))
         cuts.append(Solid_arch_top(cxw, cyw, PODIUM_Z + 10.5, 1.1, a))
+    # the great door in the drum, behind the portico (the cella wall stands inside the drum)
+    cuts += [box(rx - 3.2, ry + 19.0, PODIUM_Z + 0.9, rx + 3.2, ry + 24.6, PODIUM_Z + 10.0)]
     sc.add(cyl(rx, ry, PODIUM_Z, PODIUM_Z + 19.0, 24.0, 'marble', p, cuts=cuts))
+    sc.add(box(rx - 3.4, ry + 18.6, PODIUM_Z + 0.9, rx + 3.4, ry + 19.05, PODIUM_Z + 10.2, 'dark', 'hall_dark'))
+    sc.add(box(rx - 3.5, ry + 23.5, PODIUM_Z + 10.0, rx + 3.5, ry + 24.4, PODIUM_Z + 10.9, 'marble_warm', 'hall_door_lintel'))
+    hy = ry + math.sqrt(24.0 ** 2 - 3.0 ** 2) - 0.35
+    door(sc, 'chamber', (rx - 3.0, hy), (rx + 3.0, hy), PODIUM_Z + 0.9, PODIUM_Z + 9.9, (0.0, -1.0), 'bronze', thick=0.32)
     # string course + cornice
     sc.add(cyl(rx, ry, PODIUM_Z + 12.0, PODIUM_Z + 12.8, 24.5, 'marble_warm', p))
     # peristyle: ring colonnade on its own stylobate
@@ -197,9 +274,7 @@ def build(stage: int = 1):
     py0, py1 = ry + 16.0, ry + 36.0
     sc.add(box(px0 - 1, py0, PODIUM_Z, px1 + 1, py1, PODIUM_Z + 0.9, 'marble_warm', p))
     # cella wall with a great door
-    door = [box(rx - 3.2, py0 + 4.0, PODIUM_Z + 0.9, rx + 3.2, py0 + 7.0, PODIUM_Z + 10.0)]
-    sc.add(box(px0, py0, PODIUM_Z + 0.9, px1, py0 + 5.0, PODIUM_Z + 15.0, 'marble_shade', p, cuts=door))
-    sc.add(box(rx - 3.0, py0 + 4.2, PODIUM_Z + 0.9, rx + 3.0, py0 + 4.6, PODIUM_Z + 9.8, 'bronze', 'portico_door'))
+    sc.add(box(px0, py0, PODIUM_Z + 0.9, px1, py0 + 5.0, PODIUM_Z + 15.0, 'marble_shade', p))
     for i in range(8):
         cx_ = px0 + 1.6 + i * (px1 - px0 - 3.2) / 7
         broken = 0.55 if (ruin and i == 6) else None
@@ -469,9 +544,11 @@ def build(stage: int = 1):
     cuts = arch_cutters('x', 30.0, 84.0, 7.7, 4.6, 0.0, 9.5, ay - 3, ay + 3)
     sc.add(box(30.0, ay - 1.6, 0.0, 84.0, ay + 1.6, 15.0, 'sandstone', 'aqueduct', cuts=cuts))
     sc.add(box(29.5, ay - 2.0, 15.0, 84.0, ay + 2.0, 15.8, 'sandstone', 'aqueduct_top', cuts=[box(29, ay - 0.9, 15.3, 85, ay + 0.9, 17)]))
-    cdoor = [box(23.6, ay + 2.0, 0.0, 26.4, ay + 6.0, 3.0), hcyl('y', ay + 2.0, ay + 6.0, 25.0, 3.0, 1.4)]
+    cdoor = [box(23.6, ay + 0.2, 0.0, 26.4, ay + 6.0, 3.0), hcyl('y', ay + 0.2, ay + 6.0, 25.0, 3.0, 1.4)]
     sc.add(cyl(25.0, ay, 0.0, 18.0, 4.5, 'sandstone', 'castellum', cuts=cdoor))
-    sc.add(box(23.8, ay + 3.6, 0.0, 26.2, ay + 3.8, 2.9, 'bronze', 'castellum_door'))
+    sc.add(box(23.5, ay - 0.2, 0.0, 26.5, ay + 0.3, 4.5, 'dark', 'castellum_dark'))
+    single_door(sc, 'castellum', (23.7, ay + 3.7), 2.6, (1.0, 0.0), 0.0, 2.98, (0.0, -1.0), 'wood_door',
+                lunette=(25.0, ay + 3.75, 3.0, 1.38, 'y'))
     sc.add(cyl(25.0, ay, 18.0, 19.0, 5.0, 'marble_warm', 'castellum'))
     sc.add(ell(25.0, ay, 19.0, 4.2, 4.2, 2.6, 'roof', 'castellum', zmin=19.0))
 
@@ -517,12 +594,22 @@ def build(stage: int = 1):
     wing(-84.0, -84.0, -64.0, 14.0, 'palace_west', 'x')
     wing(-64.0, -84.0, 2.0, -64.0, 'palace_east', 'y')
 
-    def pavilion(cx, cy, name, collapsed=False):
+    def pavilion(cx, cy, name, collapsed=False, door_face=None, door_name=None):
         dm = f'dome_{name}'
         DOMES[dm] = (cx, cy)
         sc.add(box(cx - 9, cy - 9, 0.0, cx + 9, cy + 9, 0.8, 'marble_warm', name))
         cuts = arch_cutters('y', cy - 7.5, cy + 7.5, 5.0, 2.4, 0.8, 5.0, cx + 7.8, cx + 9.1) + \
             arch_cutters('x', cx - 7.5, cx + 7.5, 5.0, 2.4, 0.8, 5.0, cy + 7.8, cy + 9.1)
+        if door_face == 'east':      # the central arch opens into the building: a bronze double door
+            cuts += [box(cx + 4.6, cy - 1.2, 0.8, cx + 9.1, cy + 1.2, 5.0), hcyl('x', cx + 4.6, cx + 9.1, cy, 5.0, 1.2)]
+            sc.add(box(cx + 4.4, cy - 1.4, 0.8, cx + 4.8, cy + 1.4, 6.3, 'dark', f'{name}_dark'))
+            door(sc, door_name, (cx + 8.1, cy - 1.2), (cx + 8.1, cy + 1.2), 0.8, 4.98, (-1.0, 0.0), 'bronze', thick=0.24,
+                 lunette=(cx + 8.15, cy, 5.0, 1.18, 'x'))
+        elif door_face == 'south':
+            cuts += [box(cx - 1.2, cy + 4.6, 0.8, cx + 1.2, cy + 9.1, 5.0), hcyl('y', cy + 4.6, cy + 9.1, cx, 5.0, 1.2)]
+            sc.add(box(cx - 1.4, cy + 4.4, 0.8, cx + 1.4, cy + 4.8, 6.3, 'dark', f'{name}_dark'))
+            door(sc, door_name, (cx - 1.2, cy + 8.1), (cx + 1.2, cy + 8.1), 0.8, 4.98, (0.0, -1.0), 'bronze', thick=0.24,
+                 lunette=(cx, cy + 8.15, 5.0, 1.18, 'y'))
         sc.add(box(cx - 8.5, cy - 8.5, 0.8, cx + 8.5, cy + 8.5, 19.0, 'marble', name, cuts=cuts))
         sc.add(box(cx - 9.0, cy - 9.0, 19.0, cx + 9.0, cy + 9.0, 20.0, 'marble_warm', name))
         for dx in (-7.6, 7.6):     # corner pilasters
@@ -540,8 +627,8 @@ def build(stage: int = 1):
             sc.add(ell(cx, cy, 31.2, 0.4, 0.4, 0.4, 'gold', f'{name}_dome'))
 
     pavilion(-74.0, -74.0, 'pavilion_corner')
-    pavilion(-74.0, 22.0, 'pavilion_west', collapsed=ruin)
-    pavilion(10.0, -74.0, 'pavilion_north')
+    pavilion(-74.0, 22.0, 'pavilion_west', collapsed=ruin, door_face='east', door_name='refuge')
+    pavilion(10.0, -74.0, 'pavilion_north', door_face='south', door_name='guest')
 
     # ---------------------------------------------------------- theatre (front corner)
     tcx, tcy = theatre_c

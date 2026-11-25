@@ -285,6 +285,7 @@ def make_materials(centre_dome=(0, 0), forum_centre=(0, 0), moss=0.25, small_dom
         'dome': dome(centre=centre_dome),
         'gold': gold(),
         'bronze': flat('a8703a', 0.06),
+        'wood_door': flat('7a4a2a', 0.05),
         'dark': flat('3b2342', 0.0, cut_dark=False),
         'flowers': flowers(),
         'earth': flat('a07a52', 0.0),

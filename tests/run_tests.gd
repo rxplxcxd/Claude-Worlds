@@ -1759,6 +1759,23 @@ func _test_interior_standard() -> void:
 	check(str(live._context.get("kind", "")) == "exit", "inside, the way out is offered right at the entrance")
 	live.leave_interior()
 	check(live.interior == null, "leaving returns to the site")
+	# doors: rendered with the scene in 4 phases (exact shape, size and occlusion)
+	var patched: Array = CouncilSiteView.DOORS.filter(func(d): return d.has("patch"))
+	check(patched.size() >= 4 and patched.all(func(d): return live._door_patches.has(d["patch"]) and (live._door_patches[d["patch"]]["frames"] as Array).size() == 4),
+		"every door (chamber gate, castellum, refuge, guest house) has 4 rendered opening phases plus x-ray patches")
+	live.set_door_phase("chamber", 3)
+	check(live.door_phase("chamber") == 3 and (live._door_patches["chamber"]["over"] as Sprite2D).texture == live._door_patches["chamber"]["frames"][3], "door phases swap the patch art")
+	live.set_door_phase("chamber", 0)
+	# ghosting: at a door the parts in front of it become faint
+	live.pos_m = Vector2(-16.0, 9.2)
+	live.height_m = live.surface_height(live.pos_m)
+	live._place_figure()
+	var gm := (live._door_patches["chamber"]["over"] as Sprite2D).material as ShaderMaterial
+	check(live._ghost_door == "chamber" and (gm.get_shader_parameter("ghost_b_radius") as Vector2).x > 0.0, "at the chamber door the portico in front of it is ghosted (x-ray of the gate)")
+	live.pos_m = Vector2(-16.0, 70.0)
+	live.height_m = live.surface_height(live.pos_m)
+	live._place_figure()
+	check(live._ghost_door == "" and (gm.get_shader_parameter("ghost_b_radius") as Vector2).x == 0.0, "away from doors nothing is x-rayed")
 	live.queue_free()
 	await _test_council_chamber()
 	await _test_interior_generator()
@@ -1848,6 +1865,19 @@ func _test_council_chamber() -> void:
 	it.carry(body, rig)
 	check(body.collision_mask & InteriorScene.LAYER_LEVEL_BASE != 0 and is_equal_approx(rig.position.y, 0.0), "on the floor: gallery base collides, drawn at floor level")
 	check(str(l.get("label", "")) == "Großer Ratssaal" and it.nearest_seat(it.seats.values()[0]["pos"]) != "", "a seat can be taken at its place")
+	# upper level / walls in front of the player become faint
+	var walker := CharacterBody2D.new()
+	walker.name = "Walker"
+	it.objects.add_child(walker)
+	walker.position = Vector2(30, 54.2) * InteriorScene.T      # on the floor just behind the south gallery
+	body.queue_free()
+	for f in 30:
+		it._process(1.0 / 30.0)
+	check(it.ghosted_count() > 0, "the gallery in front of the player turns faint, so the player sees where they are (%d parts)" % it.ghosted_count())
+	walker.position = Vector2(60, 20) * InteriorScene.T
+	for f in 30:
+		it._process(1.0 / 30.0)
+	check(it.ghosted_count() == 0, "in the open hall nothing is faded")
 	it.queue_free()
 
 

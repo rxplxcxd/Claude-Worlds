@@ -32,6 +32,8 @@ var rig: CharacterRig
 var pos_m := Vector2.ZERO          # grid position (metres)
 var height_m := 0.0
 var _tiles: Array = []             # [{sprite, overlay, rect}]
+var _door_patches: Dictionary = {} # name -> {under, over, frames, frames_x, rect, phase}
+var _ghost_door := ""              # door patch currently x-rayed (figure at its door)
 var _heights := PackedInt32Array()
 var _kinds := PackedByteArray()
 var _nx := 0
@@ -190,6 +192,34 @@ func _build_world() -> void:
 		o.visible = false
 		over.add_child(o)
 		_tiles.append({"sprite": s, "overlay": o, "rect": Rect2(at, Vector2(float(t["w"]), float(t["h"])) * k)})
+	# animated doors: patches of the site image (rendered with the scene, so
+	# shape, size and everything standing in front are exact). Under: the
+	# x-ray patch without the parts in front of the door; over: the normal
+	# patch, ghosted near the figure so the entrance stays visible.
+	for dp in site.get("doors", []):
+		var frames: Array = []
+		var frames_x: Array = []
+		for f in int(dp["frames"]):
+			frames.append(load(dir + "doors/%s_%d.png" % [dp["name"], f]))
+			frames_x.append(load(dir + "doors/%s_%d_xray.png" % [dp["name"], f]))
+		if frames.has(null) or frames_x.has(null):
+			continue
+		var at := origin + Vector2(float(dp["x"]), float(dp["y"])) * k
+		var under := Sprite2D.new()
+		under.texture = frames_x[0]
+		var top := Sprite2D.new()
+		top.texture = frames[0]
+		for sp in [under, top]:
+			sp.centered = false
+			sp.position = at
+			sp.scale = Vector2(k, k)
+			base.add_child(sp)
+		var gm := ShaderMaterial.new()
+		gm.shader = shader
+		gm.set_shader_parameter("occluder_mode", false)
+		top.material = gm
+		_door_patches[str(dp["name"])] = {"under": under, "over": top, "frames": frames, "frames_x": frames_x,
+			"rect": Rect2(at, Vector2(float(dp["w"]), float(dp["h"])) * k), "phase": 0}
 	# figure and water effects share one y-sorted layer: every node sits on its
 	# ground point (sort key), the visual is lifted by its height
 	actors = Node2D.new()
@@ -314,12 +344,37 @@ func _place_figure() -> void:
 	camera.position = lift
 	var key := depth_key(pos_m)
 	var fr := Rect2(figure.position + lift + Vector2(-40, -90), Vector2(80, 100))
+	# ghosting: around the figure, and around the door it stands at
+	var gp := global_position
+	var ga_c := gp + figure.position + lift + Vector2(0, -34)
+	var ga_r := Vector2(58, 78)
+	var gb_c := Vector2.ZERO
+	var gb_r := Vector2.ZERO
+	_ghost_door = ""
+	for d in DOORS:
+		if d.has("patch") and _door_patches.has(d["patch"]) and pos_m.distance_to(d["at"]) < 7.0:
+			_ghost_door = d["patch"]
+			var pr: Rect2 = _door_patches[d["patch"]]["rect"]
+			gb_c = gp + pr.get_center()
+			gb_r = pr.size * 0.5 * 1.05
+			fr = fr.merge(pr)
 	for t in _tiles:
 		var ov: Sprite2D = t["overlay"]
 		var on := (t["rect"] as Rect2).intersects(fr)
 		ov.visible = on
 		if on:
-			(ov.material as ShaderMaterial).set_shader_parameter("figure_key", key)
+			var m := ov.material as ShaderMaterial
+			m.set_shader_parameter("figure_key", key)
+			m.set_shader_parameter("ghost_a_center", ga_c)
+			m.set_shader_parameter("ghost_a_radius", ga_r)
+			m.set_shader_parameter("ghost_b_center", gb_c)
+			m.set_shader_parameter("ghost_b_radius", gb_r)
+	for nm in _door_patches:
+		var m2 := (_door_patches[nm]["over"] as Sprite2D).material as ShaderMaterial
+		m2.set_shader_parameter("ghost_a_center", ga_c)
+		m2.set_shader_parameter("ghost_a_radius", ga_r if nm == _ghost_door else Vector2.ZERO)
+		m2.set_shader_parameter("ghost_b_center", gb_c)
+		m2.set_shader_parameter("ghost_b_radius", gb_r if nm == _ghost_door else Vector2.ZERO)
 
 
 ## Doors of the Concordium buildings (site metres, +x east, +y south): the
@@ -328,14 +383,14 @@ func _place_figure() -> void:
 ## Wasserschloss by its arched door beside the north pavilion. `kind` is the
 ## kind of opening (door, double door, gate, arcade) for the opening animation.
 const DOORS := [
-	{"key": "concordium_chamber", "label": "Großer Ratssaal", "at": Vector2(-16.0, 8.5), "kind": "gate"},
+	{"key": "concordium_chamber", "label": "Großer Ratssaal", "at": Vector2(-16.0, 8.5), "kind": "gate", "patch": "chamber"},
 	{"key": "concordium_exhibition", "label": "Ausstellungshalle (Westflügel)", "at": Vector2(-62.5, -20.0), "kind": "arcade"},
 	{"key": "concordium_diplomacy", "label": "Diplomatieflügel (Nordflügel)", "at": Vector2(-30.0, -62.5), "kind": "arcade"},
-	{"key": "concordium_archive", "label": "Archiv der Welt (Zugang im Innenhof)", "at": Vector2(-62.5, -63.0), "kind": "double"},
-	{"key": "concordium_refuge", "label": "Zufluchtsort (Westpavillon)", "at": Vector2(-63.0, 22.0), "kind": "double"},
-	{"key": "concordium_guest", "label": "Gästehaus (Nordpavillon)", "at": Vector2(10.0, -63.0), "kind": "double"},
+	{"key": "concordium_archive", "label": "Archiv der Welt (Zugang im Innenhof)", "at": Vector2(-62.5, -63.0), "kind": "arcade"},
+	{"key": "concordium_refuge", "label": "Zufluchtsort (Westpavillon)", "at": Vector2(-63.0, 22.0), "kind": "double", "patch": "refuge"},
+	{"key": "concordium_guest", "label": "Gästehaus (Nordpavillon)", "at": Vector2(10.0, -63.0), "kind": "double", "patch": "guest"},
 	{"key": "concordium_tholos", "label": "Rundtempel (Tholos)", "at": Vector2(65.0, -11.0), "kind": "arcade"},
-	{"key": "concordium_castellum", "label": "Wasserschloss", "at": Vector2(25.0, -70.5), "kind": "door"},
+	{"key": "concordium_castellum", "label": "Wasserschloss", "at": Vector2(25.0, -70.5), "kind": "door", "patch": "castellum"},
 ]
 const DOOR_RADIUS := 3.0
 const INSIDE_SPEED := 150.0
@@ -432,6 +487,7 @@ func _on_act() -> void:
 
 
 var _entering := false
+var _last_door: Dictionary = {}
 
 
 ## Door opening, then a loading view (no black screen), then the interior.
@@ -439,6 +495,7 @@ func _enter_with_transition(d: Dictionary) -> void:
 	if _entering or interior:
 		return
 	_entering = true
+	_last_door = d
 	_set_context({})
 	var dur := 0.9 if str(d.get("kind", "door")) == "gate" else 0.5
 	if str(d.get("kind", "door")) != "arcade":
@@ -454,39 +511,32 @@ func _enter_with_transition(d: Dictionary) -> void:
 	_entering = false
 
 
-## Two leaves (one for a plain door) swing open in the doorway of the asset.
-func _door_animation(d: Dictionary, dur: float) -> void:
-	var at: Vector2 = d["at"]
-	var node := Node2D.new()
-	node.position = ground_to_world(at, surface_height(at))
-	node.z_index = 5
-	actors.add_child(node)
-	var kind := str(d.get("kind", "door"))
-	var w := (3.4 if kind == "gate" else 2.2) * M_PX * 0.5
-	var h := (5.0 if kind == "gate" else 2.6) * M_PX * 0.5
-	var col := Color("8a5a2e") if kind == "gate" else Color("6b4426")
-	var leaves := 1 if kind == "door" else 2
-	var back := Polygon2D.new()
-	back.polygon = PackedVector2Array([Vector2(-w, -h), Vector2(w, -h), Vector2(w, 0), Vector2(-w, 0)])
-	back.color = Color(0.08, 0.06, 0.05, 0.9)
-	node.add_child(back)
-	for k in leaves:
-		var leaf := Polygon2D.new()
-		var lw := w * 2.0 / leaves
-		var x0 := -w + lw * k
-		leaf.position = Vector2(x0 if k == 0 else x0 + lw, 0)
-		var sgn := 1.0 if k == 0 else -1.0
-		leaf.polygon = PackedVector2Array([Vector2(0, -h), Vector2(lw * sgn, -h), Vector2(lw * sgn, 0), Vector2(0, 0)])
-		leaf.color = col
-		var stud := Polygon2D.new()
-		stud.polygon = PackedVector2Array([Vector2(lw * sgn * 0.2, -h * 0.55), Vector2(lw * sgn * 0.8, -h * 0.55), Vector2(lw * sgn * 0.8, -h * 0.5), Vector2(lw * sgn * 0.2, -h * 0.5)])
-		stud.color = Color("d4a64a") if kind == "gate" else col.darkened(0.3)
-		leaf.add_child(stud)
-		node.add_child(leaf)
-		create_tween().tween_property(leaf, "scale:x", 0.12, dur).set_trans(Tween.TRANS_SINE)
+## Plays the door's rendered opening phases (0 closed … 3 open), or closing.
+func _door_animation(d: Dictionary, dur: float, closing := false) -> void:
+	var nm := str(d.get("patch", ""))
+	if not _door_patches.has(nm):
+		return
+	var n: int = (_door_patches[nm]["frames"] as Array).size()
 	var tw := create_tween()
-	tw.tween_interval(dur + 0.6)
-	tw.tween_callback(node.queue_free)
+	for step in n:
+		var f: int = (n - 1 - step) if closing else step
+		tw.tween_callback(set_door_phase.bind(nm, f))
+		tw.tween_interval(dur / float(n))
+
+
+## Shows phase f of a door (both the normal and the x-ray patch).
+func set_door_phase(nm: String, f: int) -> void:
+	var p: Dictionary = _door_patches.get(nm, {})
+	if p.is_empty():
+		return
+	f = clampi(f, 0, (p["frames"] as Array).size() - 1)
+	p["phase"] = f
+	(p["over"] as Sprite2D).texture = p["frames"][f]
+	(p["under"] as Sprite2D).texture = p["frames_x"][f]
+
+
+func door_phase(nm: String) -> int:
+	return int(_door_patches.get(nm, {}).get("phase", -1))
 
 
 ## A loading view over everything while a (large) interior is built.
@@ -569,6 +619,14 @@ func leave_interior() -> void:
 	var d := Landmarks.get_def(landmark_id)
 	_info.text = "%s – %s\nEntwicklungsvorschau (Anreise folgt mit dem Verkehrssystem, Phase 8)" % [d.get("name", ""), d.get("subtitle", "")]
 	_set_context({})
+	_toast_left = 0.0                                   # no stale "Du betrittst …" outside
+	# back outside the door: it stands open behind the figure and closes
+	if _last_door.has("patch") and _door_patches.has(_last_door["patch"]):
+		var nm: String = _last_door["patch"]
+		set_door_phase(nm, (_door_patches[nm]["frames"] as Array).size() - 1)
+		var tw := create_tween()
+		tw.tween_interval(0.35)
+		tw.tween_callback(_door_animation.bind(_last_door, 0.9 if str(_last_door.get("kind", "")) == "gate" else 0.5, true))
 
 
 func _process_inside(_delta: float) -> void:

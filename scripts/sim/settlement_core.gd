@@ -241,7 +241,13 @@ static func day_step(record: Dictionary, data: SettlementData, cfg: Dictionary, 
 	gap_bids.sort_custom(func(a, b): return (1 if models.get(types.get(a, ""), {}).get("critical", false) else 0) > (1 if models.get(types.get(b, ""), {}).get("critical", false) else 0))
 	for bid in gap_bids:
 		var m: Dictionary = models.get(types.get(bid, ""), {})
-		var helpers: Array = (staff_of(record, bid) if m.get("critical", false) else []) + _pool(record)
+		var team := {}
+		for x in staff_of(record, bid):
+			team[x["npc_id"]] = true
+		var tie := SocialCore.ties_to(record, team)
+		var pool_sorted: Array = _pool(record)
+		pool_sorted.sort_custom(func(x, y): return float(tie.get(x["npc_id"], 0.0)) > float(tie.get(y["npc_id"], 0.0)) or (float(tie.get(x["npc_id"], 0.0)) == float(tie.get(y["npc_id"], 0.0)) and str(x["npc_id"]) < str(y["npc_id"])))
+		var helpers: Array = (staff_of(record, bid) if m.get("critical", false) else []) + pool_sorted
 		for r in helpers:
 			var id: String = r["npc_id"]
 			if roster["shifts"].has(id) or absent_today.has(id) or r["health"]["status"] != "healthy":
@@ -251,6 +257,8 @@ static func day_step(record: Dictionary, data: SettlementData, cfg: Dictionary, 
 			roster["shifts"][id] = [start, start + int(minf(hours, 8.0) * 3600.0), bid, "Vertretung"]
 			roster["gaps"][bid] = maxf(0.0, hours - 8.0)
 			events.append(_ev(t, "substitution", id, {"building": bid}))
+			var soc: Dictionary = SocialCore.person(r)
+			soc["helped"] = int(soc.get("helped", 0)) + 1
 			if float(roster["gaps"][bid]) <= 0.0:
 				break
 	var wd0 := posmod(day + 4, 7)
@@ -375,7 +383,16 @@ static func day_step(record: Dictionary, data: SettlementData, cfg: Dictionary, 
 	# 9. employment: administration assigns unemployed people to vacancies
 	var admin_ok := float(cov.get("verwaltung", 0.0)) > 0.0 or posmod(day + 4, 7) in [0, 6]
 	if admin_ok:
-		for r in alive_npcs(record):
+		var seekers: Array = alive_npcs(record)
+		var employed := {}
+		for x in seekers:
+			if x["employment"].get("status", "") == "employed":
+				employed[x["npc_id"]] = true
+		var ties := SocialCore.ties_to(record, employed)
+		if not ties.is_empty():
+			seekers = seekers.filter(func(x): return x["employment"].get("status", "") in ["unemployed", "pool"])
+			seekers.sort_custom(func(x, y): return float(ties.get(x["npc_id"], 0.0)) > float(ties.get(y["npc_id"], 0.0)) or (float(ties.get(x["npc_id"], 0.0)) == float(ties.get(y["npc_id"], 0.0)) and str(x["npc_id"]) < str(y["npc_id"])))
+		for r in seekers:
 			var e3: Dictionary = r["employment"]
 			if not e3.get("status", "") in ["unemployed", "pool"] or (e3.has("dismissed_from") and day - int(e3.get("since_day", day)) < int(emp.get("rehire_after_days", 10))):
 				continue
@@ -389,6 +406,8 @@ static func day_step(record: Dictionary, data: SettlementData, cfg: Dictionary, 
 	var dpy := float(dem.get("days_per_year", 28))
 	for r in alive_npcs(record):
 		var age2 := age_years(r, day, cfg)
+		if age2 < SocialCore.ADULT_AGE:
+			continue      # Master §13.7: children never die (or come to harm) in the simulation
 		var yearly := minf(1.0, float(dem.get("gompertz_a", 0.00005)) * exp(float(dem.get("gompertz_b", 0.09)) * age2))
 		if _chance("%s#death#%s#%d" % [sid, r["npc_id"], day]) < yearly / dpy:
 			r["alive"] = false
@@ -408,6 +427,9 @@ static func day_step(record: Dictionary, data: SettlementData, cfg: Dictionary, 
 		if _chance("%s#arrive#%d" % [sid, day]) < float(dem.get("arrival_base_per_day", 0.12)) * attract:
 			var nr := new_settler(record, data, cfg, day)
 			events.append(_ev(t, "arrived", nr["npc_id"], {"role": nr["role"]}))
+
+	# 10b. social life (Phase 5): relationships, families, groups, goals, memories
+	SocialCore.day_step(record, data, cfg, day, t, events)
 
 	# 11. lifecycle: a settlement is abandoned only when nobody lives there
 	var inhabitants: int = alive_npcs(record).size() + record.get("resident_player_ids", []).size()

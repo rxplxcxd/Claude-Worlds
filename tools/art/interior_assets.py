@@ -429,6 +429,12 @@ def build_items():
         sc.add(box(0, 0, 0, 4.0, 1.3, 1.4, 'metal')), sc.add(box(-0.05, -0.05, 1.4, 4.05, 1.35, 1.5, 'chrome')),
         [sc.add(cyl(0.7 + k * 1.3, 0.6, 1.5, 1.9, 0.38, 'iron')) for k in range(3)],
         [sc.add(cyl(0.7 + k * 1.3, 0.6, 1.88, 1.92, 0.3, ['veg', 'bread', 'blanket_ochre'][k])) for k in range(3)]), action='eat')
+    # -- stairwell: a straight flight rising to the north (to the upper floor), handrails
+    item('staircase', 'Treppe', (3.0, 4.0), lambda sc: (
+        [sc.add(box(0.15, 4.0 - (k + 1) * 0.5, 0, 2.85, 4.0 - k * 0.5, (k + 1) * 0.36, 'wood' if k % 2 == 0 else 'wood_light')) for k in range(8)],
+        sc.add(box(0.0, 0.0, 0, 0.15, 4.0, 0.25, 'wood_dark')), sc.add(box(2.85, 0.0, 0, 3.0, 4.0, 0.25, 'wood_dark')),
+        [sc.add(box(x, 4.0 - (k + 1) * 0.5 + 0.2, (k + 1) * 0.36, x + 0.08, 4.0 - (k + 1) * 0.5 + 0.28, (k + 1) * 0.36 + 0.7, 'wood_dark')) for k in range(0, 8, 2) for x in (0.04, 2.88)],
+        [sc.add(oriented_box(x + 0.04, 2.0, 0.7 + 0.36 * 4 - 0.1, 0.7 + 0.36 * 4 + 0.0, 2.0, 0.05, -math.pi / 2, 'wood')) for x in (0.04, 2.88)]), action='stairs_up')
     # -- great council chamber (compact delegate places for > 1000 seats, facing south to the rostrum)
     # seen from behind: the delegates face north, to the presidium and the rostrum
     for cush, nm in (('crimson', ''), ('navy', '_navy'), ('green', '_green')):

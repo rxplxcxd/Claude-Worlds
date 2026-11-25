@@ -2,6 +2,35 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.11.0] – Türen und Durchscheinen, Phase 5: Social Life (25.11.2026)
+Produktversion bleibt **v0.1**.
+
+### Behoben: Türen am Concordium
+- **Ursache:** Die Türen waren als Rechtecke über die Grafik gezeichnet. Größe, Form und Verdeckung stimmten nicht. Die Tür des Ratssaals lag im Modell sogar innerhalb des Tambours.
+- **Jetzt:** echte Türflügel im 3D-Modell, mit dem Gelände in 4 Öffnungsphasen gerendert.
+  - Bronzetor im Tambour hinter dem Portikus,
+  - Bronze-Doppeltüren in den Mittelbögen von West- und Nordpavillon,
+  - Bogentür mit festem Oberlicht am Wasserschloss.
+  - Öffnen beim Betreten, Schließen nach dem Verlassen.
+- **Durchscheinen:** Bauteile vor der Figur werden nur noch schemenhaft gezeigt (14 % Deckkraft). Steht die Figur an einer Tür, wird auch alles vor der Tür so dargestellt, z. B. Portikus und Stoa-Dach.
+- **In Innenräumen** werden Wände, Galerie, Treppen, Türen und hohe Möbel vor der Figur durchscheinend (20 %). So erkennt man, auf welcher Ebene man ist.
+- **Veröffentlichung:** Der Build auf `main` nach PR #4 war abgebrochen. `main` wurde neu veröffentlicht.
+
+### Hinzugefügt: Phase 5 – Social Life ([SOCIAL_SYSTEM.md](docs/SOCIAL_SYSTEM.md))
+- **Beziehungen:** Bekanntschaft, Freundschaft, enge Freundschaft, Partnerschaft, Familie, Rivalität. Sie entstehen über Haushalt, Arbeit, Freizeit und Vereine und folgen der Verträglichkeit; es gibt seltene Streits.
+- **Familien:** Partnerschaften, Zusammenziehen (auch per Wohnungstausch), Kinder mit Lebensphasen und Erwachsenwerden mit 18. Kinder werden nach Master §13.7 nie geschädigt.
+- **Vereine:** 10 Interessen, Gründung, Beitritt, wöchentliche Treffen im Tagesablauf.
+- **Erinnerungen:** nur wichtige Ereignisse, höchstens 16 je Person.
+- **Persönliche Ziele:** 7 Arten mit Fortschritt; sie verändern das Verhalten.
+- **Gespräche:** 6 Themen je nach Vertrautheit, mit Versprechen und ohne Grinding. Sie laufen als Befehl `talk` an die Weltautorität.
+- **Infofenster** mit Beziehung, Familie, Freunden, Vereinen, Ziel und Erinnerung.
+- **Einfluss auf Entscheidungen:** Vertretungen, Stellenbesetzung, Wohnen.
+- **Werkzeug:** `tools/sim/social_analysis.tscn`.
+
+### Tests
+- 19 neue Tests für Phase 5, darunter Reproduzierbarkeit, §13.7, Gespräche, Versprechen, Abwesenheit und Befehle.
+- 6 neue Tests für Türen und Durchscheinen.
+
 ## [0.10.0] – Concordium: vollständige Begehbarkeit, dynamische Innenarchitektur, Großer Ratssaal (25.11.2026)
 Produktversion bleibt **v0.1**.
 

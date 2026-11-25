@@ -226,6 +226,20 @@
    "label": "Baden",
    "clip": "use",
    "toast": "Ein warmes Bad."
+  },
+  "stairs_up": {
+   "label": "Hinaufgehen",
+   "verb": "Treppe hinauf",
+   "clip": "walk",
+   "toast": "Du gehst die Treppe hinauf.",
+   "floor": 1
+  },
+  "stairs_down": {
+   "label": "Hinuntergehen",
+   "verb": "Treppe hinunter",
+   "clip": "walk",
+   "toast": "Du gehst die Treppe hinunter.",
+   "floor": -1
   }
  },
  "props": {

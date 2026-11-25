@@ -285,6 +285,27 @@
       ],
       "sick_ok": true,
       "sick_only": true
+    },
+    "group_meeting": {
+      "label": "trifft sich mit dem Verein",
+      "place": "plaza",
+      "indoors": false,
+      "minutes": [
+        90,
+        90
+      ],
+      "gain": {
+        "social": 0.55,
+        "leisure": 0.35
+      },
+      "windows": [
+        [
+          17,
+          21.5
+        ]
+      ],
+      "cooldown_h": 20,
+      "group_only": true
     }
   },
   "professions": {
@@ -767,7 +788,7 @@
     "pool_default_type": "farm_shop"
   },
   "demography": {
-    "_comment": "Aging: 1 year of age per 60 real days (docs/LIVING_WORLD.md L-2) (daily routines stay real time). Gompertz mortality per year of age; Phase 4 arrivals of new settlers; partnerships/births = Phase 5, migration between settlements = Phase 8.",
+    "_comment": "Aging: 1 year of age per 60 real days (docs/LIVING_WORLD.md L-2) (daily routines stay real time). Gompertz mortality per year of age (adults only - children never die in the simulation, Master §13.7); Phase 4 arrivals of new settlers; partnerships/births: Phase 5 (config 'social'), migration between settlements = Phase 8.",
     "days_per_year": 60,
     "gompertz_a": 5e-05,
     "gompertz_b": 0.09,
@@ -864,5 +885,11 @@
         2
       ]
     ]
+  },
+  "social": {
+    "_comment": "Phase 5 (docs/SOCIAL_SYSTEM.md): probabilities per day. Partnerships need a close bond; births need a shared home with room, supply and both partners 20-44 (a couple's family planning, not gendered).",
+    "partnership_per_day": 0.01,
+    "birth_per_day_wanting": 0.02,
+    "birth_per_day": 0.004
   }
 }

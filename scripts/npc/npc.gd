@@ -47,6 +47,7 @@ func setup(p_record: Dictionary, building_names: Dictionary = {}, workplace_type
 	rig.name = "Rig"
 	rig.appearance = CharacterCatalog.normalize(record.get("appearance", {}))
 	add_child(rig)
+	_apply_age_scale()
 
 	_bubble = ChatBubble.new()
 	_bubble.position = Vector2(14, -62)
@@ -65,6 +66,17 @@ func setup(p_record: Dictionary, building_names: Dictionary = {}, workplace_type
 	_interactable.approach_offset = Vector2(0, 22)
 	add_child(_interactable)
 	_set_present(false)
+
+
+## Children are drawn smaller (growing up with their age, Phase 5).
+func _apply_age_scale() -> void:
+	if not record.has("born_day"):
+		return
+	var dpy := 60.0
+	var day := SettlementCore.day_index(int(GameClock.get_utc_unix()), 0)
+	var age := float(day - int(record["born_day"])) / dpy
+	var f := 0.55 if age < 3.0 else (0.68 if age < 8.0 else (0.8 if age < 13.0 else (0.92 if age < 18.0 else 1.0)))
+	rig.scale = Vector2(f, f)
 
 
 func is_present() -> bool:
@@ -305,11 +317,32 @@ func describe(sim: SettlementSim, t: int, building_names: Dictionary) -> String:
 	traits = traits.slice(0, 4)
 	if not traits.is_empty():
 		lines.append("Wesen: " + ", ".join(traits))
+	# social life (Phase 5): relationship to you, family, friends, clubs, goal, a memory
+	var day := SettlementCore.day_index(t, sim.offset_min())
+	var soc := SocialCore.card_text(sim.record, record, "player:" + LocalProfile.player_id, day, sim.config)
+	if soc != "":
+		lines.append(soc)
 	return "\n".join(lines)
 
 
-func refresh_card(sim: SettlementSim, t: int, building_names: Dictionary) -> void:
-	_interactable.text = describe(sim, t, building_names)
+func refresh_card(sim: SettlementSim, t: int, building_names: Dictionary, line := "", options: Array = []) -> void:
+	# the conversation (Phase 5, DialogEngine): what the person says now and the
+	# player's options – opener when you approach, the answer after an option
+	var day := SettlementCore.day_index(t, sim.offset_min())
+	var pid := "player:" + LocalProfile.player_id
+	var info := sim.render_info(npc_id, t)
+	var extra := {"hour": NpcBrain.local_hour(t, sim.offset_min()), "needs": sim.needs_now(npc_id, t), "place": str(sim.states.get(npc_id, {}).get("place", "")), "names": building_names}
+	var ctx := DialogEngine.context(sim.record, record, pid, LocalProfile.display_name, day, sim.config, NpcBrain.mood(extra["needs"]), extra)
+	if line == "":
+		line = DialogEngine.opener(ctx)
+	if options.is_empty():
+		options = DialogEngine.options(ctx)
+	_interactable.text = ("[i]%s[/i]\n\n" % line if line != "" else "") + describe(sim, t, building_names)
+	var acts: Array = []
+	for topic in options:
+		acts.append({"id": "talk:" + str(topic), "label": DialogEngine.label(str(topic))})
+	acts.append({"id": "talk:farewell", "label": DialogEngine.label("farewell")})
+	_interactable.actions = acts
 
 
 static func _ellipse(r: float, y_scale: float, segments: int) -> PackedVector2Array:

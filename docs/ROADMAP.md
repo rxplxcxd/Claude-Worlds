@@ -8,8 +8,8 @@ Phasen werden **nur nach ausdrücklicher Freigabe durch den Projektinhaber** beg
 | 2 | World Geography | **Implementiert (0.3.0)** + **Paket 2.1 umgesetzt (0.4.0)**, Abnahme ausstehend |
 | 2.x | Living Assets (visuelles Projekt, kein Gameplay) | Schritte A–G umgesetzt; Lizenz-PDF geprüft (Pflichtnennung + Bearbeitungsliste im Spiel seit 0.5.0); Anbindung an Simulationsereignisse vorbereitet (VisualEventRouter) |
 | 3 | Living World | **Freigegeben 24.11.2026 – implementiert (0.5.0)**: Identitäten, Bedürfnisse, Tagesabläufe, Berufe, Navigation, Utility AI, Interaktionen, Simulations-LOD, Persistenz ([LIVING_WORLD.md](LIVING_WORLD.md)); Abnahme + iPhone-Test ausstehend |
-| 4 | Settlement Foundation | geplant |
-| 5 | Social Life | geplant |
+| 4 | Settlement Foundation | umgesetzt (0.6.0), Abnahme offen |
+| 5 | Social Life | umgesetzt (0.11.0), Abnahme offen |
 | 6 | Economy | geplant |
 | 7 | Property & Construction | geplant |
 | 8 | Inter-Settlement Systems | geplant |
@@ -109,6 +109,7 @@ Offen / zu entscheiden:
 - Architekturkorrekturen (Weltautorität, Detailstufen, geräteunabhängige Bevölkerung) – ARCHITECTURE_AUDIT.md, SIMULATION_ARCHITECTURE.md §9.
 - Living World vertieft (Persönlichkeit, Betriebsmodelle, Gesundheit, Beschäftigung) – LIVING_WORLD.md.
 - **Phase 4 – Settlement Foundation umgesetzt** (SETTLEMENT_SYSTEM.md §10) – Abnahme durch den Projektinhaber offen.
+- **Phase 5 – Social Life umgesetzt** (0.11.0, SOCIAL_SYSTEM.md): Beziehungen, Familien und Kinder, Freundschaften, Gespräche, Vereine, Erinnerungen, persönliche Ziele – Abnahme durch den Projektinhaber offen.
 - Gameplay-Polishing: Richtungen, Clip-Bibliothek, Türen, Innenräume, Kollisionen, Umland, Globus, Farbpalette, Ladenbeschreibungen, Versionsanzeige – INTERIORS_AND_INTERACTION.md, VERSIONING.md.
 
 ## Master-Erweiterung World Council (25.11.2026, technisch 0.7.0)
@@ -117,7 +118,7 @@ Weltratssitz auf **Kalistia**: Standort, Weltdefinition, Globus, eigenes Außen-
 ## Vorbereitete Anforderungen für spätere Phasen
 | Phase | Anforderung | Vorbereitung heute |
 |---|---|---|
-| 5 Social Life | Partnerschaften, Geburten, Kinder mit Entwicklungsstufen (Säugling, Kleinkind, Schulkind, Jugend – bei 60 Tagen/Jahr ≈ 3 reale Jahre bis erwachsen); Kinder dürfen nie durch Abwesenheit Schaden nehmen (Master §13.7) | Altersmodell, Tagesschritt, Haushalte (`home_id`), Persönlichkeit; Familienfelder ergänzbar |
+| 5 Social Life | **umgesetzt in 0.11.0** (SOCIAL_SYSTEM.md); offen: Spielerkinder, Spieler↔Spieler (Phase 12), Feste/Schule | – |
 | 6 Economy | Löhne, Lohnausfall bei Krankheit/Fehlen, Kündigungsfristen, Ersparnisse, Preise, Einkaufen, Spieler-Arbeitsstellen, eigene Läden und Ladenbeschreibungen | Beschäftigungsstatus, Abmahnungen, Stellen, Versorgung, `business_texts`, Interieur-`upgrade` |
 | 7 Construction | Bauen/Abreißen, Möbel kaufen und tauschen, Bett statt Matratze, Innenausbau, begehbares Umland, Territoriumserweiterung | Navigation mit Sperren/Versionen, Grundriss-Daten, Innenraum-Layouts als Daten, LocalTerrain |
 | 8 Inter-Settlement | NPC-/Spieler-Wanderung, Wiederbesiedlung verlassener Siedlungen, Busverkehr | Befehl `join_settlement` (gesperrt), Lebenszyklus |

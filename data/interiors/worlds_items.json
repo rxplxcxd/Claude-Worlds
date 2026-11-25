@@ -1432,6 +1432,24 @@
    ],
    "action": "eat"
   },
+  "staircase": {
+   "sheet": "worlds/staircase.png",
+   "rect": [
+    0,
+    0,
+    48,
+    110
+   ],
+   "label": "Treppe",
+   "origin": "worlds",
+   "solid": [
+    0,
+    46,
+    48,
+    64
+   ],
+   "action": "stairs_up"
+  },
   "delegate_seat_small": {
    "sheet": "worlds/delegate_seat_small.png",
    "rect": [

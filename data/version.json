@@ -1,14 +1,14 @@
 {
   "_comment": "THE version of WORLDS (single source). product = the visible version series (starts at v0.1 on 25.11.2026); technical = engine/save compatibility version (project.godot application/config/version is kept equal by tools/version/sync_version.py and checked by the tests). The commit of a build is written by tools/version/sync_version.py --build (CI) into build/web/version.json and res://data/build_info.json. Strategy and history: docs/VERSIONING.md.",
   "product": "v0.1",
-  "technical": "0.10.0",
+  "technical": "0.11.0",
   "channel": "Entwicklungsstand",
   "history": [
     {
       "product": "v0.1",
-      "technical": "0.10.0",
+      "technical": "0.11.0",
       "date": "2026-11-25",
-      "summary": "Erste sichtbare Versionsnummer: Living World vertieft, Weltautorität, Phase 4 (Siedlungsgründung) in Arbeit, Gameplay-Polishing (Animationen, Innenräume, Türen, Kollisionen, Globus, Farbpalette). + Concordium (Weltratssitz) auf Kalistia: Standort, Globus, eigenes Monument-Asset, begehbare Vorschau, Neutralität und Grundstücksgrenzen. + Concordium vollständig begehbar (Tholos-Steg, Wasserschloss, Theater), Türen und Tore mit Kollision, Galerieebenen, dynamischer Innenraumgenerator, Großer Ratssaal mit 1182 Plätzen."
+      "summary": "Erste sichtbare Versionsnummer: Living World vertieft, Weltautorität, Phase 4 (Siedlungsgründung) in Arbeit, Gameplay-Polishing (Animationen, Innenräume, Türen, Kollisionen, Globus, Farbpalette). + Concordium (Weltratssitz) auf Kalistia: Standort, Globus, eigenes Monument-Asset, begehbare Vorschau, Neutralität und Grundstücksgrenzen. + Concordium vollständig begehbar (Tholos-Steg, Wasserschloss, Theater), Türen und Tore mit Kollision, Galerieebenen, dynamischer Innenraumgenerator, Großer Ratssaal mit 1182 Plätzen. + Türen mit echten Öffnungsphasen und Durchscheinen verdeckender Bauteile; Phase 5 (Social Life): Beziehungen, Familien und Kinder, Vereine, Erinnerungen, Ziele, Gespräche."
     }
   ]
 }

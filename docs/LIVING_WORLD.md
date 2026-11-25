@@ -1,6 +1,6 @@
 # LIVING_WORLD – lebendige Welt (Phase 3, vertieft in 0.6.0)
 
-Stand 0.6.0: Architekturkorrekturen und Vertiefung laut Auftrag vom 24.11.2026 (Abweichungen: [ARCHITECTURE_AUDIT.md](ARCHITECTURE_AUDIT.md)). Siedlungsgründung, Grundversorgung, Verwaltung usw. (Phase 4): [SETTLEMENT_SYSTEM.md](SETTLEMENT_SYSTEM.md). Weltautorität, Detailstufen, Befehle: [SIMULATION_ARCHITECTURE.md](SIMULATION_ARCHITECTURE.md).
+Stand 0.6.0: Architekturkorrekturen und Vertiefung laut Auftrag vom 24.11.2026 (Abweichungen: [ARCHITECTURE_AUDIT.md](ARCHITECTURE_AUDIT.md)). Siedlungsgründung, Grundversorgung, Verwaltung usw. (Phase 4): [SETTLEMENT_SYSTEM.md](SETTLEMENT_SYSTEM.md). Weltautorität, Detailstufen, Befehle: [SIMULATION_ARCHITECTURE.md](SIMULATION_ARCHITECTURE.md). Soziales Leben (Phase 5, seit 0.11.0): Beziehungen, Familien und Kinder, Vereine, Erinnerungen, Ziele, Gespräche – [SOCIAL_SYSTEM.md](SOCIAL_SYSTEM.md).
 
 ## 1. Überblick
 

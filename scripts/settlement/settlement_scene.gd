@@ -393,11 +393,12 @@ func _process(delta: float) -> void:
 		_lod_timer = 0.25
 		var n_before := sim.roster.size()
 		sim.advance_to(int(GameClock.get_utc_unix()))
-		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived"]):
+		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived", "born", "moved_in", "grown_up"]):
 			_sync_npc_nodes()
 		if sim.last_events.any(func(e): return e.get("kind", "") in ["building_condition", "fire"]):
 			_sync_building_visuals()
 		_update_lod(false)
+		_npc_initiative()
 	_render_npcs(false)
 	_save_timer -= delta
 	if _save_timer <= 0.0:
@@ -758,7 +759,10 @@ func _on_interaction_action(interaction_id: String, action_id: String) -> void:
 	if action_id == "leave":
 		leave_building()
 		return
-	if action_id != "talk":
+	if action_id == "stairs_up" or action_id == "stairs_down":
+		change_floor(1 if action_id == "stairs_up" else -1)
+		return
+	if action_id != "talk" and not action_id.begins_with("talk:"):
 		# object interaction: the player plays the action's clip (shared
 		# library with the NPCs); sit/lie take the position first
 		var a := ActionLibrary.get_action(action_id)
@@ -779,16 +783,58 @@ func _on_interaction_action(interaction_id: String, action_id: String) -> void:
 		player.perform({"clip": "greet"}, player.global_position + Vector2(0, -10))
 		return
 	var t := int(GameClock.get_utc_unix())
-	sim.player_talk(interaction_id, t)
 	var n: Npc = _npc_by_id[interaction_id]
 	player.perform({"clip": "greet"}, n.global_position)
-	n.rig.play("greet", true)
-	var mood := NpcBrain.mood(sim.needs_now(interaction_id, t))
-	var first := str(n.record.get("name", "")).get_slice(" ", 0)
-	var lines := ["%s nickt dir müde zu." % first, "%s grüßt kurz zurück." % first, "„Hallo! Schön, dich zu sehen“, sagt %s." % first, "%s lächelt: „Was für ein Tag!“" % first]
-	EventBus.toast_requested.emit(lines[clampi(int(mood * 4.0), 0, 3)])
-	n.refresh_card(sim, t, _names)
+	n.rig.play("talk" if action_id != "talk" else "greet", true)
+	var topic := action_id.get_slice(":", 1) if action_id.begins_with("talk:") else "chat"
+	# conversations are commands to the world authority (Phase 5; server-capable)
+	var res := {}
+	if WorldState.client:
+		res = WorldState.client.submit({"kind": "talk", "settlement_id": record.get("settlement_id", ""),
+			"payload": {"npc_id": interaction_id, "topic": topic, "name": LocalProfile.display_name, "after": _dialog_after.get(interaction_id, "")}})
+	if res.get("ok", false) and res.has("result"):
+		var line := str(res["result"]["line"])
+		if topic == "farewell":
+			EventBus.toast_requested.emit(line)
+			_dialog_after.erase(interaction_id)
+			n.refresh_card(sim, t, _names)
+			persist()
+			return
+		_dialog_after[interaction_id] = topic
+		n.refresh_card(sim, t, _names, line, res["result"].get("next", []))
+	else:
+		sim.player_talk(interaction_id, t)
+		n.refresh_card(sim, t, _names)
+	EventBus.interaction_opened.emit(n._interactable.to_info())     # the dialogue goes on in the panel
 	persist()
+
+
+var _dialog_after: Dictionary = {}       # npc id -> the topic answered last (follow-ups)
+var _initiative_left := 0.0
+
+
+## People who know you (or wait for your promised help) start a conversation
+## when you pass by: they wave, say their opener, and the card shows it.
+func _npc_initiative() -> void:
+	_initiative_left -= 0.25
+	if _initiative_left > 0.0 or interior or sim == null or player == null:
+		return
+	_initiative_left = 1.5
+	var t := int(GameClock.get_utc_unix())
+	var day := SettlementCore.day_index(t, sim.offset_min())
+	for id in _npc_by_id:
+		var n: Npc = _npc_by_id[id]
+		if not n.is_present() or n.global_position.distance_to(player.global_position) > 90.0:
+			continue
+		var why := SocialCore.wants_to_talk(sim.record, n.record, "player:" + LocalProfile.player_id, day)
+		if why == "":
+			continue
+		n.rig.play("greet", true)
+		n.refresh_card(sim, t, _names)
+		var first := str(n.record.get("name", "")).get_slice(" ", 0)
+		var opener := n._interactable.text.get_slice("[/i]", 0).trim_prefix("[i]")
+		EventBus.toast_requested.emit("%s: %s" % [first, opener] if why != "introduce" else opener)
+		return
 
 
 # --- interiors: entering and leaving buildings ----------------------------------
@@ -808,7 +854,8 @@ func enter_building(bid: String) -> void:
 	if _door_busy or interior != null or not building_nodes.has(bid):
 		return
 	var b: Building = building_nodes[bid]
-	if not InteriorScene.has_layout(b.sprite_key) or not InteriorScene.assets_available():
+	var ikey := interior_key(bid)
+	if ikey == "" or not InteriorScene.layout_available(ikey):
 		EventBus.toast_requested.emit("Dieser Innenraum folgt später.")
 		return
 	_door_busy = true
@@ -829,25 +876,13 @@ func enter_building(bid: String) -> void:
 		rig.play("walk")
 	await tw2.finished
 	# the room
-	interior = InteriorScene.create(b.sprite_key, _staff_on_duty(bid), SettlementCore.mix(str(record.get("settlement_id", "")) + "#" + bid), _interior_wealth())
-	interior.position = INTERIOR_OFFSET
-	add_child(interior)
-	_inside_bid = bid
+	_open_interior(ikey, bid)
 	_outside_return = b.door_world_point("main") + Vector2(0, 26)
-	player.reparent(interior.objects)
-	player.position = interior.spawn_point
-	player.move_y_scale = InteriorScene.MOVE_Y_SCALE
-	player._visual.scale = Vector2.ONE * InteriorScene.PERSON_SCALE
-	player.facing = Iso.facing_index(Vector2(0, -1))     # looking into the room
-	_outside_bounds = camera.bounds
-	_outside_zoom = camera.zoom
-	camera.bounds = interior.bounds()
-	camera.fit_view = true
-	camera.snap_to_target()
 	objects.visible = false
 	ground.visible = false
 	surroundings.visible = false
 	ground_lights.visible = false
+
 	var tw3 := create_tween().set_parallel(true)
 	tw3.tween_property(player, "modulate:a", 1.0, 0.35)
 	tw3.tween_method(func(v: float) -> void: player_door[bid] = v, 1.0, 0.0, 0.4)
@@ -862,6 +897,71 @@ var _outside_return := Vector2.ZERO
 
 ## Prosperity 0..1 for the furnishing variant (until the economy exists,
 ## Phase 6: from the population and the stock of food).
+## The persistent interior of a building: generated once from its real
+## footprint, type, a seed and the prosperity at that time, then stored in the
+## settlement record (record.interiors) – entering again shows the same rooms.
+## A new generator version (or later a rebuilt footprint, Phase 7) makes a new one.
+func interior_key(bid: String) -> String:
+	var ints: Dictionary = record.get("interiors", {})
+	var known: Dictionary = ints.get(bid, {})
+	if not known.is_empty() and int(known.get("v", 0)) == InteriorGenerator.VERSION:
+		return str(known["key"])
+	var entry: Dictionary = {}
+	for e in data.buildings:
+		if e.get("id", "") == bid:
+			entry = e
+	var type := InteriorGenerator.type_for_building(str(entry.get("type", "")), entry)
+	if type == "":
+		return ""
+	var spec := Building.footprint_spec(str(entry.get("type", "")), entry)
+	var key := InteriorGenerator.key_for_building(type, entry.get("footprint_v", Vector2.ONE), spec,
+		SettlementCore.mix(str(record.get("settlement_id", "")) + "#" + bid) % 1000000, _interior_wealth(), int(entry.get("storeys", 0)))
+	ints[bid] = {"key": key, "v": InteriorGenerator.VERSION}
+	record["interiors"] = ints
+	return key
+
+
+## Builds the interior for a key (also another floor of the same building).
+func _open_interior(ikey: String, bid: String) -> void:
+	if interior:
+		interior.queue_free()
+	interior = InteriorScene.create(ikey, _staff_on_duty(bid) if not ikey.contains(":f") else [], SettlementCore.mix(str(record.get("settlement_id", "")) + "#" + bid), _interior_wealth())
+	interior.position = INTERIOR_OFFSET
+	add_child(interior)
+	_inside_bid = bid
+	player.reparent(interior.objects)
+	player.position = interior.spawn_point
+	player.move_y_scale = InteriorScene.MOVE_Y_SCALE
+	player._visual.scale = Vector2.ONE * InteriorScene.PERSON_SCALE
+	player.facing = Iso.facing_index(Vector2(0, -1))     # looking into the room
+	if _outside_bounds == Rect2():
+		_outside_bounds = camera.bounds
+		_outside_zoom = camera.zoom
+	camera.bounds = interior.bounds()
+	camera.fit_view = true
+	camera.make_current()
+	camera.snap_to_target()
+
+
+## Stairs inside a generated building: the same building, another floor.
+func change_floor(step: int) -> void:
+	if interior == null:
+		return
+	var key: String = interior.key
+	var storeys := int(interior.layout.get("storeys", 1))
+	var f := clampi(int(interior.layout.get("floor", 0)) + step, 0, storeys - 1)
+	if f == int(interior.layout.get("floor", 0)):
+		return
+	var bid := _inside_bid
+	player.reparent(self)
+	_open_interior(InteriorGenerator.with_floor(key, f), bid)
+	if f == 0 and interior.layout.has("stairs_rect"):
+		# back down: at the foot of the stairs
+		var sr: Array = interior.layout["stairs_rect"]
+		player.position = Vector2(float(sr[0]) + float(sr[2]) * 0.5, float(sr[1]) + float(sr[3]) - 0.6) * InteriorScene.T
+	EventBus.toast_requested.emit(str(interior.layout.get("label", "")))
+
+
 func _interior_wealth() -> float:
 	var pop := SettlementCore.alive_npcs(record).size() if record.has("npcs") else 10
 	var stocks: Dictionary = record.get("core", {}).get("stocks", {})
@@ -895,7 +995,9 @@ func leave_building() -> void:
 	var door := b.door_world_point("main") if b else _outside_return
 	player.global_position = door + Vector2(0, -2)
 	camera.bounds = _outside_bounds
+	_outside_bounds = Rect2()
 	camera.fit_view = false
+	camera.make_current()
 	camera.snap_to_target()
 	interior.queue_free()
 	interior = null

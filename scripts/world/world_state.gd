@@ -358,6 +358,31 @@ func update_landmark_property(landmark_id: String, polygon: PackedVector2Array, 
 	return ""
 
 
+## Seat reservations of the Great Council Chamber (persistent, logged).
+## kind: reserve | release | add_substitute | remove_substitute.
+## Returns "" on success or the reason. Server-side in multiplayer (Phase 12).
+func council_seat_command(kind: String, seat_id: String, player_id: String, other := "") -> String:
+	var st := landmark_state(Landmarks.WORLD_COUNCIL)
+	if st.is_empty():
+		return "Unbekannte Landmarke."
+	var t := int(Time.get_unix_time_from_system())
+	var why := ""
+	match kind:
+		"reserve":
+			why = CouncilSeats.reserve(st, seat_id, player_id, t)
+		"release":
+			why = CouncilSeats.release(st, seat_id, player_id)
+		"add_substitute", "remove_substitute":
+			why = CouncilSeats.set_substitute(st, seat_id, player_id, other, kind == "add_substitute", t)
+		_:
+			why = "Unbekannter Befehl."
+	if why == "":
+		st["version"] = int(st.get("version", 0)) + 1
+		(st["history"] as Array).append({"t": t, "kind": "seat_" + kind, "seat": seat_id, "by": player_id})
+		save_world()
+	return why
+
+
 ## Switches storage (used by tests so the real local world is untouched).
 func use_storage(path: String, wipe: bool) -> void:
 	save_path = path

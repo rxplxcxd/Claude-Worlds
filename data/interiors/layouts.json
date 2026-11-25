@@ -3073,7 +3073,7 @@
    {
     "id": "gallery",
     "z": 4.0,
-    "floor": "marble_floor",
+    "floor": "mosaic",
     "face": "wall_marble",
     "rects": [
      [

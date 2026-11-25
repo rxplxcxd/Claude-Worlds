@@ -10,19 +10,25 @@
 Die Daten liegen in `data/landmarks/concordium_interiors.json` (Bezugsrahmen: Meter, +x Osten, +y Süden). Gebaut werden die Innenräume mit dem Innenraumsystem in Phase 7 (Restaurierung und Bau). Die Funktionen des Ratssaals folgen in Phase 10.
 
 ## 1. Großer Ratssaal (Rotunde) – politisches Herzstück
-- **Form:** rund, Tambour außen r 24 m, Saal innen r 21,5 m (Ø 43 m). Boden auf dem Podium bei +6 m, Kuppel ab 32,8 m.
-- **Zugang:** über Portikus und Vestibül durch die bronzene Doppeltür, Achse Südwest.
+- **Vorbild:** die Bouleuterien von Aphrodisias und Milet, nur als Anregung, kein Bauplan.
+  - Aphrodisias: monumentale Größe, Kapazität, Ränge, repräsentativer Charakter.
+  - Milet: halbrunde Sitzordnung, Zugänge, Umgänge, klare Gliederung.
+- **Form:** Saal im Tambour der Rotunde, im Innenraum 120 × 62 Kacheln (≈ 72 × 37 m).
+- **Zugang:** über Portikus und Vestibül, dann durch das **Bronzetor** in der Portalwand. Seitlich liegen der westliche und der östliche Umgang mit Doppeltüren.
 - **Plenarsaal:**
-  - Halbrund aus konzentrischen Delegationsreihen um das **zentrale Rednerpult (Rostrum)**, das Präsidium gegenüber dem Eingang.
-  - Abstimmungsanzeige unter der Kuppel, Flaggen- und Wappenring.
-- **Kapazität ohne künstliche Grenze:**
-  - Ein Block je anerkannter Nation (Delegierte, Stellvertreter, Berater). Die Reihen wachsen mit der Zahl der Nationen.
-  - Galerien im oberen Tambour für Beobachter und Presse.
-  - Übertragungssäle in den Palastflügeln für weitere Teilnehmer.
-- **Nutzung:**
-  - jährlich das Concilium Mundi und außerordentliche Sitzungen,
-  - Debatten, Abstimmungen, Protokolle, Übertragungen.
-- **Umgang** zwischen Tambour und Saal: Treppen zu den Galerien, Ausgänge zum Peristyl.
+  - **1182 Delegiertenplätze** in 16 konzentrischen Reihen um die Orchestra.
+  - Jeder Platz ist zum **Rostrum** gedreht. Dahinter steht das **Präsidium** vor der Nordwand mit Säulen, Statuen, Wandgemälden, Reliefs und Flaggen.
+  - 3 Radialgänge und ein Ringumgang (Diazoma) auf halber Höhe.
+- **Sitzplatz-Grundlage für Phase 10** (nicht umgesetzt):
+  - Jeder Platz hat eine eindeutige ID `D<Reihe>-<Sektor>-<Nr.>`, Reihe, Sektor, Position und Zugangspunkt.
+  - Sitzordnung nach Nationen, Abstimmungen und Protokolle folgen mit dem Ratssystem.
+- **Galerie:** echte begehbare Ebene, 4 Kacheln über dem Saalboden, mit Boden, Brüstung, Kante und Kollision.
+  - West- und Ostgalerie entlang der Seitenwände, Südgalerie in zwei Hälften beiderseits des Portals.
+  - Treppen führen vom Mittelgang und von den Umgängen hinauf. Die Bänke sind für Beobachter und Presse.
+- **Kapazität ohne künstliche Grenze:** Die Reihen lassen sich verlängern; Übertragungssäle liegen in den Palastflügeln (Konzept).
+- **Nutzung:** jährlich das Concilium Mundi, außerordentliche Sitzungen, Debatten, Abstimmungen, Protokolle, Übertragungen.
+- **Technik:** eigener Innenraum mit Ladeansicht. Aufbau in etwa 130 ms.
+  - Die Plätze haben kein eigenes Interaktionsobjekt, sondern werden über das Sitzplatzregister angeboten. So bleibt die Szene auch mobil schlank.
 
 ## 2. Historische Ausstellungshallen
 - **Ort:** Westflügel, zweigeschossig, 20 × 98 m, Arkaden zum Hof.
@@ -62,16 +68,19 @@ Alle Plätze gehören zum neutralen Gelände.
 
 **Innenräume in der Entwicklungsvorschau (seit 0.9.0, eingerichtet nach dem Innenraum-Standard):**
 
-| Innenraum | Zugang auf dem Gelände |
-|---|---|
-| Großer Ratssaal (mit Vestibül) | Bronzetür im Portikus |
-| Ausstellungshalle | Arkaden des Westflügels |
-| Diplomatieflügel | Arkaden des Nordflügels |
-| Archiv der Welt | Zugang im Innenhof |
-| Zufluchtsort | Westpavillon |
-| Gästehaus | Nordpavillon |
+| Innenraum | Zugang auf dem Gelände | Übergang |
+|---|---|---|
+| Großer Ratssaal (Vestibül, Umgänge, Galerie) | Bronzetür im Portikus | Tor öffnet sich, Ladeansicht |
+| Ausstellungshalle | Arkaden des Westflügels | offene Arkade |
+| Diplomatieflügel | Arkaden des Nordflügels | offene Arkade |
+| Archiv der Welt | Zugang im Innenhof | Doppeltür |
+| Zufluchtsort | Westpavillon | Doppeltür |
+| Gästehaus | Nordpavillon | Doppeltür |
+| Rundtempel (Tholos) | Steg durch das Becken (seit 0.10.0) | offene Säulenstellung |
+| Wasserschloss | Bogentür neben dem Nordpavillon (seit 0.10.0) | Tür |
 
-Rundtempel und Wasserschloss sind eingerichtet, auf dem Gelände in Stufe 1 aber nicht erreichbar: Der Tholos steht auf der Insel im Becken, das Wasserschloss liegt am Pavillon. Im Saal gibt es Laufen, Kollisionen, Interaktionen und den Ausgang an der Türmatte.
+- Innen gibt es Laufen, Kollisionen, Türen mit Öffnungsanimation, Interaktionen und den Ausgang an der Türmatte. Beim Verlassen steht man wieder vor der Tür.
+- NPCs nutzen dieselben Türen: Die Tür öffnet für jede Figur in der Nähe, die Kollision folgt dem Öffnungsgrad.
 
 **Außengelände in der Entwicklungsvorschau** (Globus → „Ansehen (Vorschau)“), gemessen am Laufraster und durch Tests mit Erreichbarkeitsprüfung ab dem Tor belegt:
 - **erreichbar:**
@@ -80,26 +89,28 @@ Rundtempel und Wasserschloss sind eingerichtet, auf dem Gelände in Stufe 1 aber
   - Große Freitreppe und Antrittsstufen, Portikus zwischen den Säulen,
   - Podium mit Peristyl (Ringkolonnade),
   - die drei Wasserterrassen über die Treppenläufe,
-  - Säulenhallen (Kolonnadenbereich, Antrittsstufe), Gärten und Wege,
-  - Theatergarten und Theaterrand (über den Bogendurchgang in der Rückwand der östlichen Säulenhalle und die Heckentore).
+  - Säulenhallen, Gärten und Wege,
+  - Theatergarten, Theaterrand und **über den Gang bis zur Orchestra**,
+  - **Steg zum Rundtempel**, **Wasserschloss**,
+  - alle 8 Gebäudetüren (Test).
 - **nicht begehbar:**
-  - die Innenräume nicht direkt vom Gelände aus; sie werden über die Türen betreten (oben),
-  - das Theaterinnere (Sitzstufen 0,68 m hoch),
-  - Wasserflächen, Statuen, Pflanzen.
+  - Wasserflächen, Statuen, Pflanzen,
+  - die Sitzstufen des Theaters außerhalb des Gangs,
+  - die Dachflächen.
 
 Das Laufraster misst mit zwei Strahlhöhen (8,9 m und 3 m), damit auch niedrige Durchgänge in Mauern erkannt werden.
 
 Bei der Prüfung behobene Mängel des Entwurfs:
 - fehlende Treppen zu den oberen Wasserterrassen,
 - zu hohe Stufen an Ringkolonnade (0,65 m) und Säulenhallen (0,88 m),
-- ein eingeschlossener Theatergarten.
+- ein eingeschlossener Theatergarten,
+- das Wasserschloss überschnitt den Nordpavillon (versetzt).
 
 Der Test „reachable from the gate“ prüft das bei jedem Build.
 
 **Konzept**, verbindlich festgelegt, aber noch nicht spielmechanisch umgesetzt:
 - das erweiterbare Ausstellungssystem (Stiftungen der Spieler),
 - die Funktionen der Räume: Abstimmungen (Phase 10), Versorgung und Betrieb (Phase 6/11),
-- Galerieebenen als eigene, begehbare Ebene.
 
 ## 6. Überführung in die endgültige Spielarchitektur
 1. **Außengelände:** Die Vorschau-Szene wird zum regulären Ort, erreichbar über Reisen (Phase 8).

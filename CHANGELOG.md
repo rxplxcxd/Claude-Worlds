@@ -2,6 +2,45 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.10.0] – Concordium: vollständige Begehbarkeit, dynamische Innenarchitektur, Großer Ratssaal (25.11.2026)
+Produktversion bleibt **v0.1**.
+
+### Hinzugefügt
+- **Außengelände vollständig erreichbar:**
+  - Rundtempel über einen Steg durch das Becken,
+  - Wasserschloss mit Bogentür (versetzt, weil es den Nordpavillon überschnitt),
+  - Theater mit Gang über die Sitzstufen bis zur Orchestra.
+  - Alle 8 Gebäudetüren liegen auf Wegen, die vom Tor aus erreichbar sind (Test).
+- **Betreten mit Übergang:** Tür, Doppeltür oder Bronzetor öffnet sich (Arkaden ohne Animation). Danach eine Ladeansicht statt eines Schwarzbilds. Beim Verlassen steht man wieder vor der Tür.
+- **Innenraum-Engine:**
+  - Türtypen (einfach, doppelt, monumentales Tor) mit eigener antiker Grafik in 4 Öffnungsphasen.
+  - Die Kollision ist mit dem Öffnungsgrad gekoppelt: zu = Sperre, ab 60 % offen = Durchgang. Türen öffnen für Spieler und NPCs.
+  - Erhöhte Ebenen (Galerien) mit Treppen, Brüstungen, Kanten und ebenenabhängiger Kollision. Figuren werden auf der Ebene angehoben gezeichnet.
+  - Laufraster (8 px) mit Höhen und Erreichbarkeitsprüfung.
+  - Sitzplatzregister: eindeutige ID, Reihe, Sektor, Position und Zugangspunkt.
+  - Gedrehte Stücke mit Ankerpunkt.
+- **Dynamischer Innenraumgenerator** (`InteriorGenerator`): Grundfläche, Gebäudetyp, Seed und Wohlstand ergeben Räume, Flure, Türen und Möblierung.
+  - 6 Typen: Wohnhaus, Laden, Amtsgebäude, Praxis, Werkstatt, Palast mit Innenhof.
+  - Reproduzierbar über einen Schlüssel. Ein Prüfraster entfernt störende Möbel, bis alle Räume erreichbar sind.
+  - Getestet von 8 × 7 bis 50 × 50 Kacheln.
+- **Großer Ratssaal**, angelehnt an die Bouleuterien von Aphrodisias und Milet (nur als Vorbild):
+  - Halle 120 × 62 Kacheln (≈ 72 × 37 m) mit **1182 Delegiertenplätzen** in 16 konzentrischen Reihen. Jeder Platz ist zum Rostrum gedreht, mit 3 Radialgängen und einem Ringumgang.
+  - Präsidium und Rostrum, Säulen, Statuen, Wandgemälde, Reliefs, Flaggen, Leuchter.
+  - Begehbare Galerie in 4 Abschnitten auf 4 Kacheln Höhe, mit 4 Treppen und Beobachterbänken.
+  - Portalwand mit Bronzetor, Vestibül mit Akkreditierung, Sicherheitskontrolle und Waffenverwahrung.
+  - Westlicher und östlicher Umgang mit Doppeltüren und Statuen.
+  - Aufbau in etwa 130 ms (Desktop, Emulation).
+- **Eigene Grafik:** 26 gedrehte Delegiertenplätze, Präsidium, Rostrum, große Säule, zwei Statuen mit Gliedmaßen und Gewand, großes Wandgemälde mit Mäander und Figuren, Relief, Hängeleuchter, Flaggenreihe, Türen und Tore. Dazu Holzboden und Putzwand.
+
+### Tests
+- Neu geprüft:
+  - Erreichbarkeit aller Türen und Bereiche außen,
+  - ≥ 1000 Plätze mit eindeutigen IDs, alle erreichbar,
+  - Galerie als eigene Ebene, keine Höhensprünge außer über Treppen,
+  - Tor öffnet und schließt für einen NPC, synchron mit der Kollision,
+  - Ebenenkollision.
+- Generator: 60 Grundrisse, reproduzierbar, alle Räume erreichbar.
+
 ## [0.9.0] – Globaler Innenraum-Rework (25.11.2026)
 Produktversion bleibt **v0.1**.
 

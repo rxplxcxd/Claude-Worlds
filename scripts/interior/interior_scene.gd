@@ -93,6 +93,8 @@ static func atlas_data() -> Dictionary:
 
 ## Resolves aliases ("house_1" → "house_small").
 static func resolve(p_key: String) -> Dictionary:
+	if InteriorGenerator.is_generated_key(p_key):
+		return InteriorGenerator.layout_for_key(p_key)
 	var l: Dictionary = layouts().get(p_key, {})
 	var guard := 0
 	while l.has("alias") and guard < 4:
@@ -560,12 +562,23 @@ func _build_levels() -> void:
 			top.position = Vector2(0, rr.position.y * T - 0.5)
 			_rect_poly(floor_tex, Rect2(Vector2(rr.position.x * T, 0.5 - z * T), rr.size * T), rr.position * SRC_TILE, top)
 			objects.add_child(top)
-			# front face (south edge) down to the floor
-			var face := Node2D.new()
-			face.position = Vector2(0, rr.end.y * T)
-			_rect_poly(face_tex, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, z * T)), Vector2(rr.position.x * SRC_TILE, 0), face, Color(0.86, 0.84, 0.82))
-			_rect_poly(null, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, 3)), Vector2.ZERO, face, CAP_COLOR)
-			objects.add_child(face)
+			# front face (south edge) down to the floor – not where the level continues
+			var joined := false
+			for rj in rects.size():
+				if rj != ri and absf((rects[rj] as Rect2).position.y - rr.end.y) < 0.05 and (rects[rj] as Rect2).position.x <= rr.position.x + 0.05 and (rects[rj] as Rect2).end.x >= rr.end.x - 0.05:
+					joined = true
+			if not joined:
+				var face := Node2D.new()
+				face.position = Vector2(0, rr.end.y * T)
+				_rect_poly(face_tex, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, z * T)), Vector2(rr.position.x * SRC_TILE, 0), face, Color(0.86, 0.84, 0.82))
+				_rect_poly(null, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, 3)), Vector2.ZERO, face, CAP_COLOR)
+				objects.add_child(face)
+			# cornice along the open north edge: the drop into the hall reads as an edge
+			var lip := Node2D.new()
+			lip.position = Vector2(0, rr.position.y * T - 0.4)
+			_rect_poly(null, Rect2(Vector2(rr.position.x * T, 0.4 - z * T), Vector2(rr.size.x * T, 4)), Vector2.ZERO, lip, Color("b9ad9c"))
+			_rect_poly(null, Rect2(Vector2(rr.position.x * T, 4.4 - z * T), Vector2(rr.size.x * T, 1)), Vector2.ZERO, lip, OUTLINE)
+			objects.add_child(lip)
 			_add_rect(body, Rect2(rr.position * T, rr.size * T), "level_base")
 			var joins: Array = stair_rects.duplicate()
 			for rj in rects.size():
@@ -591,7 +604,8 @@ func _build_levels() -> void:
 			_add_rect(rails, Rect2(Vector2(r.position.x * T, r.end.y * T), Vector2(r.size.x * T, th)), "rail")
 		var n := maxi(2, int(ceil(z / 0.4)))
 		var holder := Node2D.new()
-		holder.position = Vector2(0, r.end.y * T + 0.25)
+		# sorted at the flight's north edge: figures on (or south of) the steps are drawn over them
+		holder.position = Vector2(0, r.position.y * T - 0.25)
 		for k in n:
 			var h := z * float(k + 1) / float(n)
 			var seg: Rect2
@@ -601,7 +615,7 @@ func _build_levels() -> void:
 				seg = Rect2(Vector2(r.end.x - r.size.x * float(k + 1) / n, r.position.y), Vector2(r.size.x / n, r.size.y))
 			else:
 				seg = Rect2(Vector2(r.position.x + r.size.x * float(k) / n, r.position.y), Vector2(r.size.x / n, r.size.y))
-			var tread := Rect2(Vector2(seg.position.x * T, seg.position.y * T - h * T - r.end.y * T), seg.size * T)
+			var tread := Rect2(Vector2(seg.position.x * T, seg.position.y * T - h * T - r.position.y * T + 0.25), seg.size * T)
 			_rect_poly(null, tread, Vector2.ZERO, holder, Color("e8dfcf").darkened(0.04 * (k % 2)))
 			var riser_h := z / n * T
 			if dir == "north":

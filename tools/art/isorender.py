@@ -36,6 +36,42 @@ INK = np.array([0x2b, 0x0f, 0x2a]) / 255.0
 EPS = 1e-9
 
 
+class Camera:
+    """Parallel projection. Default: the Penzilla isometric view. `oblique`
+    is the straight 3/4 view of the interior packs (Penzilla Top-Down Retro
+    Interior, Kenney Roguelike Indoors): floor tiles square, x to the right,
+    y (south) down, height drawn straight up: screen = (X, Y - k*Z)."""
+
+    def __init__(self, kind='iso', k=1.0):
+        self.kind = kind
+        self.k = k
+        if kind == 'iso':
+            self.view = VIEW
+        else:
+            v = np.array([0.0, -k, -1.0])
+            self.view = v / np.linalg.norm(v)
+
+    def project(self, p):
+        p = np.asarray(p, float)
+        if self.kind == 'iso':
+            return p @ RIGHT, p @ UP
+        return p[..., 0], -(p[..., 1] - self.k * p[..., 2])
+
+    def origin(self, u, v):
+        if self.kind == 'iso':
+            return u[:, None] * RIGHT + v[:, None] * UP - VIEW * 2000.0
+        pts = np.stack([u, -v, np.zeros_like(u)], 1)      # on the plane z = 0
+        return pts - self.view * 2000.0
+
+
+CAM = Camera()
+
+
+def set_camera(cam):
+    global CAM
+    CAM = cam
+
+
 def hexc(h: str) -> np.ndarray:
     h = h.lstrip('#')
     return np.array([int(h[i:i + 2], 16) for i in (0, 2, 4)]) / 255.0
@@ -298,8 +334,7 @@ class Scene:
         for s in self.solids:
             a, b = s.aabb
             corners = np.array([[x, y, z] for x in (a[0], b[0]) for y in (a[1], b[1]) for z in (a[2], b[2])])
-            sx = corners @ RIGHT
-            sy = corners @ UP
+            sx, sy = CAM.project(corners)
             mins.append((sx.min(), sy.min()))
             maxs.append((sx.max(), sy.max()))
         mins = np.array(mins)
@@ -334,8 +369,9 @@ def render(scene: Scene, materials: dict, px_per_m: float, ss: int = 2, tile: in
     for so in scene.solids:
         a, b = so.aabb
         corners = np.array([[x, y, z] for x in (a[0], b[0]) for y in (a[1], b[1]) for z in (a[2], b[2])])
-        cx = (corners @ RIGHT - sx0) * s
-        cy = (sy1 - corners @ UP) * s
+        px_, py_ = CAM.project(corners)
+        cx = (px_ - sx0) * s
+        cy = (sy1 - py_) * s
         rects.append((int(math.floor(cx.min())) - 1, int(math.floor(cy.min())) - 1, int(math.ceil(cx.max())) + 1, int(math.ceil(cy.max())) + 1))
         part_index.setdefault(so.part, len(part_index))
     for ty in range(0, H, tile):
@@ -351,8 +387,8 @@ def render(scene: Scene, materials: dict, px_per_m: float, ss: int = 2, tile: in
                 cc, rr = np.meshgrid(cols, rows)
                 u = (cc.ravel() + 0.5) / s + sx0
                 v = sy1 - (rr.ravel() + 0.5) / s
-                o = u[:, None] * RIGHT + v[:, None] * UP - VIEW * 2000.0
-                t, n, cf = so.hit(o)
+                o = CAM.origin(u, v)
+                t, n, cf = so.hit(o, CAM.view)
                 sub = depth[y0:y1, x0:x1].ravel()
                 closer = t < sub
                 if not closer.any():
@@ -371,7 +407,7 @@ def render(scene: Scene, materials: dict, px_per_m: float, ss: int = 2, tile: in
     rr, cc = np.nonzero(hit)
     u = (cc + 0.5) / s + sx0
     v = sy1 - (rr + 0.5) / s
-    pos = u[:, None] * RIGHT + v[:, None] * UP - VIEW * 2000.0 + depth[rr, cc][:, None] * VIEW
+    pos = CAM.origin(u, v) + depth[rr, cc][:, None] * CAM.view
     nrm = normal[rr, cc].astype(float)
     nrm /= np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), EPS)
     mids = matid[rr, cc]

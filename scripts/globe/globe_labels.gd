@@ -11,6 +11,7 @@ var settlements: Array = []
 var candidate: Dictionary = {}
 var candidate_valid := true
 ## Fixed world landmarks [{landmark_id, lat, lon, name, subtitle, reserve_km}]
+## (reserve_km: radius of a circle with the property's area – drawn at least 9 px)
 ## (World Council). Drawn flat on the surface + a small monument emblem
 ## standing on the exact point – never floating above the globe.
 var landmarks: Array = []

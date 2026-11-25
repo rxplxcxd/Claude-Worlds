@@ -329,3 +329,61 @@ def overgrowth(amount=1.0, seed=51):
         color[sel] = c
         return color
     return f
+
+
+FONT = '/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf'
+
+
+def _text_mask(lines, w_m, h_m, ppm=48):
+    """Roman capitals, centred, rendered to a mask (h, w) of 0..1.
+    lines: [(text, rel_height)] with rel_height = share of the panel height."""
+    from PIL import Image, ImageDraw, ImageFont
+    W, H = max(8, int(w_m * ppm)), max(8, int(h_m * ppm))
+    im = Image.new('L', (W, H), 0)
+    d = ImageDraw.Draw(im)
+    total = sum(r for _, r in lines)
+    y = H * (1 - total) / 2
+    for text, rel in lines:
+        size = int(H * rel * 0.86)
+        font = ImageFont.truetype(FONT, size)
+        spaced = ' '.join(text) if len(text) < 12 else text   # wide letter spacing like Roman inscriptions
+        tw = d.textlength(spaced, font=font)
+        while tw > W * 0.94 and size > 6:
+            size -= 1
+            font = ImageFont.truetype(FONT, size)
+            tw = d.textlength(spaced, font=font)
+        bbox = d.textbbox((0, 0), spaced, font=font)
+        d.text(((W - tw) / 2, y + (H * rel - (bbox[3] - bbox[1])) / 2 - bbox[1]), spaced, fill=255, font=font)
+        y += H * rel
+    return np.asarray(im, np.float32) / 255.0
+
+
+def lettering(base_hex, panels, gold_hex='d9a836', fallback=None):
+    """Gilded inscriptions on +Y facing panels (portico frieze, gate attic).
+    panels: [{y, x0, x1, z0, z1, lines}] in metres; other faces use `fallback`."""
+    base = hexc(base_hex)
+    g = hexc(gold_hex)
+    shade = hexc('a67a22')
+    masks = [(pnl, _text_mask(pnl['lines'], pnl['x1'] - pnl['x0'], pnl['z1'] - pnl['z0'])) for pnl in panels]
+
+    def f(p, n, cut):
+        col = fallback(p, n, cut) if fallback else base[None, :] * bright(n)[:, None]
+        front = n[:, 1] > 0.9
+        for pnl, m in masks:
+            sel = front & (np.abs(p[:, 1] - pnl['y']) < 0.08) & (p[:, 0] >= pnl['x0']) & (p[:, 0] <= pnl['x1']) & \
+                (p[:, 2] >= pnl['z0']) & (p[:, 2] <= pnl['z1'])
+            if not sel.any():
+                continue
+            h, w = m.shape
+            u = np.clip(((p[sel, 0] - pnl['x0']) / (pnl['x1'] - pnl['x0']) * w).astype(int), 0, w - 1)
+            v = np.clip(((pnl['z1'] - p[sel, 2]) / (pnl['z1'] - pnl['z0']) * h).astype(int), 0, h - 1)
+            a = m[v, u]
+            # engraved look: a darker gold edge below/right of each stroke
+            a2 = m[np.clip(v - 2, 0, h - 1), np.clip(u - 2, 0, w - 1)]
+            c = col[sel]
+            edge = (a2 > 0.5) & (a <= 0.5)
+            c[edge] = shade
+            c[a > 0.5] = g
+            col[sel] = c
+        return col
+    return f

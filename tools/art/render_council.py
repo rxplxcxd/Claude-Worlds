@@ -15,6 +15,7 @@ t = time.time()
 sc = wc.build(stage)
 mats = cm.make_materials(centre_dome=wc.RC, moss=0.3 if stage <= 1 else 0.0, small_domes=wc.DOMES, mosaics=wc.MOSAICS)
 mats['inscription'] = cm.inscription('efe6d4', z0=wc.PODIUM_Z + 16.2, z1=wc.PODIUM_Z + 17.4)
+mats['lettering'] = cm.lettering('efe6d4', wc.INSCRIPTIONS, fallback=cm.stone('efe6d4', weather=0.05, seed=9))
 frame = tuple(float(v) for v in os.environ['WC_FRAME'].split(',')) if os.environ.get('WC_FRAME') else None
 img, buf = ir.render(sc, mats, px, ss=ss, frame=frame, shade_fn=cm.overgrowth(1.0 if stage <= 1 else (0.35 if stage == 2 else 0.0)), log=lambda m: print(f"[{time.time() - t:6.1f}s] {m}", flush=True))
 ir.save_png(img, out)

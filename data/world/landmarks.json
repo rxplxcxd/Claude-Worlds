@@ -1,17 +1,35 @@
 {
-  "_comment": "Fixed world landmarks: part of the persistent WORLD DEFINITION (same for every client and the future server, never re-rolled). Landmarks are uninhabited historic sites, NOT settlements - the empty-planet rule (genesis.json) is unaffected. Their CHANGEABLE state (restoration, damage, extensions, decisions) lives in the world state (WorldState.landmark_state / later Firestore landmarks/{id}), changed only by the world authority. See docs/WORLD_COUNCIL.md.",
-  "schema_version": 1,
+  "_comment": "Fixed world landmarks: part of the persistent WORLD DEFINITION (same for every client and the future server, never re-rolled). Landmarks are uninhabited historic sites, NOT settlements - the empty-planet rule (genesis.json) is unaffected. Their CHANGEABLE state (restoration, damage, extensions, decisions) lives in the world state (WorldState.landmark_state / later Firestore landmarks/{id}), changed only by the world authority. Property boundaries are part of the state as well (changed only by a resolution + server update). See docs/WORLD_COUNCIL.md.",
+  "schema_version": 2,
   "landmarks": [
     {
       "landmark_id": "lmk_world_council",
       "kind": "world_council",
-      "name": "WORLD COUNCIL",
+      "name": "CONCORDIUM",
+      "site_name": "Concordium",
+      "name_meaning": "lat. concordia: Eintracht, Harmonie, Zusammenhalt, Übereinstimmung",
       "subtitle": "Internationaler Weltratssitz",
-      "site_name": "Concordium von Kalistia",
+      "tagline": {
+        "de": "Der Ort, an dem die Welt zusammenkommt.",
+        "en": "The place where the world comes together."
+      },
+      "inscriptions": {
+        "gate": [
+          "CONCORDIUM",
+          "UBI MUNDUS CONVENIT"
+        ],
+        "assembly_hall": [
+          "CONCILIUM MUNDI"
+        ],
+        "_comment": "UBI MUNDUS CONVENIT = lat. \"wo die Welt zusammenkommt\" (Motto, vom Projektinhaber änderbar)"
+      },
       "continent_id": "cnt_05",
       "continent_name": "Kalistia",
       "region_id": "reg_139",
-      "position": {"lat": 28.28, "lon": 137.36},
+      "position": {
+        "lat": 28.28,
+        "lon": 137.36
+      },
       "site_choice": {
         "tool": "tools/world/council_site.gd",
         "elevation_m": 162,
@@ -22,32 +40,238 @@
         "rise_towards": "Nordosten, sanfte Hügel bis +218 m (Aquädukt-Quelle, Aussicht)",
         "sea_towards": "Südwesten, Bucht in ca. 30 km (Hafen)"
       },
-      "reserve_radius_km": 18.0,
-      "_reserve_comment": "No settlement territory may be founded inside this radius: room for the complex, its extensions, airport, stations, roads, hotels (docs/WORLD_COUNCIL.md §3). Infrastructure is NOT built automatically.",
-      "site_tiles": [48, 48],
-      "assembly": {"month": 6, "day": 24, "time_basis": "world_time_utc", "duration_days": 1},
+      "site_frame": {
+        "_comment": "Site metres around `position`: +x = east, +y = south (the axes of the site grid and art). Height in metres above the site ground.",
+        "x_axis": "east",
+        "y_axis": "south"
+      },
+      "property": {
+        "_comment": "Exact property boundary of the Concordium = the neutral zone. Only this polygon is neutral; roads, hotels, stations, airports outside are NOT. Extensions only by resolution + server update (WorldState.update_landmark_property).",
+        "version": 1,
+        "polygon_m": [
+          [
+            -86.0,
+            -86.0
+          ],
+          [
+            86.0,
+            -86.0
+          ],
+          [
+            86.0,
+            86.0
+          ],
+          [
+            -86.0,
+            86.0
+          ]
+        ]
+      },
+      "height_m": 56.25,
+      "_height_comment": "Highest point (lantern sphere on the rotunda dome) ~ 33 figure heights of ~1.7 m (owner decision 25.11.2026).",
+      "assembly": {
+        "month": 6,
+        "day": 24,
+        "time_basis": "world_time_utc",
+        "duration_days": 1,
+        "official_name": "Concilium Mundi",
+        "official_meaning": "lat. Rat / Versammlung der Welt",
+        "ui_name": {
+          "de": "Weltversammlung",
+          "en": "World Assembly"
+        }
+      },
+      "institution": {
+        "ui_name": {
+          "de": "Weltrat",
+          "en": "World Council"
+        }
+      },
       "initial_stage": 1,
       "stages": [
-        {"stage": 1, "id": "historic", "label": "Historische Anlage"},
-        {"stage": 2, "id": "first_restoration", "label": "Erste Restaurierung"},
-        {"stage": 3, "id": "international_centre", "label": "Internationales Zentrum"},
-        {"stage": 4, "id": "monumental_seat", "label": "Monumentaler Weltratssitz"}
+        {
+          "stage": 1,
+          "id": "historic",
+          "label": "Historische Anlage"
+        },
+        {
+          "stage": 2,
+          "id": "first_restoration",
+          "label": "Erste Restaurierung"
+        },
+        {
+          "stage": 3,
+          "id": "international_centre",
+          "label": "Internationales Zentrum"
+        },
+        {
+          "stage": 4,
+          "id": "monumental_seat",
+          "label": "Monumentaler Weltratssitz"
+        }
       ],
       "components": [
-        {"id": "assembly_hall", "label": "Große Versammlungsrotunde", "condition": 0.62, "access": "closed"},
-        {"id": "portico", "label": "Säulenportikus mit Giebel", "condition": 0.7, "access": "open"},
-        {"id": "grand_stairs", "label": "Große Freitreppe", "condition": 0.66, "access": "open"},
-        {"id": "forum", "label": "Forum (Hauptplatz)", "condition": 0.55, "access": "open"},
-        {"id": "canal", "label": "Wasserkanal und Kaskade", "condition": 0.35, "access": "open"},
-        {"id": "great_fountain", "label": "Großer Brunnen", "condition": 0.3, "access": "open"},
-        {"id": "stoa_west", "label": "Westliche Säulenhalle", "condition": 0.5, "access": "open"},
-        {"id": "stoa_east", "label": "Östliche Säulenhalle", "condition": 0.4, "access": "open"},
-        {"id": "palace_west", "label": "Westflügel (Delegationen)", "condition": 0.55, "access": "closed"},
-        {"id": "palace_east", "label": "Ostflügel (Diplomatie)", "condition": 0.45, "access": "closed"},
-        {"id": "gardens", "label": "Gärten und Terrassen", "condition": 0.3, "access": "open"},
-        {"id": "statues", "label": "Statuen und Reliefs", "condition": 0.4, "access": "open"},
-        {"id": "aqueduct", "label": "Aquädukt (Wasserzufuhr)", "condition": 0.25, "access": "closed"}
-      ]
+        {
+          "id": "assembly_hall",
+          "label": "Große Versammlungsrotunde",
+          "condition": 0.62,
+          "access": "closed"
+        },
+        {
+          "id": "portico",
+          "label": "Säulenportikus mit Giebel",
+          "condition": 0.7,
+          "access": "open"
+        },
+        {
+          "id": "grand_stairs",
+          "label": "Große Freitreppe",
+          "condition": 0.66,
+          "access": "open"
+        },
+        {
+          "id": "forum",
+          "label": "Forum (Hauptplatz)",
+          "condition": 0.55,
+          "access": "open"
+        },
+        {
+          "id": "canal",
+          "label": "Wasserkanal und Kaskade",
+          "condition": 0.35,
+          "access": "open"
+        },
+        {
+          "id": "great_fountain",
+          "label": "Großer Brunnen",
+          "condition": 0.3,
+          "access": "open"
+        },
+        {
+          "id": "stoa_west",
+          "label": "Westliche Säulenhalle",
+          "condition": 0.5,
+          "access": "open"
+        },
+        {
+          "id": "stoa_east",
+          "label": "Östliche Säulenhalle",
+          "condition": 0.4,
+          "access": "open"
+        },
+        {
+          "id": "palace_west",
+          "label": "Westflügel (Delegationen)",
+          "condition": 0.55,
+          "access": "closed"
+        },
+        {
+          "id": "palace_east",
+          "label": "Ostflügel (Diplomatie)",
+          "condition": 0.45,
+          "access": "closed"
+        },
+        {
+          "id": "gardens",
+          "label": "Gärten und Terrassen",
+          "condition": 0.3,
+          "access": "open"
+        },
+        {
+          "id": "statues",
+          "label": "Statuen und Reliefs",
+          "condition": 0.4,
+          "access": "open"
+        },
+        {
+          "id": "aqueduct",
+          "label": "Aquädukt (Wasserzufuhr)",
+          "condition": 0.25,
+          "access": "closed"
+        }
+      ],
+      "neutrality": {
+        "_comment": "Binding world law (docs/WORLD_COUNCIL_NEUTRALITY.md). Applies all year inside the property, never outside. Tiers: prevented = ordinary violence is technically blocked by the server; violation = deliberate breach is detected, logged and answered by security; crisis = an extraordinary, mechanically intended attack on the Concordium (only once the Phase-11 conflict system exists, only as a declared act of a state, never by individual players).",
+        "status": "neutral",
+        "owner": null,
+        "principles": [
+          "no_combat",
+          "no_pvp",
+          "no_violence",
+          "no_killing",
+          "no_occupation",
+          "no_siege",
+          "no_blockade",
+          "no_takeover",
+          "no_discrimination"
+        ],
+        "acts": {
+          "attack_player": {
+            "tier": "prevented",
+            "then": "violation_on_repeat"
+          },
+          "injure_player": {
+            "tier": "prevented",
+            "then": "violation_on_repeat"
+          },
+          "kill_player": {
+            "tier": "prevented",
+            "then": "violation"
+          },
+          "damage_structure": {
+            "tier": "prevented",
+            "then": "violation"
+          },
+          "carry_weapon": {
+            "tier": "violation",
+            "then": "confiscate"
+          },
+          "block_entrance": {
+            "tier": "violation",
+            "then": "remove"
+          },
+          "occupy_site": {
+            "tier": "prevented",
+            "then": "crisis_only_if_declared"
+          },
+          "siege": {
+            "tier": "prevented",
+            "then": "crisis_only_if_declared"
+          },
+          "declared_state_attack": {
+            "tier": "crisis",
+            "requires": [
+              "rules.concordium_crisis_enabled",
+              "declared_by_state_government",
+              "server_validated"
+            ]
+          }
+        },
+        "crisis_enabled": false,
+        "crisis_consequences": [
+          "world_outrage",
+          "diplomatic_breaks",
+          "sanctions",
+          "isolation",
+          "investigation_and_trial",
+          "emergency_assembly",
+          "reactions_of_nations",
+          "historic_record",
+          "damage_to_buildings",
+          "lasting_change_of_world_order"
+        ],
+        "humanitarian": {
+          "access": "unconditional",
+          "planned_facilities": [
+            "medical_station",
+            "emergency_shelter",
+            "community_rooms",
+            "food_supply",
+            "drinking_water",
+            "protected_areas"
+          ]
+        }
+      }
     }
   ]
 }

@@ -26,9 +26,11 @@ import numpy as np
 from isorender import Scene, box, cyl, hcyl, ell, prism_gable, ngon_prism, oriented_box
 
 RC = (-16.0, -16.0)        # rotunda centre
+INSCRIPTIONS = []          # gilded lettering panels (+Y faces), filled by build()
 DOMES = {}                 # material name -> centre (ribs per dome)
 MOSAICS = {}
 PODIUM_Z = 6.0
+HEIGHT_M = 56.25           # highest point of the rotunda (lantern sphere)
 
 
 def niche(solid):
@@ -102,6 +104,7 @@ def arch_cutters(axis, along0, along1, spacing, width, z0, spring, depth0, depth
 
 
 def build(stage: int = 1):
+    INSCRIPTIONS.clear()
     sc = Scene()
     ruin = stage <= 1
     rng = np.random.default_rng(7)
@@ -133,7 +136,7 @@ def build(stage: int = 1):
     # string course + cornice
     sc.add(cyl(rx, ry, PODIUM_Z + 12.0, PODIUM_Z + 12.8, 24.5, 'marble_warm', p))
     # peristyle: ring colonnade on its own stylobate
-    sc.add(cyl(rx, ry, PODIUM_Z, PODIUM_Z + 0.7, 31.5, 'marble_warm', 'peristyle'))
+    sc.add(cyl(rx, ry, PODIUM_Z, PODIUM_Z + 0.5, 31.5, 'marble_warm', 'peristyle'))
     n_col = 32
     for k in range(n_col):
         a = 2 * math.pi * k / n_col
@@ -143,7 +146,7 @@ def build(stage: int = 1):
         broken = None
         if ruin and k in (3, 4, 29):
             broken = 0.35 + 0.2 * (k % 2)
-        column(sc, cx_, cy_, PODIUM_Z + 0.7, 13.5, 0.85, f'peristyle_c{k}', broken=broken)
+        column(sc, cx_, cy_, PODIUM_Z + 0.5, 13.7, 0.85, f'peristyle_c{k}', broken=broken)
     # entablature ring (gaps over broken columns are ignored – it is carried by the wall)
     ent_cut = [cyl(rx, ry, PODIUM_Z + 13.0, PODIUM_Z + 17.0, 27.6)]
     sc.add(cyl(rx, ry, PODIUM_Z + 14.2, PODIUM_Z + 15.6, 31.0, 'marble', 'peristyle_roof', cuts=ent_cut))
@@ -167,18 +170,19 @@ def build(stage: int = 1):
         sc.add(oriented_box(rx + math.cos(a) * 21.2, ry + math.sin(a) * 21.2, zc, zc + 7.0, 0.6, 0.9, a, 'marble_warm', 'drum_upper'))
     # dome
     zd = zc + 7.8
-    sc.add(ell(rx, ry, zd, 20.6, 20.6, 17.0, 'dome', 'dome', zmin=zd))
+    # height of the highest point (lantern sphere) = HEIGHT_M (~33 figure heights, owner decision)
+    sc.add(ell(rx, ry, zd, 20.6, 20.6, 15.8, 'dome', 'dome', zmin=zd))
     # lantern
-    zl = zd + 16.4
+    zl = zd + 15.2
     sc.add(cyl(rx, ry, zl, zl + 0.8, 4.2, 'marble', 'lantern'))
     for k in range(8):
         a = 2 * math.pi * k / 8
-        sc.add(cyl(rx + math.cos(a) * 3.3, ry + math.sin(a) * 3.3, zl + 0.8, zl + 5.0, 0.32, 'column', 'lantern'))
-    sc.add(cyl(rx, ry, zl + 0.8, zl + 5.0, 2.4, 'dark', 'lantern'))
-    sc.add(cyl(rx, ry, zl + 5.0, zl + 5.8, 4.0, 'marble', 'lantern'))
-    sc.add(ell(rx, ry, zl + 5.8, 3.4, 3.4, 2.8, 'gold', 'lantern', zmin=zl + 5.8))
-    sc.add(cyl(rx, ry, zl + 8.4, zl + 10.5, 0.25, 'gold', 'lantern'))
-    sc.add(ell(rx, ry, zl + 10.8, 0.55, 0.55, 0.55, 'gold', 'lantern'))
+        sc.add(cyl(rx + math.cos(a) * 3.3, ry + math.sin(a) * 3.3, zl + 0.8, zl + 4.2, 0.32, 'column', 'lantern'))
+    sc.add(cyl(rx, ry, zl + 0.8, zl + 4.2, 2.4, 'dark', 'lantern'))
+    sc.add(cyl(rx, ry, zl + 4.2, zl + 5.0, 4.0, 'marble', 'lantern'))
+    sc.add(ell(rx, ry, zl + 5.0, 3.4, 3.4, 2.4, 'gold', 'lantern', zmin=zl + 5.0))
+    sc.add(cyl(rx, ry, zl + 7.0, zl + 7.6, 0.25, 'gold', 'lantern'))
+    sc.add(ell(rx, ry, zl + 7.85, 0.4, 0.4, 0.4, 'gold', 'lantern'))
 
     # ---------------------------------------------------------- portico (faces +Y)
     p = 'portico'
@@ -200,8 +204,11 @@ def build(stage: int = 1):
         sc.add(hcyl('x', px0 + 17.0, px0 + 19.4, py1 + 2.2, 1.05, 1.0, 'column', 'debris'))
         sc.add(hcyl('y', py1 + 4.0, py1 + 6.0, px0 + 21.0, 0.95, 0.95, 'column', 'debris'))
     ze = PODIUM_Z + 15.0
-    sc.add(box(px0 - 0.6, py0, ze, px1 + 0.6, py1, ze + 1.2, 'marble', p))
-    sc.add(box(px0 - 0.6, py0, ze + 1.2, px1 + 0.6, py1, ze + 2.4, 'inscription', 'portico_frieze'))
+    sc.add(box(px0 - 0.6, py0, ze, px1 + 0.6, py1, ze + 0.7, 'marble', p))
+    sc.add(box(px0 - 0.6, py0, ze + 0.7, px1 + 0.6, py1, ze + 2.4, 'lettering', 'portico_frieze'))
+    # official ceremonial name of the annual assembly on the assembly hall
+    INSCRIPTIONS.append({"y": py1, "x0": px0 + 0.4, "x1": px1 - 0.4, "z0": ze + 0.75, "z1": ze + 2.35,
+                         "lines": [("CONCILIUM MUNDI", 1.0)]})
     sc.add(box(px0 - 1.0, py0, ze + 2.4, px1 + 1.0, py1 + 0.4, ze + 3.0, 'marble_warm', p))
     # pediment with recessed tympanum and gilded relief
     zp = ze + 3.0
@@ -300,7 +307,10 @@ def build(stage: int = 1):
         for xs in (cx_axis + side * 4.8, cx_axis + side * 10.2):
             column(sc, xs, gy1 + 0.5, 0.0, 12.5, 0.55, f'gate_c{side}_{xs:.0f}', mat='column')
     sc.add(box(cx_axis - 11.4, gy0 - 0.3, 12.5, cx_axis + 11.4, gy1 + 1.2, 13.3, 'marble_warm', 'gate'))
-    sc.add(box(cx_axis - 10.6, gy0, 13.3, cx_axis + 10.6, gy1 + 0.6, 17.2, 'inscription', 'gate_attic'))
+    sc.add(box(cx_axis - 10.6, gy0, 13.3, cx_axis + 10.6, gy1 + 0.6, 17.2, 'lettering', 'gate_attic'))
+    # the site's name over the main entrance; Latin motto: "where the world comes together"
+    INSCRIPTIONS.append({"y": gy1 + 0.6, "x0": cx_axis - 10.2, "x1": cx_axis + 10.2, "z0": 13.5, "z1": 17.0,
+                         "lines": [("CONCORDIUM", 0.52), ("UBI MUNDUS CONVENIT", 0.3)]})
     sc.add(box(cx_axis - 11.0, gy0 - 0.2, 17.2, cx_axis + 11.0, gy1 + 0.8, 17.8, 'marble_warm', 'gate'))
     statue(sc, cx_axis, (gy0 + gy1) / 2, 17.8, 'gate_statue', 'gold' if not ruin else 'bronze', 1.6, pedestal=0.8)
     for side in (-1, 1):
@@ -323,16 +333,25 @@ def build(stage: int = 1):
             sc.add(ell(x, y, 1.5, 1.4, 1.4, 1.0, 'foliage', 'planter'))
 
     # ---------------------------------------------------------- stoas
-    def stoa(x_back0, x_back1, x_col, y0, y1, facing, name, broken_cols=(), roof_missing=None):
+    def stoa(x_back0, x_back1, x_col, y0, y1, facing, name, broken_cols=(), roof_missing=None, door_y=None):
         # stylobate
         xa, xb = sorted((x_back0, x_col + facing * 2.0))
         sc.add(box(xa, y0, 0.0, xb, y1, 1.0, 'marble_warm', name))
+        sa, sb = sorted((x_col + facing * 2.0, x_col + facing * 2.9))     # step up onto the stylobate
+        sc.add(box(sa, y0, 0.0, sb, y1, 0.55, 'marble_warm', name))
         # back wall with niches on the inner side
         niche_x = (x_back1, x_back1 + facing * 0.5) if facing > 0 else (x_back1 - 0.5, x_back1)
         cuts = arch_cutters('y', y0 + 2, y1 - 2, 5.0, 2.0, 2.2, 6.0, min(niche_x), max(niche_x))
         cuts = [niche(c) for c in cuts]
         if facing < 0:  # outer side faces the camera (+X): arched windows through the wall
             cuts = arch_cutters('y', y0 + 2, y1 - 2, 5.0, 1.8, 2.6, 6.4, min(x_back0, x_back1) - 0.1, max(x_back0, x_back1) + 0.1)
+        if door_y is not None:   # arched passage through the back wall (to the theatre garden)
+            wa0, wb0 = min(x_back0, x_back1) - 0.1, max(x_back0, x_back1) + 0.1
+            cuts = [c for c in cuts if not (c.aabb[0][1] < door_y + 2.0 and c.aabb[1][1] > door_y - 2.0)]
+            cuts += [box(wa0, door_y - 1.6, 0.9, wb0, door_y + 1.6, 4.6), hcyl('x', wa0, wb0, door_y, 4.6, 1.6)]
+            xo = max(x_back0, x_back1) if facing < 0 else min(x_back0, x_back1)
+            sa2, sb2 = sorted((xo, xo - facing * 0.9))
+            sc.add(box(sa2, door_y - 1.8, 0.0, sb2, door_y + 1.8, 0.5, 'marble_warm', name))
         wa, wb = sorted((x_back0, x_back1))
         sc.add(box(wa, y0, 1.0, wb, y1, 10.0, 'marble_shade' if facing > 0 else 'marble', f'{name}_wall', cuts=cuts))
         # ceiling / dark interior band seen between the columns
@@ -360,12 +379,21 @@ def build(stage: int = 1):
 
     stoa(fx0 - 9.0, fx0 - 7.4, fx0 + 0.6, fy0 - 4.0, fy1, 1, 'stoa_west', broken_cols=(3, 4) if ruin else ())
     stoa(fx1 + 9.0, fx1 + 7.4, fx1 - 0.6, fy0 - 4.0, fy1, -1, 'stoa_east', broken_cols=(2, 7, 8) if ruin else (),
-         roof_missing=(fy0 + 18.0, fy0 + 27.0) if ruin else None)
+         roof_missing=(fy0 + 18.0, fy0 + 27.0) if ruin else None, door_y=41.5)
 
     # ---------------------------------------------------------- water terraces (+X)
     tx0 = rx + 35.0
     ty0, ty1 = ry - 22.0, ry + 22.0
     levels = [(tx0 - 14.0, tx0 + 12.0, 4.4), (tx0 + 12.0, tx0 + 30.0, 2.2), (tx0 + 30.0, 84.0, 0.0)]
+    # stairs: podium -> upper terrace, and between the terraces (both sides of the channel)
+    flights = [(rx + math.sqrt(35.1 ** 2 - 9.0 ** 2) - 0.4, PODIUM_Z + 0.05, levels[0][2] + 0.05)] + \
+        [(levels[i][1], levels[i][2] + 0.05, levels[i + 1][2] + 0.05) for i in range(2)]
+    for (x_start, z_hi, z_lo) in flights:
+        n_st = max(2, int(math.ceil((z_hi - z_lo) / 0.42)))
+        for k in range(n_st):
+            zt = z_hi - (k + 1) * (z_hi - z_lo) / (n_st + 0.0) + (z_hi - z_lo) / n_st
+            for (y0, y1) in ((ry + 5.0, ry + 9.0), (ry - 9.0, ry - 5.0)):
+                sc.add(box(x_start + k * 0.8, y0, 0.0, x_start + (k + 1) * 0.8, y1, zt - (z_hi - z_lo) / n_st * 0.0 - (z_hi - z_lo) / n_st, 'marble_warm', 'terrace_stairs'))
     for li, (a, b, z) in enumerate(levels):
         if z > 0:
             sc.add(box(a, ty0, 0.0, b, ty1, z, 'marble_warm', f'terrace_{li}'))
@@ -506,8 +534,9 @@ def build(stage: int = 1):
     # ---------------------------------------------------------- gardens
     gcuts = []
     # lawn parterres with hedges and flowers beside the theatre and terraces
-    for (x0, y0, x1, y1) in ((24.0, 26.0, 84.0, 30.0), (24.0, 74.0, 84.0, 78.0)):
-        hedge(sc, x0, y0, x1, y1, 0.0, 'hedge')
+    for (y0, y1) in ((26.0, 30.0), (74.0, 78.0)):     # hedges with a gap (garden gate) at x 47..53
+        hedge(sc, 24.0, y0, 47.0, y1, 0.0, 'hedge')
+        hedge(sc, 53.0, y0, 84.0, y1, 0.0, 'hedge')
     for (x0, y0, x1, y1) in ((26.0, 32.0, 32.0, 72.0),):
         sc.add(box(x0, y0, 0.0, x1, y1, 0.35, 'flowers', 'flower_bed'))
     for k in range(7):

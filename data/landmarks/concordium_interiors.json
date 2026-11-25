@@ -1,0 +1,76 @@
+{
+  "_comment": "Binding room programme of the Concordium (docs/WORLD_COUNCIL_INTERIORS.md). Every building gets its OWN interior whose shape follows the exterior (site metres, +x east, +y south, same frame as data/world/landmarks.json). status: walkable = playable in the current build; preview = walkable only in the development preview; concept = planned, not built. Interiors are built with the interior system in Phase 7 (restoration/construction); the assembly hall functions with Phase 10.",
+  "schema_version": 1,
+  "buildings": [
+    {"id": "assembly_hall", "label": "Großer Ratssaal (Rotunde)", "component": "assembly_hall", "status": "concept", "phase": 7,
+     "shape": {"kind": "circle", "centre": [-16, -16], "outer_r": 24.0, "inner_r": 21.5, "floor_z": 6.0, "dome_z": 32.8},
+     "entrances": [{"from": "portico", "at": [-16, 3.0], "width": 6.4, "kind": "bronze_double_door"}],
+     "rooms": [
+       {"id": "council_chamber", "function": "Plenarsaal des Concilium Mundi: Halbrund aus konzentrischen Delegationsreihen um das zentrale Rednerpult (Rostrum), Präsidium gegenüber dem Eingang, Abstimmungsanzeige unter der Kuppel, Flaggen- und Wappenring auf der Galerie", "seating": "rows scale with the number of recognised nations (one block per nation, delegates + deputies + advisers); upper galleries for observers and press; overflow halls in the palace wings with live transmission – no fixed capacity limit"},
+       {"id": "rostrum", "function": "Rednerpult im Zentrum, Sichtachse zum Präsidium und zur Kuppelöffnung"},
+       {"id": "galleries", "function": "Umlaufende Galerie im oberen Tambour: Besucher, Presse, Übertragung"},
+       {"id": "ambulatory", "function": "Umgang zwischen Tambour und Saal: Garderoben, Treppen zu den Galerien, Ausgänge zum Peristyl"}
+     ]},
+    {"id": "portico", "label": "Portikus und Vestibül", "component": "portico", "status": "preview", "phase": 7,
+     "shape": {"kind": "rect", "min": [-29, 0], "max": [-3, 20], "floor_z": 6.9},
+     "rooms": [{"id": "vestibule", "function": "Empfang der Delegationen, Akkreditierung, Sicherheitskontrolle (Waffen werden hier verwahrt)"}]},
+    {"id": "palace_west", "label": "Westflügel – Delegationen und Ausstellungen", "component": "palace_west", "status": "concept", "phase": 7,
+     "shape": {"kind": "rect", "min": [-84, -84], "max": [-64, 14], "floor_z": 0.6, "storeys": 2},
+     "entrances": [{"from": "east_arcade", "every_m": 5.0, "kind": "arcade"}],
+     "rooms": [
+       {"id": "exhibition_hall_history", "function": "Historische Ausstellungshalle: Statuen, Wandgemälde, Mosaike, Inschriften, Dokumente früherer Ereignisse"},
+       {"id": "exhibition_hall_nations", "function": "Ausstellungen der Nationen (wechselnd, erweiterbar: Spieler und Nationen stiften Statuen, Gemälde, Erinnerungsstücke)"},
+       {"id": "delegation_offices", "function": "Büros und Ruheräume der Delegationen (Obergeschoss)"},
+       {"id": "overflow_hall", "function": "Übertragungssaal für weitere Teilnehmer des Concilium Mundi"}
+     ]},
+    {"id": "palace_east", "label": "Nordflügel – Diplomatie", "component": "palace_east", "status": "concept", "phase": 7,
+     "shape": {"kind": "rect", "min": [-64, -84], "max": [2, -64], "floor_z": 0.6, "storeys": 2},
+     "rooms": [
+       {"id": "bilateral_rooms", "function": "Räume für bilaterale Gespräche"},
+       {"id": "confidential_rooms", "function": "Vertrauliche Verhandlungsräume (Zutritt nur für berechtigte Delegierte)"},
+       {"id": "mediation_hall", "function": "Saal für internationale Vermittlung und Vertragsunterzeichnungen"},
+       {"id": "conference_rooms", "function": "Kleinere Konferenzräume, Sekretariat, Archiv der Beschlüsse und Protokolle"}
+     ]},
+    {"id": "pavilion_corner", "label": "Eckpavillon – Archiv der Welt", "component": "palace_east", "status": "concept", "phase": 7,
+     "shape": {"kind": "square_dome", "centre": [-74, -74], "half": 8.5, "floor_z": 0.8},
+     "rooms": [{"id": "world_archive", "function": "Kuppelsaal mit Archiv: Gründungsurkunden, Verträge, historische Dokumente"}]},
+    {"id": "pavilion_west", "label": "Westpavillon (eingestürzte Kuppel) – Zufluchtsort", "component": "palace_west", "status": "concept", "phase": 7,
+     "shape": {"kind": "square_dome", "centre": [-74, 22], "half": 8.5, "floor_z": 0.8},
+     "rooms": [{"id": "humanitarian_centre", "function": "Nach der Restaurierung: medizinische Versorgungsstelle und Koordination der humanitären Hilfe"}]},
+    {"id": "pavilion_north", "label": "Nordpavillon – Gästehaus der Delegationen", "component": "palace_east", "status": "concept", "phase": 7,
+     "shape": {"kind": "square_dome", "centre": [10, -74], "half": 8.5, "floor_z": 0.8},
+     "rooms": [{"id": "guest_hall", "function": "Empfangssaal, Speisesaal der Delegationen"}]},
+    {"id": "stoa_west", "label": "Westliche Säulenhalle", "component": "stoa_west", "status": "preview", "phase": 7,
+     "shape": {"kind": "rect", "min": [-61, 29.6], "max": [-50, 80], "floor_z": 1.0, "open_side": "east"},
+     "rooms": [{"id": "market_hall", "function": "Offene Halle: Marktstände, Ausstellungen, Begegnung; Nischen für Statuen der Nationen"}]},
+    {"id": "stoa_east", "label": "Östliche Säulenhalle (Dach teils eingestürzt)", "component": "stoa_east", "status": "preview", "phase": 7,
+     "shape": {"kind": "rect", "min": [18, 29.6], "max": [29, 80], "floor_z": 1.0, "open_side": "west"},
+     "rooms": [{"id": "public_hall", "function": "Offene Halle: Reden, Lesungen, Informationstafeln, später Notunterkunft bei Krisen"}]},
+    {"id": "tholos", "label": "Rundtempel im Spiegelbecken", "component": "gardens", "status": "concept", "phase": 7,
+     "shape": {"kind": "circle", "centre": [65.0, -16.0], "outer_r": 5.0, "floor_z": 1.2},
+     "rooms": [{"id": "memorial", "function": "Gedenkort (Gedenktage, Kränze der Nationen); erreichbar nach Restaurierung über einen Steg"}]},
+    {"id": "castellum", "label": "Wasserschloss des Aquädukts", "component": "aqueduct", "status": "concept", "phase": 7,
+     "shape": {"kind": "circle", "centre": [4, -76], "outer_r": 4.5, "floor_z": 0.0},
+     "rooms": [{"id": "water_works", "function": "Wasserverteilung (Trinkwasser für die humanitäre Versorgung, Brunnen, Kaskaden)"}]},
+    {"id": "theatre", "label": "Theater (offen)", "component": "forum", "status": "preview", "phase": 7,
+     "shape": {"kind": "half_circle", "centre": [50, 50], "outer_r": 23.2, "floor_z": -6.0},
+     "rooms": [{"id": "theatre_stage", "function": "Öffentliche Reden, Kultur, Feiern; Bühnenhaus mit Garderoben später"}]}
+  ],
+  "open_areas": [
+    {"id": "forum", "label": "Forum (Hauptplatz)", "status": "preview", "uses": ["markets", "culture", "exhibitions", "speeches", "meetings"]},
+    {"id": "grand_stairs", "label": "Große Freitreppe und Podium", "status": "preview"},
+    {"id": "peristyle", "label": "Ringkolonnade der Rotunde", "status": "preview"},
+    {"id": "terraces", "label": "Wasserterrassen und Kaskaden", "status": "preview"},
+    {"id": "gardens", "label": "Gärten und Innenhöfe", "status": "preview"},
+    {"id": "gate", "label": "Triumphtor (Haupteingang)", "status": "preview"}
+  ],
+  "humanitarian": {
+    "_comment": "Planned facilities (WORLD_COUNCIL_NEUTRALITY.md §4). Access never depends on political affiliation.",
+    "medical_station": "pavilion_west",
+    "emergency_shelter": ["stoa_east", "palace_west"],
+    "community_rooms": "palace_west",
+    "food_supply": "pavilion_north",
+    "drinking_water": "castellum",
+    "protected_areas": ["forum", "gardens", "peristyle"]
+  }
+}

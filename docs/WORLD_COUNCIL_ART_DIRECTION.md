@@ -1,4 +1,4 @@
-# World Council – Architektur, Gestaltung und Asset
+# Concordium – Architektur, Gestaltung und Asset
 
 ## 1. Leitidee
 Ein Ort, an dem Stein, Wasser, Pflanzen und Architektur zusammenwirken. Er ist so alt, dass niemand mehr weiß, wer ihn gebaut hat, und so schön, dass die Nationen dort zusammenkommen wollen.
@@ -17,14 +17,14 @@ Grundriss 168 × 168 m. Die Rotunde liegt hinten in der Mitte, die Hauptachse f�
 
 | Bereich | Gestaltung | Komponente |
 |---|---|---|
-| **Versammlungsrotunde** | Dreistufiges Podium (+6 m). Tambour mit Bogenfenstern und Gesims, 32-säulige Ringkolonnade (Peristyl) mit Gebälk und Balustrade, oberer Tambour mit Attikafenstern und Pilastern. Patina-Kuppel mit vergoldeten Rippen, Laterne mit Säulchen, Goldkuppel und Spitze (~60 m). | `assembly_hall` |
-| **Portikus** | 8 Säulen in der Front plus Seitenreihen, Bronzetor in der Cella-Wand. Fries mit vergoldeter Inschrift, Giebel mit vertieftem Tympanon und Goldrelief (Medaillon, Figuren). Akroterien in Gold. | `portico` |
+| **Versammlungsrotunde** (Großer Ratssaal) | Dreistufiges Podium (+6 m). Tambour mit Bogenfenstern und Gesims, 32-säulige Ringkolonnade (Peristyl) mit Gebälk und Balustrade, oberer Tambour mit Attikafenstern und Pilastern. Patina-Kuppel mit vergoldeten Rippen, Laterne mit Säulchen, Goldkuppel und Spitze – höchster Punkt 56,25 m (~33 Figurenhöhen). | `assembly_hall` |
+| **Portikus** | 8 Säulen in der Front plus Seitenreihen, Bronzetor in der Cella-Wand. Fries mit vergoldeter Inschrift „CONCILIUM MUNDI“, Giebel mit vertieftem Tympanon und Goldrelief (Medaillon, Figuren). Akroterien in Gold. | `portico` |
 | **Große Freitreppe** | 15 Stufen und 2 Antrittsstufen. Wangen mit Statuen, seitlich fünfstufige Wasserkaskaden. | `grand_stairs` |
 | **Forum** | Gepflasterter Platz mit langem Wasserkanal, Statuenreihen und Mosaikmedaillon. Bronze-Feuerschalen, Pflanzkübel. | `forum`, `canal`, `statues` |
 | **Großer Brunnen** | Rundes Becken mit Schale und Säule. In Stufe 1 trocken, der obere Teil liegt zerbrochen im Becken. | `great_fountain` |
 | **Säulenhallen (Stoen)** | West und Ost, Säulenreihen zum Forum, Rückwände mit Nischen bzw. Bogenfenstern, Ziegeldächer. Im Osten fehlt ein Dachstück (sichtbare Balken, Schutt). | `stoa_west`, `stoa_east` |
-| **Triumphtor** | Haupteingang des Forums: drei Bögen, vorgesetzte Säulen, Attika mit Inschrift, Statuengruppe. | (Forum) |
-| **Wasserterrassen** | Drei Ebenen (4,4 / 2,2 / 0 m) mit Kanal und Kaskaden. Balustraden, Zypressenalleen, großes Spiegelbecken mit Rundtempel (Tholos) auf einer Insel. | `gardens`, `canal` |
+| **Triumphtor** | Haupteingang des Forums: drei Bögen, vorgesetzte Säulen, Attika mit Inschrift „CONCORDIUM – UBI MUNDUS CONVENIT“, Statuengruppe. | (Forum) |
+| **Wasserterrassen** | Drei Ebenen (4,4 / 2,2 / 0 m) mit Kanal, Kaskaden und Treppenläufen beiderseits des Kanals. Balustraden, Zypressenalleen, großes Spiegelbecken mit Rundtempel (Tholos) auf einer Insel. | `gardens`, `canal` |
 | **Aquädukt** | Bogenreihe aus den Hügeln im Nordosten, Wasserschloss (Castellum). Ein Bogen eingestürzt. | `aqueduct` |
 | **Palastflügel** | L-förmig (Delegationen West, Diplomatie Nord): Arkaden im Erdgeschoss, Bogenfenster, Gesimse, Balustraden mit Dachstatuen. Drei Kuppelpavillons, einer mit eingestürzter Kuppel. | `palace_west`, `palace_east` |
 | **Theater** | Versenkte halbrunde Cavea mit 9 Sitzreihen, Mosaik-Orchestra, Bühne, Randmauer. | (öffentliche Veranstaltungen) |
@@ -62,7 +62,8 @@ Blender als Python-Modul aus PyPI wurde in dieser Umgebung nicht zugelassen (Reg
 1. Grundkomposition: Rotunde, Portikus, Forum, Stoen, Terrassen, Palastflügel, Theater, Aquädukt.
 2. Detailprüfung in der Nahansicht. Treppenlinien zu dicht → Innenkanten weicher. Verwitterung reduziert. Giebeldach füllte das Tympanon → korrigiert. Goldrelief ergänzt. Efeu-Überwucherung eingeführt; die erste Fassung war viel zu stark und wurde neu kalibriert.
 3. Nischen und Öffnungen unterschieden. Kuppelrippen je Pavillon zentriert. Wasser trüb-blau statt rasengrün. Dezentere Mosaike. Triumphtor, Feuerschalen, Kieswege, Mosaikmedaillon. Kanalwasser sichtbar gemacht.
-4. Spieltauglichkeit: Antrittsstufen am Portikus, Laufraster mit Durchgängen unter Bögen und Säulenhallen, Zoomgrenze passend zur Bildauflösung.
+4. Spieltauglichkeit: Antrittsstufen am Portikus, Laufraster mit Durchgängen unter Bögen und Säulenhallen, Zoomgrenze passend zur Bildauflösung. → **Entwurf 1**, gesichert (Commit `d21e116`, `docs/world_council/concordium_entwurf_1.png`).
+5. Entscheidungen des Projektinhabers (25.11.2026): Höhe auf **56,25 m** (Kuppel −1,2 m, Laterne/Spitze kürzer; alles andere unverändert); echte **vergoldete Antiqua-Inschriften** (Liberation Serif Bold, SIL OFL, als Pixel in die Grafik gerastert): Portikusfries „CONCILIUM MUNDI“ (Fries vergrößert), Tor „CONCORDIUM / UBI MUNDUS CONVENIT“; **Treppenläufe** zwischen Podium und Wasserterrassen (vorher waren die oberen Terrassen unerreichbar), niedrigere Unterbauten (Ringkolonnade 0,5 m, Antrittsstufe an den Säulenhallen), Bogendurchgang zum Theatergarten, Heckentore.
 
 ## 4. Lizenzen und Quellen
 - Alle Grafiken des Weltratssitzes sind **eigene Erzeugnisse** dieses Projekts (Code und Modell in `tools/art/`). Es stecken keine Fremd- oder Penzilla-Pixel darin, daher dürfen sie ins Repository (`assets/landmarks/`).

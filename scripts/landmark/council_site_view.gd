@@ -43,6 +43,8 @@ var _sin_phi := 292.0 / 512.0
 var _cos_phi := 0.0
 var _ui: CanvasLayer
 var _info: Label
+var _zone: Label
+var _inside := true
 var _modulate: CanvasModulate
 
 
@@ -231,6 +233,7 @@ func _process(delta: float) -> void:
 	height_m = lerpf(height_m, surface_height(pos_m), clampf(delta * 12.0, 0.0, 1.0))
 	_place_figure()
 	_update_light()
+	_update_zone()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -264,6 +267,18 @@ func _update_light() -> void:
 	_modulate.color = c
 
 
+## Neutral zone = exactly the property polygon (site metres: +x east, +y south).
+func is_in_neutral_zone(p: Vector2) -> bool:
+	return Landmarks.inside_property(landmark_id, p, WorldState.landmark_state(landmark_id))
+
+
+func _update_zone() -> void:
+	var inside := is_in_neutral_zone(pos_m)
+	if _zone and (inside != _inside or _zone.text == ""):
+		_zone.text = "Neutrales Gelände des Concordiums – Gewalt ist hier verboten." if inside else "Außerhalb des Concordiums – hier gelten die normalen Regeln."
+	_inside = inside
+
+
 func _build_ui() -> void:
 	_ui = CanvasLayer.new()
 	_ui.layer = 10
@@ -275,12 +290,19 @@ func _build_ui() -> void:
 	_ui.add_child(root)
 	var d := Landmarks.get_def(landmark_id)
 	_info = Label.new()
-	_info.text = "%s – %s\n%s · Entwicklungsvorschau (Anreise folgt mit dem Verkehrssystem, Phase 8)" % [d.get("name", ""), d.get("subtitle", ""), d.get("site_name", "")]
+	_info.text = "%s – %s\nEntwicklungsvorschau (Anreise folgt mit dem Verkehrssystem, Phase 8)" % [d.get("name", ""), d.get("subtitle", "")]
 	_info.position = Vector2(16, 12)
 	_info.add_theme_font_size_override("font_size", 15)
 	_info.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08))
 	_info.add_theme_constant_override("outline_size", 5)
 	root.add_child(_info)
+	_zone = Label.new()
+	_zone.position = Vector2(16, 62)
+	_zone.add_theme_font_size_override("font_size", 13)
+	_zone.add_theme_color_override("font_color", Color("f2d58a"))
+	_zone.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08))
+	_zone.add_theme_constant_override("outline_size", 5)
+	root.add_child(_zone)
 	var bar := HBoxContainer.new()
 	bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	bar.position = Vector2(-230, 12)

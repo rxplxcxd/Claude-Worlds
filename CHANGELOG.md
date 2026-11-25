@@ -2,6 +2,23 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.8.0] – Concordium: verbindliche Entscheidungen des Projektinhabers (25.11.2026)
+Produktversion bleibt **v0.1** (erst nach Freigabe erhöht).
+
+### Geändert
+- **Name:** Der Ort heißt **Concordium**, die jährliche Weltversammlung offiziell **Concilium Mundi**. Im Interface bleibt sie lokalisiert „Weltrat“ bzw. „Weltversammlung“. Globus, Vorschau und Infotexte sind angepasst. Echte vergoldete Inschriften im Asset: „CONCILIUM MUNDI“ am Portikus, „CONCORDIUM – UBI MUNDUS CONVENIT“ am Tor.
+- **Höhe:** höchster Punkt 56,25 m (~33 Figurenhöhen), vorher 60,6 m. Kuppel und Laterne niedriger, sonst unverändert.
+- **Schutzgebiet:** Der 18-km-Radius ist verworfen. Neutral ist nur das **Grundstückspolygon** (172 × 172 m). Siedlungsgebiete dürfen es nicht überdecken, direkt daneben gelten normale Regeln.
+- **Treppenläufe** zwischen Podium und Wasserterrassen, die oberen Terrassen sind jetzt erreichbar.
+
+### Hinzugefügt
+- **Grenzänderung** nur durch die Weltautorität mit Beschluss. Das neue Gelände muss das alte enthalten. Mit Version und Protokoll, persistent.
+- **Neutralitäts-Regelwerk** in drei Stufen (verhindert, Verstoß, Krise) mit Schutz vor Ausnutzung: `Landmarks.classify_act`, Daten `neutrality`, [WORLD_COUNCIL_NEUTRALITY.md](docs/WORLD_COUNCIL_NEUTRALITY.md). Humanitärer Zugang bedingungslos.
+- **Verbindliches Innenraumprogramm** aller Gebäude mit Status (begehbar, Vorschau, Konzept): `data/landmarks/concordium_interiors.json`, [WORLD_COUNCIL_INTERIORS.md](docs/WORLD_COUNCIL_INTERIORS.md).
+- Anzeige der Zone in der Vorschau: neutrales Gelände bzw. normale Regeln außerhalb.
+- Entwurf 1 gesichert: Commit `d21e116`, `docs/world_council/concordium_entwurf_1.png`.
+- Neue Tests: Namen, Höhe, Grenze innen/außen, Gründung daneben, Neutralitätsstufen, Grenzänderung, Innenraumprogramm, Erreichbarkeit ab dem Tor.
+
 ## [0.7.0] – Weltratssitz (World Council) auf Kalistia (25.11.2026)
 Produktversion bleibt **v0.1**, bis der Projektinhaber abnimmt.
 

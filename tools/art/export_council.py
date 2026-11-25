@@ -33,6 +33,7 @@ if GRID_ONLY:
     site_old = json.load(open(os.path.join(out, 'site.json')))
 mats = cm.make_materials(centre_dome=wc.RC, moss=0.3 if stage <= 1 else 0.0, small_domes=wc.DOMES, mosaics=wc.MOSAICS)
 mats['inscription'] = cm.inscription('efe6d4', z0=wc.PODIUM_Z + 16.2, z1=wc.PODIUM_Z + 17.4)
+mats['lettering'] = cm.lettering('efe6d4', wc.INSCRIPTIONS, fallback=cm.stone('efe6d4', weather=0.05, seed=9))
 if GRID_ONLY:
     img, buf = None, None
 else:
@@ -105,8 +106,9 @@ for k, m in np.ndenumerate(mat):
         kind[k] = 1
 # statues, columns, walls: much higher than the surrounding floor -> blocked
 from scipy import ndimage
-floor = ndimage.minimum_filter(z, size=9)
-kind[(z - floor > 1.6) & (kind == 0)] = 1
+# (no extra "much higher than the floor" rule: movement already refuses steps
+#  > 0.55 m, so pedestals, walls and drops are not enterable, while terrace
+#  edges and stair landings stay usable)
 kind[z > 8.8] = 1                              # roofs, entablatures: not reachable
 hd = np.clip(np.round(z * 10.0), -100, 2000).astype(np.int16)
 site = {
@@ -117,6 +119,8 @@ site = {
              "height_dm": base64.b64encode(hd.astype('<i2').tobytes()).decode(),
              "kind": base64.b64encode(kind.tobytes()).decode()},
     "spawn": [float(wc.RC[0]), 83.4],
+    "height_m": float(max(so.aabb[1][2] for so in sc.solids)),
+    "site_frame": {"x_axis": "east", "y_axis": "south"},
     "points": {"forum": [float(wc.RC[0]) + 6.0, 60.0], "portico": [float(wc.RC[0]), 26.0], "theatre": [44.0, 44.0], "terraces": [40.0, -12.0]},
 }
 json.dump(site, open(os.path.join(out, "site.json"), "w"))

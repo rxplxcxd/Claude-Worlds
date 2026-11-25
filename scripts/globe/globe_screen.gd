@@ -286,7 +286,7 @@ func _refresh_overlays() -> void:
 	labels.settlements = markers
 	var lms: Array = []
 	for d in Landmarks.all():
-		lms.append({"landmark_id": d["landmark_id"], "lat": d["position"]["lat"], "lon": d["position"]["lon"], "name": d["name"], "subtitle": d["subtitle"], "reserve_km": d.get("reserve_radius_km", 18.0)})
+		lms.append({"landmark_id": d["landmark_id"], "lat": d["position"]["lat"], "lon": d["position"]["lon"], "name": d["name"], "subtitle": d["subtitle"], "reserve_km": sqrt(Landmarks.property_area_m2(d["landmark_id"]) / PI) / 1000.0})
 	labels.landmarks = lms
 	labels.candidate = {"lat": candidate["sample"]["lat"], "lon": candidate["sample"]["lon"]} if not candidate.is_empty() else {}
 	labels.candidate_valid = candidate.get("valid", true)
@@ -330,12 +330,13 @@ func select_landmark(landmark_id: String) -> void:
 	for sg in d.get("stages", []):
 		if int(sg["stage"]) == int(st.get("stage", 1)):
 			stage_label = sg["label"]
-	var t := "[b][color=#e0b64a]%s[/color][/b]\n[color=#b9b4a8]%s[/color]\n\n" % [d["name"], d["subtitle"]]
+	var t := "[b][color=#e0b64a]%s[/color][/b]\n[color=#b9b4a8]%s · Sitz des %ss[/color]\n[i]%s[/i]\n\n" % [d["name"], d["subtitle"], Landmarks.institution_ui_name(), d.get("tagline", {}).get("de", "")]
 	t += Landmarks.describe(landmark_id, int(Time.get_unix_time_from_system())).split("\n", false, 1)[1] + "\n"
 	t += "Zustand: Stufe %d – %s\n" % [int(st.get("stage", 1)), stage_label]
+	t += "Neutrales Gelände: %d × %d m (Grundstücksgrenze) – keine Nation besitzt es, Gewalt ist dort verboten.\n" % [int(sqrt(Landmarks.property_area_m2(landmark_id, st))), int(sqrt(Landmarks.property_area_m2(landmark_id, st)))]
 	t += "Position: %s\n" % Geo.format(ll.x, ll.y)
 	t += "Klima: warm-gemäßigt, Ø %d °C · Meer ca. %d km im Südwesten\n" % [int(d["site_choice"]["temperature_c"]), int(d["site_choice"]["coast_km"])]
-	t += "\n[color=#9a958a]Entwicklungsstand: Reisen dorthin (Phase 8), Restaurierung (Phase 7) und die Weltversammlung (Phase 10) folgen in späteren Phasen.[/color]"
+	t += "\n[color=#9a958a]Entwicklungsstand: Reisen dorthin (Phase 8), Restaurierung und Innenräume (Phase 7) und das %s (Phase 10) folgen in späteren Phasen.[/color]" % Landmarks.assembly_official_name()
 	if mode == "found":
 		_info.text = t + "\n\n" + _info.text
 	else:

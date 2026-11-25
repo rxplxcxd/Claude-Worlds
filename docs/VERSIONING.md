@@ -20,6 +20,15 @@ Die GitHub-Action ruft das bei jedem Build mit dem Commit-SHA auf. So ist jeder 
 - **Menü:** Titel „WORLDS v0.1 · Menü“ und unten die vollständige Zeile mit Kanal, technischer Version und Commit.
 - Code: `WorldsVersion.short_label()` / `full_label()` (`scripts/core/worlds_version.gd`).
 
+## Klarstellung des Projektinhabers (25.11.2026)
+- Die **sichtbare Produktversion** beginnt mit **v0.1** und steht auf dem Ladebildschirm und im Menü.
+- Sie wird **nicht** erhöht, nur weil weitergearbeitet wurde – eine neue Produktversion gibt es erst für einen vom Projektinhaber **freigegebenen** Entwicklungsstand.
+- Die **technische Build-Version** (`technical`, z. B. 0.8.0) und der Commit des Builds werden unabhängig davon geführt und zeigen jeden Arbeitsstand an.
+
+| Produktversion | Technische Builds | Stand |
+|---|---|---|
+| v0.1 | 0.6.0, 0.7.0, 0.8.0 | Living World, Phase 4, Gameplay-Polishing, Concordium – Abnahme ausstehend |
+
 ## Strategie
 - Die sichtbare Reihe beginnt am 25.11.2026 mit **v0.1** (Stand: Living World vertieft, Weltautorität, Phase 4 in Arbeit, Gameplay-Polishing).
 - **v0.2, v0.3 …**: jeder vom Projektinhaber abgenommene, relevante Entwicklungsstand (in der Regel eine abgeschlossene Phase oder ein größeres Arbeitspaket). Kleine Korrekturen dazwischen erhöhen nur `technical` (z. B. 0.6.1), nicht die Produktversion.

@@ -1507,12 +1507,62 @@ func _test_world_council() -> void:
 	# same position on every load (part of the world definition)
 	Landmarks._defs = []
 	check(Landmarks.position_of(Landmarks.WORLD_COUNCIL) == ll, "position is fixed, not re-rolled")
-	# founding is not possible inside the reserve, but just outside it is judged normally
+	# names: place, official assembly name and interface names are separate
+	check(Landmarks.site_name() == "Concordium" and d["name"] == "CONCORDIUM", "the place is called Concordium (with C)")
+	check(Landmarks.assembly_official_name() == "Concilium Mundi", "official ceremonial name of the annual assembly: Concilium Mundi")
+	check(Landmarks.assembly_ui_name("de") == "Weltversammlung" and Landmarks.institution_ui_name("de") == "Weltrat" and Landmarks.assembly_ui_name("en") == "World Assembly", "interface names stay localised (Weltrat / Weltversammlung / World Assembly)")
+	check(Landmarks.ceremonial_heading() == "CONCORDIUM\nConcilium Mundi\nDer Ort, an dem die Welt zusammenkommt.", "ceremonial heading for boards and invitations")
+	check(Landmarks.describe(Landmarks.WORLD_COUNCIL, 0).contains("Concilium Mundi") and Landmarks.describe(Landmarks.WORLD_COUNCIL, 0).contains("Weltversammlung"), "info text names both: Concilium Mundi (Weltversammlung)")
+	# height ~ 33 figure heights
+	check(absf(float(d["height_m"]) - 56.0) < 1.0, "highest point ~56 m (33 figure heights)")
+	# neutral zone = exactly the property polygon, no radius around it
+	check(not d.has("reserve_radius_km"), "no 18 km reserve any more")
+	check(absf(Landmarks.property_area_m2(Landmarks.WORLD_COUNCIL) - 172.0 * 172.0) < 1.0, "property: 172 x 172 m polygon")
+	var inside_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(80, -80), p.radius_km)
+	var outside_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(186, 0), p.radius_km)
+	check(not Landmarks.zone_at(inside_ll.x, inside_ll.y, p.radius_km).is_empty(), "a point inside the boundary is neutral ground")
+	check(Landmarks.zone_at(outside_ll.x, outside_ll.y, p.radius_km).is_empty(), "100 m outside the boundary the normal rules apply")
+	var rt := Landmarks.to_site(Landmarks.WORLD_COUNCIL, inside_ll.x, inside_ll.y, p.radius_km)
+	check(rt.distance_to(Vector2(80, -80)) < 0.5, "site metres <-> lat/lon round trip (%.2f m)" % rt.distance_to(Vector2(80, -80)))
+	# founding: the start square may not include the property, but right next to it is allowed
 	var inside := Geography.rate_site(ll.x, ll.y, [], [])
-	check(not inside["valid"] and inside.get("landmark", "") == Landmarks.WORLD_COUNCIL, "no founding inside the reserved ground")
-	var out_ll := Geo.offset(ll.x, ll.y, 0.0, -40.0, p.radius_km)
-	var outside := Geography.rate_site(out_ll.x, out_ll.y, [], [])
-	check(not outside.has("landmark"), "40 km away the reserve does not apply")
+	check(not inside["valid"] and inside.get("landmark", "") == Landmarks.WORLD_COUNCIL, "no settlement territory over the neutral property")
+	var near_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(0, 700), p.radius_km)
+	var near := Geography.rate_site(near_ll.x, near_ll.y, [], [])
+	check(not near.has("landmark"), "700 m away (start square outside the boundary): normal founding rules")
+	# neutrality tiers
+	var ctx_in := {"inside": true}
+	check(Landmarks.classify_act("attack_player", {"inside": false}) == "normal", "outside the property: ordinary rules")
+	check(Landmarks.classify_act("attack_player", ctx_in) == "prevented", "ordinary attack inside: technically prevented")
+	check(Landmarks.classify_act("attack_player", {"inside": true, "repeat": true}) == "violation", "repeated attempts: security violation")
+	check(Landmarks.classify_act("carry_weapon", ctx_in) == "violation" and Landmarks.classify_act("block_entrance", ctx_in) == "violation", "weapons and blockades: violation with intervention")
+	check(Landmarks.classify_act("declared_state_attack", {"inside": true, "declared_by_state_government": true, "server_validated": true}) == "violation", "no crisis attack while the conflict system is not enabled")
+	check(Landmarks.classify_act("declared_state_attack", {"inside": true, "declared_by_state_government": false, "server_validated": true, "crisis_enabled": true}) == "violation", "an individual player can never trigger the crisis event")
+	check(Landmarks.classify_act("declared_state_attack", {"inside": true, "declared_by_state_government": true, "server_validated": true, "crisis_enabled": true}) == "crisis", "a declared, server-validated state attack is a crisis event (later phases)")
+	check(d["neutrality"]["owner"] == null and d["neutrality"]["humanitarian"]["access"] == "unconditional", "owned by no nation; humanitarian access unconditional")
+	# interior programme: every building has its own interior shaped like the exterior
+	var prog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/landmarks/concordium_interiors.json"))
+	var ids := []
+	for b in prog["buildings"]:
+		ids.append(b["id"])
+	var needed := ["assembly_hall", "portico", "palace_west", "palace_east", "pavilion_corner", "pavilion_west", "pavilion_north", "stoa_west", "stoa_east", "tholos"]
+	check(needed.all(func(x): return ids.has(x)), "interior programme covers every building")
+	var hall: Dictionary = prog["buildings"][ids.find("assembly_hall")]
+	check(hall["shape"]["kind"] == "circle" and Vector2(hall["shape"]["centre"][0], hall["shape"]["centre"][1]) == Vector2(-16, -16), "council chamber is round and lies inside the rotunda")
+	check(prog["buildings"].all(func(b): return b["status"] in ["walkable", "preview", "concept"]), "every interior has an explicit status")
+	# boundary changes only by the world authority after a resolution
+	WorldState.use_storage("user://test_world_council_b.json", true)
+	var bigger := PackedVector2Array([Vector2(-86, -86), Vector2(120, -86), Vector2(120, 86), Vector2(-86, 86)])
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, bigger, "plr_someone", "res_1") != "", "a player cannot move the boundary")
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, bigger, Landmarks.AUTHORITY_ISSUER, "") != "", "no boundary change without a resolution")
+	var smaller := PackedVector2Array([Vector2(-50, -50), Vector2(50, -50), Vector2(50, 50), Vector2(-50, 50)])
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, smaller, Landmarks.AUTHORITY_ISSUER, "res_2") != "", "the neutral property can never shrink")
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, bigger, Landmarks.AUTHORITY_ISSUER, "res_3") == "", "extension by resolution + server update")
+	WorldState.load_world()
+	var stb := WorldState.landmark_state(Landmarks.WORLD_COUNCIL)
+	var east_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(110, 0), p.radius_km)
+	check(int(stb["property"]["version"]) == 2 and not Landmarks.zone_at(east_ll.x, east_ll.y, p.radius_km, {Landmarks.WORLD_COUNCIL: stb}).is_empty(), "extended boundary persists and is neutral")
+	WorldState.use_storage(WorldState.DEFAULT_SAVE_PATH, false)
 	# persistent state: read through WorldState, survives save/load
 	WorldState.use_storage("user://test_world_council.json", true)
 	var st := WorldState.landmark_state(Landmarks.WORLD_COUNCIL)
@@ -1543,6 +1593,28 @@ func _test_world_council() -> void:
 		h = h2
 	check(ok_steps, "the grand stairs can be climbed step by step")
 	check(v.cell_kind(Vector2(-16, -16)) != 0, "closed rotunda (stage 1) is not walkable")
+	check(absf(float(v.site.get("height_m", 0.0)) - float(d["height_m"])) < 0.05, "exported art has the defined height (%.2f m)" % float(v.site.get("height_m", 0.0)))
+	# reachable from the entrance (flood fill on the walk grid)
+	var reach := {}
+	var start := Vector2i(int((-16.0 - v._x0) / v._cell_m), int((83.4 - v._y0) / v._cell_m))
+	var queue: Array[Vector2i] = [start]
+	reach[start] = true
+	while not queue.is_empty():
+		var c: Vector2i = queue.pop_back()
+		var hc := float(v._heights[c.y * v._nx + c.x]) / 10.0
+		for dlt in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n2: Vector2i = c + dlt
+			if n2.x < 0 or n2.y < 0 or n2.x >= v._nx or n2.y >= v._ny or reach.has(n2):
+				continue
+			var i2 := n2.y * v._nx + n2.x
+			if v._kinds[i2] == 0 and absf(float(v._heights[i2]) / 10.0 - hc) <= CouncilSiteView.STEP_MAX:
+				reach[n2] = true
+				queue.append(n2)
+	var at := func(m: Vector2) -> bool: return reach.has(Vector2i(int((m.x - v._x0) / v._cell_m), int((m.y - v._y0) / v._cell_m)))
+	check(at.call(Vector2(-40, 45)) and at.call(Vector2(-9.5, 12.0)) and at.call(Vector2(-56, 40)), "reachable from the gate: forum, portico/podium (stairs), west stoa")
+	check(at.call(Vector2(4.0, 4.0)), "peristyle walkway around the rotunda reachable")
+	check(at.call(Vector2(25.0, -6.0)) and at.call(Vector2(42.0, -6.0)) and at.call(Vector2(60.0, -40.0)), "all three water terraces reachable over the stair flights")
+	check(at.call(Vector2(66.0, 66.0)), "theatre surroundings reachable")
 	check(v.screen_dir_to_grid(Vector2(1, 0)).normalized().distance_to(Vector2(1, -1).normalized()) < 0.01, "screen right = grid (+x, -y)")
 	var k := v.depth_key(Vector2(3, 4))
 	check(is_equal_approx(k, 20700.0), "depth key = (x + y + 200) * 100")

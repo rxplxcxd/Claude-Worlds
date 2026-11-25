@@ -107,7 +107,12 @@ func load_world() -> void:
 	var ls: Dictionary = saved.get("landmarks", {})
 	for id in ls.keys():
 		if not Landmarks.get_def(id).is_empty():
-			_landmark_state[id] = ls[id]
+			var st: Dictionary = ls[id]
+			var init := Landmarks.initial_state(id)
+			for k in init.keys():   # schema 2: property, neutral, incidents
+				if not st.has(k):
+					st[k] = init[k]
+			_landmark_state[id] = st
 	_migrate_territories()
 	_migrate_positions()
 
@@ -331,6 +336,26 @@ func landmark_state(landmark_id: String) -> Dictionary:
 			return {}
 		_landmark_state[landmark_id] = Landmarks.initial_state(landmark_id)
 	return _landmark_state[landmark_id]
+
+
+## Server-side boundary update of a landmark property (after a resolution).
+## Returns "" on success or the reason for the rejection. Logged in history.
+func update_landmark_property(landmark_id: String, polygon: PackedVector2Array, issuer: String, resolution_id: String) -> String:
+	var st := landmark_state(landmark_id)
+	if st.is_empty():
+		return "Unbekannte Landmarke."
+	var why := Landmarks.check_property_change(landmark_id, st, polygon, issuer, resolution_id)
+	if why != "":
+		return why
+	var pts := []
+	for p in polygon:
+		pts.append([p.x, p.y])
+	var prop: Dictionary = st.get("property", {})
+	st["property"] = {"version": int(prop.get("version", 1)) + 1, "polygon_m": pts}
+	st["version"] = int(st.get("version", 0)) + 1
+	(st["history"] as Array).append({"t": int(Time.get_unix_time_from_system()), "kind": "property_changed", "resolution_id": resolution_id, "by": issuer})
+	save_world()
+	return ""
 
 
 ## Switches storage (used by tests so the real local world is untouched).

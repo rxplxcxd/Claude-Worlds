@@ -22,8 +22,9 @@ Diese Datei spiegelt `data/credits.json` (im Spiel: Menü → *Mitwirkende & Liz
 ## Weitere Inhalte
 
 - Hintergrund des Figuren-Editors: Stylized Grass & Dirt (Hersteller im Paket nicht angegeben; vom Projektinhaber bereitgestellt).
-- Innenausstattung (in Vorbereitung): Kenney „Furniture Kit“ und OpenGameArt-Sammlungen, CC0 (gemeinfrei).
+- Geprüfte, derzeit nicht verwendete Innenraum-Pakete: Kenney „Furniture Kit“, Kenney „Roguelike Indoors“, OpenGameArt-Sammlung (alle CC0, gemeinfrei).
 - Eigene Effekte (Feuer, Rauch, Wetter, Funken, Belohnung): WORLDS-Projekt.
+- Innenraum-Ergänzungen (80 Möbel, 9 Böden/Wände, u. a. Betten, Bad, Läden, Concordium-Ausstattung): eigene Pixelgrafik des WORLDS-Projekts in der Perspektive der Penzilla-Innenraumtafeln.
 - Concordium (Weltratssitz): eigene Grafik des WORLDS-Projekts, mit einem eigenen isometrischen Renderer im Stil der Penzilla-Außenwelt erzeugt (keine Fremd- oder Penzilla-Pixel). Inschriften gesetzt in Liberation Serif (SIL Open Font License).
 - Schrift und Engine: Godot Engine (MIT-Lizenz).
 

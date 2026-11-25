@@ -69,7 +69,20 @@ func screen_to_world(screen_point: Vector2) -> Vector2:
 	return global_position + (screen_point - vp_size * 0.5) / zoom.x
 
 
+## Inside rooms: keep the whole view inside the bounds and centre rooms that
+## are smaller than the screen (outside, only the centre is clamped).
+var fit_view := false
+
+
 func _clamp(p: Vector2) -> Vector2:
 	if bounds.size == Vector2.ZERO:
 		return p
+	if fit_view:
+		var half := get_viewport_rect().size * 0.5 / zoom.x
+		var out := p
+		for i in 2:
+			var lo := bounds.position[i] + half[i]
+			var hi := bounds.end[i] - half[i]
+			out[i] = (bounds.position[i] + bounds.end[i]) * 0.5 if lo > hi else clampf(p[i], lo, hi)
+		return out
 	return Vector2(clampf(p.x, bounds.position.x, bounds.end.x), clampf(p.y, bounds.position.y, bounds.end.y))

@@ -829,7 +829,7 @@ func enter_building(bid: String) -> void:
 		rig.play("walk")
 	await tw2.finished
 	# the room
-	interior = InteriorScene.create(b.sprite_key, _staff_on_duty(bid))
+	interior = InteriorScene.create(b.sprite_key, _staff_on_duty(bid), SettlementCore.mix(str(record.get("settlement_id", "")) + "#" + bid), _interior_wealth())
 	interior.position = INTERIOR_OFFSET
 	add_child(interior)
 	_inside_bid = bid
@@ -838,10 +838,11 @@ func enter_building(bid: String) -> void:
 	player.position = interior.spawn_point
 	player.move_y_scale = InteriorScene.MOVE_Y_SCALE
 	player._visual.scale = Vector2.ONE * InteriorScene.PERSON_SCALE
-	player.facing = 1
+	player.facing = Iso.facing_index(Vector2(0, -1))     # looking into the room
 	_outside_bounds = camera.bounds
 	_outside_zoom = camera.zoom
 	camera.bounds = interior.bounds()
+	camera.fit_view = true
 	camera.snap_to_target()
 	objects.visible = false
 	ground.visible = false
@@ -857,6 +858,15 @@ func enter_building(bid: String) -> void:
 
 
 var _outside_return := Vector2.ZERO
+
+
+## Prosperity 0..1 for the furnishing variant (until the economy exists,
+## Phase 6: from the population and the stock of food).
+func _interior_wealth() -> float:
+	var pop := SettlementCore.alive_npcs(record).size() if record.has("npcs") else 10
+	var stocks: Dictionary = record.get("core", {}).get("stocks", {})
+	var food_days := float(stocks.get("food", 0.0)) / maxf(1.0, float(pop))
+	return clampf(0.25 + 0.4 * minf(1.0, pop / 40.0) + 0.3 * clampf(food_days / 20.0, 0.0, 1.0), 0.0, 1.0)
 
 
 func leave_building() -> void:
@@ -885,6 +895,7 @@ func leave_building() -> void:
 	var door := b.door_world_point("main") if b else _outside_return
 	player.global_position = door + Vector2(0, -2)
 	camera.bounds = _outside_bounds
+	camera.fit_view = false
 	camera.snap_to_target()
 	interior.queue_free()
 	interior = null

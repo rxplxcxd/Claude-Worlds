@@ -144,7 +144,7 @@ for k, v in (('house_1', 'house_small'), ('house_5', 'house_small'), ('house_2',
 
 # ------------------------------------------------------------------ shops
 L_OUT['shop_baker'] = {
-    'label': 'Bäckerei', 'size': [13, 10], 'palette': ['state1'],
+    'label': 'Bäckerei', 'size': [13, 10], 'wall_tiles': 3.5, 'palette': ['state1'],
     'rooms': [room('Backstube', [0, 0, 13, 4], 'tiles_orange', 'wall_brick'),
               room('Laden', [0, 4, 13, 6], ['boards_cream', 'parquet_cream'], 'wall_cream')],
     'partitions': [P([0, 4], [13, 4], openings=[[9, 4, 2]])],
@@ -160,7 +160,7 @@ L_OUT['shop_baker'] = {
     ],
 }
 L_OUT['shop_grocer'] = {
-    'label': 'Gemischtwaren', 'size': [13, 10], 'palette': ['state1', 'state2'],
+    'label': 'Gemischtwaren', 'size': [13, 10], 'wall_tiles': 3.5, 'palette': ['state1', 'state2'],
     'rooms': [room('Laden', [0, 0, 13, 10], ['planks_light', 'boards_cream'], ['wall_orange', 'wall_cream'])],
     'entrance': {'x': 6.5}, 'staff_spot': [10.5, 3.9],
     'items': [
@@ -228,7 +228,7 @@ L_OUT['clinic'] = {
     ],
 }
 L_OUT['workshop'] = {
-    'label': 'Werkstatt', 'size': [18, 8], 'palette': ['state1'],
+    'label': 'Werkstatt', 'size': [18, 8], 'wall_tiles': 4, 'palette': ['state1'],
     'rooms': [room('Halle', [0, 0, 18, 8], 'stone_flags', 'wall_brick')],
     'entrance': {'x': 9.0}, 'staff_spot': [2.2, 1.9],
     'items': [
@@ -297,13 +297,12 @@ chamber_items = [
     I('rostrum', 13.4, 5.6, action='speak'),
     I('candelabrum', 10.9, 5.4), I('candelabrum', 18.3, 5.4), I('brazier', 9.0, 2.8), I('brazier', 19.8, 2.8),
 ] + arcs(15.0, 7.0, [5.2, 7.7, 10.2], 18, 162, 'delegate_seat', 1.9)
-for k, x in enumerate((5.0, 7.0, 21.4, 23.4)):
-    chamber_items.append(W(['banner_red', 'banner_blue', 'banner_green', 'banner_gold', 'banner_purple', 'banner_white'][k + (k > 1)], x, 0.6))
-for x in (5.0, 9.0, 17.0, 21.0):
-    chamber_items.append(W('gallery_rail', x, 4.0))
+# the round hall carries full wall faces only in its top band (x ≈ 10..20)
+chamber_items += [W('banner_red', 12.3, 0.6), W('banner_blue', 16.2, 0.6), W('gallery_rail', 10.0, 4.0), W('gallery_rail', 16.0, 4.0),
+                  I('flag_stand', 10.2, 1.6), I('flag_stand', 18.0, 1.6)]
 for x, y in ((4.7, 6.4), (23.7, 6.4)):
     chamber_items.append(I('column', x, y))
-chamber_items += [W('mural', 9.0, 1.0), W('mural', 17.0, 1.0),
+chamber_items += [
                   I('reception_desk', 17.8, 25.3, action='reception', label='Akkreditierung'),
                   I('archive_cabinet', 8.4, 24.4, action='files', label='Waffenverwahrung',
                     text='Waffen und gefährliche Gegenstände werden hier verwahrt – das Concordium ist neutrales Gelände.'),

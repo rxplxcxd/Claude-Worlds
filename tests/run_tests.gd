@@ -1275,7 +1275,7 @@ func _test_gameplay_polish() -> void:
 	check(not clinic.is_inside(Vector2i(14, 1)) and clinic.is_inside(Vector2i(2, 1)) and clinic.is_inside(Vector2i(14, 8)), "the clinic interior is L-shaped like the building")
 	var ws: Array = InteriorScene.layouts()["workshop"]["size"]
 	check(int(ws[0]) >= int(ws[1]) * 1.6, "the long workshop has a long room")
-	check(clinic._is_entrance_cell(Vector2i(15, 8)) and home._is_entrance_cell(Vector2i(2, 9)), "entrances are on the same side as outside (clinic right, home left)")
+	check(clinic._is_entrance_cell(Vector2i(8, 9)) and home._is_entrance_cell(Vector2i(3, 9)) and not home._is_entrance_cell(Vector2i(8, 9)), "entrances are 2-tile gaps in the front wall")
 	# walking inside: the entrance is free, furniture blocks
 	var space := home.get_world_2d().direct_space_state
 	var q := PhysicsPointQueryParameters2D.new()
@@ -1296,6 +1296,7 @@ func _test_gameplay_polish() -> void:
 	check(r.size.x < 120 and r.size.y < 80, "the exit button area is only at the doorway (%s)" % str(r.size))
 	home.queue_free()
 	clinic.queue_free()
+	await _test_interior_standard()
 
 
 ## Personality has measurable effects (population-level A/B with fixed seeds).
@@ -1660,3 +1661,94 @@ func _test_world_council() -> void:
 	var back := gv.pick(pr["pos"])
 	check(pr["visible"] and back.distance_to(ll) < 0.05, "globe marker sits on the exact position (pick error %.3f°)" % back.distance_to(ll))
 	gv.queue_free()
+
+
+## Interior standard (docs/INTERIOR_STANDARD.md): straight 3/4 projection,
+## furnished rooms without overlaps, art in the same perspective.
+func _test_interior_standard() -> void:
+	print("[interior standard]")
+	check(InteriorScene.to_px(Vector2(1, 0)) == Vector2(InteriorScene.T, 0) and InteriorScene.to_px(Vector2(0, 1)) == Vector2(0, InteriorScene.T), "straight projection: room axes horizontal/vertical, square tiles (no diamonds)")
+	check(InteriorScene.MOVE_Y_SCALE == 1.0, "no vertical squash inside (square floor tiles)")
+	var atlas := InteriorScene.atlas_data()
+	var items: Dictionary = atlas["items"]
+	var missing := []
+	var too_tall := []
+	var keys: Array = InteriorScene.layouts().keys().filter(func(k): return not str(k).begins_with("_") and not InteriorScene.layouts()[k].has("alias"))
+	for k in keys:
+		var l: Dictionary = InteriorScene.layouts()[k]
+		var wall := float(l.get("wall_tiles", InteriorScene.WALL_TILES))
+		for e in l.get("items", []):
+			var ids: Array = e["item"] if e["item"] is Array else [e["item"]]
+			for id in ids:
+				if not items.has(id):
+					missing.append("%s:%s" % [k, id])
+					continue
+				var d: Dictionary = items[id]
+				if e.has("at") and not e.has("lift") and not d.get("wall", false):
+					var sol: Array = d.get("solid", [0, 0, 0, 0])
+					var h := (float(d["rect"][3]) - float(sol[3])) / 16.0
+					if float(sol[3]) > 0 and h > wall + 0.3:
+						too_tall.append("%s:%s %.1f>%.1f" % [k, id, h, wall])
+	check(missing.is_empty(), "every piece in the layouts exists in the atlas %s" % str(missing.slice(0, 5)))
+	check(too_tall.is_empty(), "no standing piece is taller than the room's walls %s" % str(too_tall.slice(0, 5)))
+	var own_missing := []
+	for id in items.keys():
+		var sh := str(items[id].get("sheet", ""))
+		if sh.begins_with("worlds/") and not ResourceLoader.exists("res://assets/interior/" + sh):
+			own_missing.append(id)
+	check(own_missing.is_empty(), "own interior art present (%d pieces)" % items.values().filter(func(d): return str(d.get("sheet", "")).begins_with("worlds/")).size())
+	for sk in ["player_home", "house_1", "house_2", "house_3", "house_4", "house_5", "house_6", "shop_baker", "shop_grocer", "shop_smith", "town_hall", "clinic", "farm_shop", "workshop", "depot", "emergency_post", "energy_station", "water_works"]:
+		if not InteriorScene.has_layout(sk):
+			missing.append(sk)
+	check(missing.is_empty(), "every enterable building of a settlement has its own interior")
+	var problems := 0
+	var counts := {}
+	var art := InteriorScene.assets_available()
+	for k in keys:
+		if not art and not bool(InteriorScene.layouts()[k].get("own_art_only", false)):
+			continue
+		var sc := InteriorScene.create(k, [], 3, 0.6)
+		sc.position = Vector2(0, 90000)
+		add_child(sc)
+		await get_tree().process_frame
+		var pr := sc.layout_problems()
+		if not pr.is_empty():
+			print("       ", k, ": ", pr)
+		problems += pr.size()
+		counts[k] = sc.item_nodes.size()
+		sc.queue_free()
+	check(problems == 0, "all interiors furnished without overlaps, pieces outside the room or blocked entrances (%d rooms)" % counts.size())
+	check(counts.values().all(func(n): return n >= 4), "no empty rooms (fewest pieces: %d)" % (counts.values().min() if not counts.is_empty() else 0))
+	# variants: two houses of the same type differ
+	if art:
+		var a := InteriorScene.create("house_2", [], 11, 0.2)
+		var b := InteriorScene.create("house_2", [], 12, 0.9)
+		add_child(a)
+		add_child(b)
+		await get_tree().process_frame
+		var na: String = a.item_nodes.map(func(n): return str(n.name).get_slice("_", 0) + str(n.name).get_slice("_", 1)).reduce(func(x, y): return x + y, "")
+		var nb: String = b.item_nodes.map(func(n): return str(n.name).get_slice("_", 0) + str(n.name).get_slice("_", 1)).reduce(func(x, y): return x + y, "")
+		check(na != nb or a._sheet_swap != b._sheet_swap, "furnishing varies with the building and the settlement's prosperity")
+		a.queue_free()
+		b.queue_free()
+	# Concordium: doors reachable on the site, interiors enterable
+	var v := CouncilSiteView.new()
+	v.load_site(1)
+	var bad := []
+	for d in CouncilSiteView.DOORS:
+		if v.cell_kind(d["at"]) != 0:
+			bad.append(d["key"])
+	check(bad.is_empty(), "every Concordium door stands on walkable ground %s" % str(bad))
+	v.free()
+	var live := CouncilSiteView.new()
+	add_child(live)
+	await get_tree().process_frame
+	live.enter_interior("concordium_chamber")
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	check(live.interior != null and live.walker != null and live.interior.layout.get("label", "") == "Großer Ratssaal", "the council chamber can be entered from the site")
+	live._process_inside(0.016)
+	check(str(live._context.get("kind", "")) == "exit", "inside, the way out is offered right at the entrance")
+	live.leave_interior()
+	check(live.interior == null, "leaving returns to the site")
+	live.queue_free()

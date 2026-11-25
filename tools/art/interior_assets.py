@@ -294,8 +294,8 @@ def build_items():
         sc.add(box(0, 0.1, 0.5, 3.0, 0.8, 0.65, 'wood'))), action='sit')
     item('waiting_chairs', 'Wartestühle', (3.4, 1.1), lambda sc: [chair(sc, 0.1 + k * 1.1, 0.0, 'blue') for k in range(3)], action='sit')
     item('flag_stand', 'Fahne', (1.0, 1.0), lambda sc: (
-        sc.add(cyl(0.5, 0.5, 0, 0.15, 0.4, 'bronze')), sc.add(cyl(0.5, 0.5, 0.15, 4.4, 0.06, 'bronze')),
-        sc.add(box(0.55, 0.45, 2.6, 1.9, 0.55, 4.2, 'blue')), sc.add(box(0.55, 0.45, 3.15, 1.9, 0.56, 3.65, 'gold'))))
+        sc.add(cyl(0.5, 0.5, 0, 0.15, 0.4, 'bronze')), sc.add(cyl(0.5, 0.5, 0.15, 3.3, 0.06, 'bronze')),
+        sc.add(box(0.55, 0.45, 1.7, 1.9, 0.55, 3.2, 'blue')), sc.add(box(0.55, 0.45, 2.2, 1.9, 0.56, 2.7, 'gold'))))
     # -- clinic
     item('med_bed', 'Behandlungsliege', (1.6, 3.2), lambda sc: (
         [sc.add(box(x, y, 0, x + 0.12, y + 0.12, 0.7, 'chrome')) for x in (0.1, 1.38) for y in (0.2, 3.0)],

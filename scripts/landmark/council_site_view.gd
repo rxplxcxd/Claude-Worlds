@@ -322,10 +322,54 @@ func _place_figure() -> void:
 			(ov.material as ShaderMaterial).set_shader_parameter("figure_key", key)
 
 
+## Doors of the Concordium buildings (site metres, +x east, +y south): the
+## interiors of docs/WORLD_COUNCIL_INTERIORS.md in the interior standard.
+## (Tholos and Wasserschloss: interiors exist; their doors are not reachable
+## on the stage-1 site – the tholos stands on an island in the pool.)
+const DOORS := [
+	{"key": "concordium_chamber", "label": "Großer Ratssaal", "at": Vector2(-16.0, 8.5)},
+	{"key": "concordium_exhibition", "label": "Ausstellungshalle (Westflügel)", "at": Vector2(-62.5, -20.0)},
+	{"key": "concordium_diplomacy", "label": "Diplomatieflügel (Nordflügel)", "at": Vector2(-30.0, -62.5)},
+	{"key": "concordium_archive", "label": "Archiv der Welt (Zugang im Innenhof)", "at": Vector2(-62.5, -63.0)},
+	{"key": "concordium_refuge", "label": "Zufluchtsort (Westpavillon)", "at": Vector2(-63.0, 22.0)},
+	{"key": "concordium_guest", "label": "Gästehaus (Nordpavillon)", "at": Vector2(10.0, -63.0)},
+]
+const DOOR_RADIUS := 3.0
+const INSIDE_SPEED := 150.0
+
+var interior: InteriorScene
+var walker: CharacterBody2D
+var walker_rig: CharacterRig
+var _act_button: Button
+var _toast: Label
+var _toast_left := 0.0
+var _context := {}
+
+
+## The door zone the figure stands in (outside), or {}.
+func door_at(p: Vector2) -> Dictionary:
+	for d in DOORS:
+		if p.distance_to(d["at"]) <= DOOR_RADIUS and InteriorScene.layout_available(d["key"]):
+			return d
+	return {}
+
+
 func _process(delta: float) -> void:
+	_toast_left -= delta
+	if _toast:
+		_toast.visible = _toast_left > 0.0
+	if interior:
+		_update_light()
+		# inside: daylight through the openings by day, warm lamp light at night
+		var lum := (_modulate.color.r + _modulate.color.g + _modulate.color.b) / 3.0
+		_modulate.color = Color(0.93, 0.84, 0.72).lerp(Color(1.0, 0.98, 0.95), clampf((lum - 0.5) / 0.4, 0.0, 1.0))
+		_process_inside(delta)
+		return
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down") if InputMap.has_action("move_left") else Vector2.ZERO
 	if _joystick.length_squared() > input.length_squared():
 		input = _joystick
+	var dz := door_at(pos_m)
+	_set_context({"kind": "door", "door": dz, "label": "Betreten: " + str(dz["label"])} if not dz.is_empty() else {})
 	var moving := input.length() > 0.05
 	if moving:
 		var g := screen_dir_to_grid(input) * WALK_SPEED * delta
@@ -346,6 +390,121 @@ func _process(delta: float) -> void:
 	_place_figure()
 	_update_light()
 	_update_zone()
+
+
+func _set_context(c: Dictionary) -> void:
+	_context = c
+	if _act_button:
+		_act_button.visible = not c.is_empty()
+		_act_button.text = str(c.get("label", ""))
+
+
+func _show_toast(t: String) -> void:
+	if _toast:
+		_toast.text = t
+		_toast_left = 3.5
+
+
+func _on_act() -> void:
+	match str(_context.get("kind", "")):
+		"door":
+			enter_interior(str(_context["door"]["key"]))
+		"exit":
+			leave_interior()
+		"item":
+			var act: String = _context["action"]
+			var adef: Dictionary = ActionLibrary.actions().get(act, {})
+			if walker_rig and adef.has("clip"):
+				walker_rig.play(str(adef["clip"]), true)
+			var txt := str(adef.get("toast", _context.get("label", "")))
+			if str(_context.get("text", "")) != "":
+				txt += "\n" + str(_context["text"]).replace("[i]", "").replace("[/i]", "")
+			_show_toast(txt)
+
+
+## Enters a Concordium building: the interior (interior standard) replaces
+## the site view; a walker with collisions moves inside.
+func enter_interior(key: String) -> void:
+	if interior or not InteriorScene.layout_available(key):
+		return
+	interior = InteriorScene.create(key, [], 1, 1.0)
+	interior.position = Vector2(0, 200000)
+	add_child(interior)
+	for n in [get_node_or_null("Tiles"), get_node_or_null("Occluders"), actors]:
+		if n:
+			n.visible = false
+	walker = CharacterBody2D.new()
+	walker.name = "Walker"
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 9.0
+	shape.shape = circle
+	walker.add_child(shape)
+	walker_rig = CharacterRig.new()
+	walker_rig.appearance = rig.appearance
+	walker_rig.world_per_src = Iso.WORLD_PER_SRC_PX * 0.62 * InteriorScene.PERSON_SCALE
+	walker.add_child(walker_rig)
+	interior.objects.add_child(walker)
+	walker.position = interior.spawn_point
+	camera.reparent(walker)
+	camera.position = Vector2(0, -40)
+	var b := interior.bounds()
+	camera.limit_left = int(b.position.x)
+	camera.limit_top = int(b.position.y)
+	camera.limit_right = int(b.end.x)
+	camera.limit_bottom = int(b.end.y)
+	camera.zoom = Vector2(0.75, 0.75)
+	camera.reset_smoothing()
+	_info.text = "%s – %s\n%s" % [Landmarks.site_name(landmark_id).to_upper(), str(interior.layout.get("label", "")), "Innenraum (Entwicklungsvorschau)"]
+	_show_toast("Du betrittst: " + str(interior.layout.get("label", "")))
+
+
+func leave_interior() -> void:
+	if interior == null:
+		return
+	camera.reparent(figure)
+	camera.position = rig.position
+	camera.limit_left = -10000000
+	camera.limit_top = -10000000
+	camera.limit_right = 10000000
+	camera.limit_bottom = 10000000
+	camera.zoom = Vector2(0.55, 0.55)
+	camera.reset_smoothing()
+	interior.queue_free()
+	interior = null
+	walker = null
+	walker_rig = null
+	for n in [get_node_or_null("Tiles"), get_node_or_null("Occluders"), actors]:
+		if n:
+			n.visible = true
+	var d := Landmarks.get_def(landmark_id)
+	_info.text = "%s – %s\nEntwicklungsvorschau (Anreise folgt mit dem Verkehrssystem, Phase 8)" % [d.get("name", ""), d.get("subtitle", "")]
+	_set_context({})
+
+
+func _process_inside(_delta: float) -> void:
+	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down") if InputMap.has_action("move_left") else Vector2.ZERO
+	if _joystick.length_squared() > input.length_squared():
+		input = _joystick
+	walker.velocity = input.limit_length(1.0) * INSIDE_SPEED
+	walker.move_and_slide()
+	if input.length() > 0.05:
+		_facing = Iso.facing_with_hysteresis(input, _facing)
+	walker_rig.set_motion(clampf(walker.velocity.length() / INSIDE_SPEED, 0.0, 1.0), _facing)
+	# context: exit at the doormat, else the object under the figure
+	var lp := walker.position
+	for it in interior.find_children("*", "Interactable", true, false):
+		var cp := it.get_child(0) as CollisionPolygon2D
+		if cp == null or not Geometry2D.is_point_in_polygon(lp - it.position, cp.polygon):
+			continue
+		if it.kind == "interior_exit":
+			_set_context({"kind": "exit", "label": "Verlassen"})
+			return
+		if it.kind == "interior":
+			var act := str(it.get_meta("action", ""))
+			_set_context({"kind": "item", "action": act, "label": "%s: %s" % [it.verb, it.title], "text": it.text})
+			return
+	_set_context({})
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -425,6 +584,24 @@ func _build_ui() -> void:
 		b.custom_minimum_size = Vector2(56, 48)
 		b.pressed.connect(spec[1])
 		bar.add_child(b)
+	_act_button = Button.new()
+	_act_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_act_button.custom_minimum_size = Vector2(220, 64)
+	_act_button.position = Vector2(-250, -110)
+	_act_button.visible = false
+	_act_button.pressed.connect(_on_act)
+	root.add_child(_act_button)
+	_toast = Label.new()
+	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_toast.position = Vector2(-260, 96)
+	_toast.custom_minimum_size = Vector2(520, 0)
+	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_toast.add_theme_font_size_override("font_size", 15)
+	_toast.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08))
+	_toast.add_theme_constant_override("outline_size", 6)
+	_toast.visible = false
+	root.add_child(_toast)
 	var stick := TouchJoystick.new()
 	stick.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	stick.position = Vector2(20, -200)

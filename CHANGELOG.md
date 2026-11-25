@@ -2,6 +2,32 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.9.0] – Globaler Innenraum-Rework (25.11.2026)
+Produktversion bleibt **v0.1**.
+
+### Behoben (Ursache)
+- Innenräume waren isometrisch (45°-Rauten) aufgebaut, die Innenraum-Grafiken sind aber gerade 3/4 gezeichnet. Böden, Wände und Möbel waren dadurch verzerrt oder standen schräg.
+- Neuer **Innenraum-Standard** ([INTERIOR_STANDARD.md](docs/INTERIOR_STANDARD.md)) mit neuem `InteriorScene`:
+  - rechteckige Räume, quadratische Kacheln,
+  - frontale Rückwände, Seiten- und Vorderkappen,
+  - Möbel mit Standfläche, y-Sortierung, Kollisionen,
+  - Innentüren, runde Räume mit gerader Rückwand oben.
+
+### Hinzugefügt
+- **80 eigene Pixel-Art-Stücke und 9 Boden- und Wandtexturen** in exakt dieser Perspektive, auf die Penzilla-Innenraumpalette quantisiert (`tools/art/interior_assets.py`).
+  - Betten, Matratze, Feldbett, Schränke, Dusche, Badmöbel, Küchen-Oberschränke.
+  - Laden, Bäckerei, Schmiede, Werkstatt, Büro, Praxis, Versorgung.
+  - Das komplette antike Concordium-Set: Säulen, Statuen, Vitrinen, Rednerpult, Delegiertenplätze, Präsidium, Banner, Wandgemälde, Archiv, Brunnen.
+- **23 eingerichtete Innenräume** mit Varianten nach Gebäude und Wohlstand (`tools/interiors/build_layouts.py`). Neu betretbar: alle Wohnhäuser, Depot, Rettungswache, Energiestation, Wasserwerk und 8 Concordium-Räume.
+- Concordium-Vorschau: Türen zu Ratssaal, Ausstellungshalle, Diplomatieflügel, Archiv, Zufluchtsort und Gästehaus, mit Laufen, Interaktionen und Raumlicht.
+- Kamera zeigt kleine Räume mittig.
+- 16 neue Aktionen (Bett, Schrank, Essen, Lesen, Rednerpult …).
+- Tests:
+  - gerade Projektion, keine Überschneidungen, keine verstellten Eingänge,
+  - Assets vorhanden, kein Möbel höher als die Wand,
+  - alle Gebäude mit Raumprogramm, Varianten,
+  - Concordium-Türen begehbar, Ratssaal betretbar.
+
 ## [0.8.1] – Concordium: Korrekturen und lebendiges Wasser (25.11.2026)
 Produktversion bleibt **v0.1**.
 

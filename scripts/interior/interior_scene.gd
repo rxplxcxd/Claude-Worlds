@@ -153,8 +153,9 @@ func _ready() -> void:
 	_build_staff()
 
 
+## Camera bounds in global coordinates (the room plus its back wall).
 func bounds() -> Rect2:
-	return Rect2(Vector2(-CAP, -wall_tiles * T), Vector2(size_t.x * T + CAP * 2, (size_t.y + wall_tiles) * T + CAP * 2)).grow(48)
+	return Rect2(global_position + Vector2(-CAP, -wall_tiles * T), Vector2(size_t.x * T + CAP * 2, (size_t.y + wall_tiles) * T + CAP * 2)).grow(48)
 
 
 # --- variants -----------------------------------------------------------------------
@@ -294,13 +295,20 @@ func _build_walls() -> void:
 			while x1 < size_t.x and cells.get(Vector2i(x1, y), -1) == room and not cells.has(Vector2i(x1, y - 1)):
 				x1 += 1
 			var r := Rect2(Vector2(x * T, y * T - wh), Vector2((x1 - x) * T, wh))
+			if _is_arc_step(room, y):
+				# round rooms: the curve below the top band is a low cap, not a wall face
+				_rect_poly(null, Rect2(Vector2(x * T, y * T - CAP), Vector2((x1 - x) * T, CAP)), Vector2.ZERO, wall_layer, CAP_COLOR)
+				_add_rect(body, Rect2(Vector2(x * T, y * T - T), Vector2((x1 - x) * T, T + 6)))
+				x = x1
+				continue
 			_rect_poly(_wall_tex(room), r, Vector2(x * SRC_TILE, 0), wall_layer)
 			_rect_poly(null, Rect2(r.position - Vector2(0, CAP), Vector2(r.size.x, CAP)), Vector2.ZERO, wall_layer, CAP_COLOR)
 			_rect_poly(null, Rect2(Vector2(r.position.x, y * T - 2), Vector2(r.size.x, 2)), Vector2.ZERO, wall_layer, Color(0, 0, 0, 0.22))
 			_add_rect(body, Rect2(Vector2(x * T, y * T - T), Vector2((x1 - x) * T, T + 6)))
 			x = x1
 	for c in cells:
-		var top: float = c.y * T - (wh + CAP if not cells.has(c + Vector2i(0, -1)) else 0.0)
+		var full_wall := not cells.has(c + Vector2i(0, -1)) and not _is_arc_step(int(cells[c]), c.y)
+		var top: float = c.y * T - (wh + CAP if full_wall else 0.0)
 		if not cells.has(c + Vector2i(-1, 0)):
 			_rect_poly(null, Rect2(Vector2(c.x * T - CAP, top), Vector2(CAP, (c.y + 1) * T - top)), Vector2.ZERO, wall_layer, CAP_COLOR)
 			_add_rect(body, Rect2(Vector2(c.x * T - T, c.y * T - 4), Vector2(T + 4, T + 8)))
@@ -318,6 +326,18 @@ func _build_walls() -> void:
 				holder.add_child(cap)
 				objects.add_child(holder)
 				_add_rect(body, Rect2(Vector2(c.x * T, (c.y + 1) * T - 4), Vector2(T, T)))
+
+
+## In a round room only the top band (2 rows) carries full wall faces.
+func _is_arc_step(room: int, y: int) -> bool:
+	var sc: Dictionary = layout.get("shape_circle", {})
+	if sc.is_empty() or (sc.has("room") and int(sc["room"]) != room):
+		return false
+	var top := size_t.y
+	for c in cells:
+		if int(cells[c]) == room:
+			top = mini(top, c.y)
+	return y > top + 1
 
 
 func _entrance() -> Dictionary:

@@ -60,7 +60,20 @@ Alle Plätze gehören zum neutralen Gelände.
 ## 5. Was heute tatsächlich begehbar ist
 **Begehbar im Spiel** (regulär, mit Anreise): **nichts**. Die Anreise kommt in Phase 8.
 
-**Entwicklungsvorschau** (Globus → „Ansehen (Vorschau)“), gemessen am Laufraster und durch Tests mit Erreichbarkeitsprüfung ab dem Tor belegt:
+**Innenräume in der Entwicklungsvorschau (seit 0.9.0, eingerichtet nach dem Innenraum-Standard):**
+
+| Innenraum | Zugang auf dem Gelände |
+|---|---|
+| Großer Ratssaal (mit Vestibül) | Bronzetür im Portikus |
+| Ausstellungshalle | Arkaden des Westflügels |
+| Diplomatieflügel | Arkaden des Nordflügels |
+| Archiv der Welt | Zugang im Innenhof |
+| Zufluchtsort | Westpavillon |
+| Gästehaus | Nordpavillon |
+
+Rundtempel und Wasserschloss sind eingerichtet, auf dem Gelände in Stufe 1 aber nicht erreichbar: Der Tholos steht auf der Insel im Becken, das Wasserschloss liegt am Pavillon. Im Saal gibt es Laufen, Kollisionen, Interaktionen und den Ausgang an der Türmatte.
+
+**Außengelände in der Entwicklungsvorschau** (Globus → „Ansehen (Vorschau)“), gemessen am Laufraster und durch Tests mit Erreichbarkeitsprüfung ab dem Tor belegt:
 - **erreichbar:**
   - Tor mit Durchgang durch den Mittelbogen,
   - Forum,
@@ -70,7 +83,7 @@ Alle Plätze gehören zum neutralen Gelände.
   - Säulenhallen (Kolonnadenbereich, Antrittsstufe), Gärten und Wege,
   - Theatergarten und Theaterrand (über den Bogendurchgang in der Rückwand der östlichen Säulenhalle und die Heckentore).
 - **nicht begehbar:**
-  - alle Innenräume: Rotunde, Palastflügel, Pavillons, Vestibül hinter der Bronzetür, Tholos, Wasserschloss,
+  - die Innenräume nicht direkt vom Gelände aus; sie werden über die Türen betreten (oben),
   - das Theaterinnere (Sitzstufen 0,68 m hoch),
   - Wasserflächen, Statuen, Pflanzen.
 
@@ -83,7 +96,10 @@ Bei der Prüfung behobene Mängel des Entwurfs:
 
 Der Test „reachable from the gate“ prüft das bei jedem Build.
 
-**Konzept** (verbindlich festgelegt, nicht gebaut): alle Innenräume aus §1–3, das Ausstellungssystem, die humanitären Einrichtungen.
+**Konzept**, verbindlich festgelegt, aber noch nicht spielmechanisch umgesetzt:
+- das erweiterbare Ausstellungssystem (Stiftungen der Spieler),
+- die Funktionen der Räume: Abstimmungen (Phase 10), Versorgung und Betrieb (Phase 6/11),
+- Galerieebenen als eigene, begehbare Ebene.
 
 ## 6. Überführung in die endgültige Spielarchitektur
 1. **Außengelände:** Die Vorschau-Szene wird zum regulären Ort, erreichbar über Reisen (Phase 8).

@@ -1438,6 +1438,7 @@
    13,
    10
   ],
+  "wall_tiles": 3.5,
   "palette": [
    "state1"
   ],
@@ -1641,6 +1642,7 @@
    13,
    10
   ],
+  "wall_tiles": 3.5,
   "palette": [
    "state1",
    "state2"
@@ -2423,6 +2425,7 @@
    18,
    8
   ],
+  "wall_tiles": 4,
   "palette": [
    "state1"
   ],
@@ -3186,57 +3189,43 @@
    {
     "item": "banner_red",
     "wall": [
-     5.0,
+     12.3,
      0.6
     ]
    },
    {
     "item": "banner_blue",
     "wall": [
-     7.0,
-     0.6
-    ]
-   },
-   {
-    "item": "banner_gold",
-    "wall": [
-     21.4,
-     0.6
-    ]
-   },
-   {
-    "item": "banner_purple",
-    "wall": [
-     23.4,
+     16.2,
      0.6
     ]
    },
    {
     "item": "gallery_rail",
     "wall": [
-     5.0,
+     10.0,
      4.0
     ]
    },
    {
     "item": "gallery_rail",
     "wall": [
-     9.0,
+     16.0,
      4.0
     ]
    },
    {
-    "item": "gallery_rail",
-    "wall": [
-     17.0,
-     4.0
+    "item": "flag_stand",
+    "at": [
+     10.2,
+     1.6
     ]
    },
    {
-    "item": "gallery_rail",
-    "wall": [
-     21.0,
-     4.0
+    "item": "flag_stand",
+    "at": [
+     18.0,
+     1.6
     ]
    },
    {
@@ -3251,20 +3240,6 @@
     "at": [
      23.7,
      6.4
-    ]
-   },
-   {
-    "item": "mural",
-    "wall": [
-     9.0,
-     1.0
-    ]
-   },
-   {
-    "item": "mural",
-    "wall": [
-     17.0,
-     1.0
     ]
    },
    {

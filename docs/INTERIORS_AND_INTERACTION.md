@@ -38,12 +38,22 @@ Fehlende Bewegungen werden **aus den Original-Penzilla-Einzelbildern** zusammeng
 - Fahrzeug- und Bustüren: als Typen vorgesehen (`vehicle_hinged`, `bus_folding` im Konzept); Fahrzeuge gibt es im Spiel noch nicht.
 
 ## 3. Innenräume
-- **Isometrisch**, etwas steiler als draußen (Raute 1,45 : 1). Die Retro-Interior-Tafeln sind frontal gezeichnet: Böden, Wände, Fenster, Bilder und Innentüren werden auf die isometrischen Flächen **projiziert**, Möbel stehen als frontale Sprites auf isometrischen Grundflächen (Kollision = Raute). Hinterwände sichtbar, Vorderwände aufgeschnitten.
-- **Form folgt dem Gebäude:** Häuser fast quadratisch, Läden schmal, Werkstatt lang, Rathaus groß mit Verwaltungsflügel, **Praxis L-förmig**; Eingang auf derselben Seite wie draußen.
-- Betretbar: **Spielerhaus** (Matratze, Bad mit Toilette, Waschbecken, Dusche, einfache Küche mit altem Herd und Kühlschrank, Umzugskisten), **Bäckerei, Gemischtwaren, Schmiede, Rathaus** (Verwaltungsschalter öffnet die Verwaltung), **Praxis, Hofladen, Werkstatt**. Personal im Dienst (aus dem Dienstplan) steht dort.
-- Bewusst unfertig: Matratze statt Bett, alter Herd, Kisten statt Schrank – mit Hinweis, was später gekauft/gebaut werden kann (`upgrade`, Phase 6/7). Layouts sind Daten (`data/interiors/layouts.json`), Möbel austauschbar.
-- Raumwechsel: Position draußen gemerkt, Innenraum geladen (weit außerhalb der Stadt im selben Weltbaum, die Siedlung lebt weiter), Spieler am Eingang, Kamera auf den Raum begrenzt, Licht innen (tags Tageslicht, nachts Lampenlicht); beim Verlassen zurück an die Haustür.
-- Interaktionsknopf nur am Objekt: Innenraum-Objekte haben ihre Grundfläche + kleinen Rand als Interaktionsbereich; Ausgang nur an der Türmatte; draußen hat jedes Gebäude eine kleine Türfläche („Betreten“), der Gebäudekörper ist nur per Antippen erreichbar.
+**Seit 0.9.0 gilt der [Innenraum-Standard](INTERIOR_STANDARD.md):** gerade 3/4-Ansicht wie die Innenraum-Grafiken selbst, rechteckige Räume, quadratische Kacheln, frontale Rückwände, Möbel mit Standfläche auf dem Raster. Die frühere isometrische Projektion der Innenräume war die Ursache für schräg liegende Möbel und Betten und ist ersetzt.
+
+- **Betretbar** sind 23 Innenräume, alle eingerichtet:
+  - Spielerhaus,
+  - Wohnhäuser in drei Größen (house_1 bis house_6 über Verweise),
+  - Bäckerei, Gemischtwaren, Schmiede, Hofladen,
+  - Rathaus, Praxis (L-förmig), Werkstatt, Depot, Rettungswache, Energiestation, Wasserwerk,
+  - acht Concordium-Räume.
+- **Personal:** Wer laut Dienstplan Dienst hat, steht im Raum.
+- **Varianten:** Die Einrichtung wechselt je Gebäude (Seed) und mit dem Wohlstand der Siedlung.
+- **Spielerhaus:** bleibt bewusst einfach (Matratze statt Bett, Umzugskisten) – mit Hinweis, was später gekauft oder gebaut werden kann (Phase 6/7).
+- **Raumwechsel:**
+  - Position draußen gemerkt, Innenraum weit außerhalb der Stadt im selben Weltbaum, Spieler am Eingang mit Blick in den Raum.
+  - Die Kamera zeigt kleine Räume mittig und bleibt in großen Räumen innerhalb der Wände.
+  - Licht innen; beim Verlassen zurück an die Haustür.
+- **Interaktionsknopf nur am Objekt:** Standfläche plus kleiner Rand; der Ausgang nur an der Türmatte.
 
 ## 4. Kollisionen, Größen, Sortierung
 - Straßenlaternen: Mast auf ≈ 4,5 m (2,6 × Personenhöhe), Leuchte menschengroß; Leuchtenkopf liegt immer über dem Kopf der Figuren (keine Sortierfehler mehr).

@@ -14,9 +14,16 @@ extends Node2D
 ## (verified in the browser: row 2 faces right).
 
 signal animation_finished(anim: String)
+## Fired by clip event markers (e.g. "door_open" when the hand reaches the door).
+signal clip_event(event: String)
 
-## facing index (Iso.facing_index) -> [row, mirrored]
-const FACING_ROWS := [[2, false], [3, false], [4, false], [3, true], [2, true], [1, true], [0, false], [1, false]]
+## facing index (Iso.facing_index: 0 E, 1 NE, 2 N, 3 NW, 4 W, 5 SW, 6 S, 7 SE)
+## -> [sheet row, mirrored]. Penzilla rows (measured on the sheets: the face
+## layer lies 31–41 px LEFT of the body centre in rows 1 and 2, rows 3/4 show
+## the back): 0 = S, 1 = SW, 2 = W, 3 = NW, 4 = N. East-facing directions are
+## the mirrored west rows. (0.5.0 had this mirrored – walking right showed the
+## figure facing left; tests/run_tests.gd checks the mapping now.)
+const FACING_ROWS := [[2, true], [3, true], [4, false], [3, false], [2, false], [1, false], [0, false], [1, true]]
 
 ## World units per ORIGINAL Penzilla pixel (characters are drawn a bit smaller
 ## than the building grid, see docs/CHARACTER_SYSTEM.md).
@@ -38,6 +45,18 @@ var _parts: Array[Sprite2D] = []
 var _face_sprite: Sprite2D
 var _build_id := 0
 var _held := false
+var speed_scale := 1.0             # animation rate multiplier (movement speed)
+var _stop_grace := 0.0
+## Clip playback (CharacterCatalog clips: sequences of Penzilla frames with
+## face changes, head/body offsets and event markers).
+var _clip: Dictionary = {}
+var _seg := 0
+var _seg_frames: Array = []
+var _repeat := 0
+var _offset_body := Vector2.ZERO
+var _offset_face := Vector2.ZERO
+var _face_item := ""
+var _fired: Dictionary = {}
 
 
 func _ready() -> void:
@@ -52,7 +71,8 @@ func set_appearance(app: Dictionary) -> void:
 		_rebuild()
 
 
-## Changes the animation ("idle", "walk", "interact"). Restarts one-shots.
+## Changes the animation – a Penzilla animation ("idle", "walk", "sit" …) or
+## a clip from the library ("greet", "eat", "open_door" …). Restarts one-shots.
 func play(new_anim: String, restart: bool = false) -> void:
 	if new_anim == anim and not restart:
 		return
@@ -60,7 +80,23 @@ func play(new_anim: String, restart: bool = false) -> void:
 	frame = 0
 	_time = 0.0
 	_held = false
+	_clip = CharacterCatalog.clip(new_anim)
+	_seg = 0
+	_repeat = 0
+	_fired = {}
+	_offset_body = Vector2.ZERO
+	_offset_face = Vector2.ZERO
+	_face_item = ""
 	_rebuild()
+
+
+func is_playing_clip() -> bool:
+	return not _clip.is_empty()
+
+
+func _segment() -> Dictionary:
+	var segs: Array = _clip.get("segments", [])
+	return segs[mini(_seg, segs.size() - 1)] if not segs.is_empty() else {}
 
 
 func set_facing(f: int) -> void:
@@ -73,9 +109,16 @@ func set_facing(f: int) -> void:
 ## Convenience for moving characters.
 func set_motion(speed01: float, new_facing: int) -> void:
 	set_facing(new_facing)
-	if anim == "interact" and speed01 < 0.05:
+	# step rate follows the real speed (slow stick = slower steps, no sliding feet)
+	speed_scale = clampf(speed01, 0.55, 1.15) if speed01 > 0.05 else 1.0
+	if speed01 > 0.05:
+		_stop_grace = 0.12
+		if anim != "walk":
+			play("walk")
 		return
-	play("walk" if speed01 > 0.05 else "idle")
+	if anim == "interact" or (anim == "walk" and _stop_grace > 0.0):
+		return   # one-shot runs to the end / brief stop keeps the stride
+	play("idle")
 
 
 func is_ready_to_draw() -> bool:
@@ -85,10 +128,15 @@ func is_ready_to_draw() -> bool:
 func _process(delta: float) -> void:
 	if _parts.is_empty():
 		return
+	_stop_grace = maxf(0.0, _stop_grace - delta)
+	if not _clip.is_empty():
+		_process_clip(delta)
+		_update_blink(delta)
+		return
 	var info := CharacterCatalog.anim_info(_resolved)
 	var frames: int = int(info.get("frames", 1))
 	var fps: float = float(info.get("fps", 8))
-	_time += delta
+	_time += delta * speed_scale
 	var step := int(_time * fps)
 	var new_frame := step % frames if info.get("loop", true) else mini(step, frames - 1)
 	if not info.get("loop", true) and step >= frames and info.get("hold", false):
@@ -110,8 +158,57 @@ func _process(delta: float) -> void:
 	_update_blink(delta)
 
 
+func _process_clip(delta: float) -> void:
+	var seg := _segment()
+	var seq: Array = seg.get("seq", [0])
+	var fps := float(seg.get("fps", _clip.get("fps", 8)))
+	_time += delta * speed_scale
+	var step := int(_time * fps)
+	if step >= seq.size():
+		var segs: Array = _clip.get("segments", [])
+		if _seg + 1 < segs.size():
+			_seg += 1
+			_time = 0.0
+			_fired = {}
+			_rebuild()
+			return
+		_repeat += 1
+		if bool(_clip.get("loop", false)) or _repeat < int(_clip.get("repeat", 1)):
+			_seg = 0
+			_time = 0.0
+			_fired = {}
+			if segs.size() > 1:
+				_rebuild()
+			return
+		if bool(_clip.get("hold", false)):
+			if not _held:
+				_held = true
+				animation_finished.emit(anim)
+			step = seq.size() - 1
+		else:
+			var finished := anim
+			play(str(_clip.get("then", "idle")), true)
+			animation_finished.emit(finished)
+			return
+	var ev: Dictionary = seg.get("events", {})
+	if ev.has(str(step)) and not _fired.has(step):
+		_fired[step] = true
+		clip_event.emit(str(ev[str(step)]))
+	var bob: Array = seg.get("body_dy", [])
+	var fdx: Array = seg.get("face_dx", [])
+	var fdy: Array = seg.get("face_dy", [])
+	var body := Vector2(0, float(bob[step % bob.size()]) if not bob.is_empty() else 0.0)
+	var facev := Vector2(float(fdx[step % fdx.size()]) if not fdx.is_empty() else 0.0, float(fdy[step % fdy.size()]) if not fdy.is_empty() else 0.0)
+	var new_frame := int(seq[mini(step, seq.size() - 1)])
+	if new_frame != frame or body != _offset_body or facev != _offset_face:
+		frame = new_frame
+		_offset_body = body
+		_offset_face = facev
+		_apply_frame()
+
+
 func _update_blink(delta: float) -> void:
-	if not blink or _face_sprite == null or not _resolved.begins_with("idle"):
+	if not blink or _face_sprite == null or not _resolved.begins_with("idle") or _face_item != "":
 		return
 	if _blinking > 0.0:
 		_blinking -= delta
@@ -139,8 +236,16 @@ func _rebuild() -> void:
 		s.queue_free()
 	_parts.clear()
 	_face_sprite = null
-	_resolved = CharacterCatalog.resolve_anim(appearance, anim)
-	var layers := CharacterCatalog.layers_for(appearance, _resolved)
+	var face_override := ""
+	if not _clip.is_empty():
+		var seg := _segment()
+		_resolved = CharacterCatalog.resolve_anim(appearance, str(seg.get("base", "idle")))
+		var f := str(seg.get("face", _clip.get("face", "")))
+		face_override = ("face_" + f) if f != "" else ""
+	else:
+		_resolved = CharacterCatalog.resolve_anim(appearance, anim)
+	_face_item = face_override
+	var layers := CharacterCatalog.layers_for(appearance, _resolved, face_override)
 	if layers.is_empty():
 		queue_redraw()
 		return
@@ -209,12 +314,15 @@ func _apply_frame() -> void:
 	var region := Rect2(frame * fs.x, int(rule[0]) * fs.y, fs.x, fs.y)
 	var scale_f := world_per_src / CharacterCatalog.file_scale()
 	var feet := CharacterCatalog.feet_in_frame(_resolved)
+	var mirror := -1.0 if rule[1] else 1.0
 	for s in _parts:
 		s.region_rect = region
 		s.flip_h = rule[1]
 		# Mirror around the feet so the character does not jump sideways.
 		var x := -(fs.x - feet.x) if rule[1] else -feet.x
-		s.position = Vector2(x, -feet.y) * scale_f
+		s.position = Vector2(x, -feet.y) * scale_f + _offset_body * world_per_src
+		if s == _face_sprite:
+			s.position += Vector2(_offset_face.x * mirror, _offset_face.y) * world_per_src
 
 
 func _draw() -> void:

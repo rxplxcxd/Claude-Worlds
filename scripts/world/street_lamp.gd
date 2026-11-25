@@ -16,7 +16,10 @@ const HEAD_SRC := Rect2(0, 0, 58, 70)
 const ARM_JOINT_SRC := Vector2(103, 84)
 const ARM_FREE_SRC := Vector2(9, 8)
 ## How far the arm reaches over the road, in tiles (ground projection).
-const ARM_REACH_TILES := 0.42
+const ARM_REACH_TILES := 0.55
+## The Penzilla lamp is drawn at the miniature building scale (≈ as tall as a
+## person). Street lamps are ~4.5 m: 2.6 × the 1.75 m person (62 world px).
+const HEIGHT_SCALE := 2.6
 
 ## Grid direction from the lamp towards the road it lights.
 var road_dir := Vector2i(0, 1)
@@ -63,10 +66,10 @@ func _build_visual() -> void:
 	var reach := arm_vector()
 	if _off_tex == null or arm_tex == null:
 		# Placeholder: simple pole + arm + head drawn in _draw().
-		_head_world = Vector2(0, -62) + reach
+		_head_world = Vector2(0, -62 * HEIGHT_SCALE) + reach
 		queue_redraw()
 		return
-	var k := Iso.WORLD_PER_SRC_PX
+	var k := Iso.WORLD_PER_SRC_PX * HEIGHT_SCALE
 	var f_lamp := float(_off_tex.get_width()) / 58.0 # file pixels per source pixel
 	var pole := Sprite2D.new()
 	pole.texture = _off_tex
@@ -106,7 +109,7 @@ func _build_visual() -> void:
 
 	_halo = Sprite2D.new()
 	_halo.texture = _light_tex
-	_halo.scale = Vector2(0.32, 0.32)
+	_halo.scale = Vector2(0.45, 0.45)
 	_halo.position = _head_world
 	_halo.material = _additive()
 	_halo.modulate.a = 0.0
@@ -162,9 +165,10 @@ func _draw() -> void:
 	# PLACEHOLDER arm lamp.
 	var reach := arm_vector()
 	IsoPainter.ellipse(self, Vector2.ZERO, Vector2(7, 3), Color(0, 0, 0, 0.2))
-	draw_line(Vector2.ZERO, Vector2(0, -62), Color("3c4248"), 3.0, true)
-	draw_line(Vector2(0, -62), Vector2(0, -62) + reach, Color("3c4248"), 2.0, true)
-	IsoPainter.ellipse(self, Vector2(0, -58) + reach, Vector2(6, 4), Color("f6e3a1") if _lit else Color("9aa0a6"))
+	var h := 62.0 * HEIGHT_SCALE
+	draw_line(Vector2.ZERO, Vector2(0, -h), Color("3c4248"), 3.0, true)
+	draw_line(Vector2(0, -h), Vector2(0, -h) + reach, Color("3c4248"), 2.0, true)
+	IsoPainter.ellipse(self, Vector2(0, -h + 4) + reach, Vector2(6, 4), Color("f6e3a1") if _lit else Color("9aa0a6"))
 
 
 static func _make_light_texture() -> GradientTexture2D:

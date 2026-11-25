@@ -61,6 +61,11 @@ func anim_info(anim: String) -> Dictionary:
 	return data.get("anims", {}).get(anim, {})
 
 
+## Animation clip from the library (data/character_catalog.json "clips"), {} if none.
+func clip(id: String) -> Dictionary:
+	return data.get("clips", {}).get(id, {})
+
+
 # --- appearance ---------------------------------------------------------
 
 func default_appearance() -> Dictionary:

@@ -57,6 +57,18 @@ func setup(entry: Dictionary, p_variant: float = 0.0) -> void:
 		shape.polygon = pts
 		add_child(shape)
 
+	# objects people can use get an interaction area right at the object
+	var lib_actions := ActionLibrary.prop_actions(kind)
+	if not lib_actions.is_empty() and not entry.has("name"):
+		entry = entry.duplicate()
+		entry["name"] = {"mailbox": "Briefkasten", "bench": "Bank", "trash_small": "Mülleimer", "crates": "Kisten", "bus_stop": "Haltestelle", "fountain": "Brunnen", "notice_board": "Anschlagtafel"}.get(kind, kind)
+	if not lib_actions.is_empty():
+		var have: Array = entry.get("actions", [])
+		for la in lib_actions:
+			if not have.any(func(h): return h.get("id", "") == la["id"]):
+				have = have + [la]
+		entry = entry.duplicate()
+		entry["actions"] = have
 	if entry.has("name"):
 		var poly := PackedVector2Array()
 		var rr := maxf(r, 16.0) + 26.0

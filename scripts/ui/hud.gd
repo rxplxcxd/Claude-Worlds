@@ -269,7 +269,7 @@ func _build_menu() -> void:
 	var head := HBoxContainer.new()
 	box.add_child(head)
 	var title := Label.new()
-	title.text = "WORLDS · Menü"
+	title.text = WorldsVersion.short_label() + " · Menü"
 	title.add_theme_font_size_override("font_size", 24)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
@@ -337,6 +337,14 @@ func _build_menu() -> void:
 		joystick.visible = on
 		_hint_label.visible = not on)
 	box.add_child(joy_toggle)
+	# version (single source: data/version.json) – also on the loading screen
+	var ver := Label.new()
+	ver.name = "VersionLabel"
+	ver.text = WorldsVersion.full_label()
+	ver.add_theme_font_size_override("font_size", 13)
+	ver.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	ver.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(ver)
 
 
 func _build_debug() -> void:

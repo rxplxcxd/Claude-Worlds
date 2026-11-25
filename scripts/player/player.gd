@@ -21,6 +21,13 @@ var player_id: String = ""
 ## False while a full-screen UI (character editor) owns the input.
 var input_enabled := true
 var facing: int = 6
+## Vertical squash of the isometric ground plane (outside Iso.MOVE_Y_SCALE,
+## inside the steeper InteriorScene.MOVE_Y_SCALE).
+var move_y_scale := Iso.MOVE_Y_SCALE
+## Pose taken for an action ("" / "sit" / "lie"); input makes the player get up.
+var pose := ""
+var _pose_return := Vector2.ZERO
+var _busy := 0.0                  # seconds the current action blocks movement
 
 var _joystick := Vector2.ZERO
 var _target: Variant = null # Vector2 or null
@@ -72,11 +79,24 @@ func _physics_process(delta: float) -> void:
 		input = _joystick
 	if not input_enabled:
 		input = Vector2.ZERO
+	if pose != "":
+		# sitting / lying: a push on the stick stands the player up first
+		if input.length_squared() > 0.09 and _busy <= 0.0:
+			_stand_up()
+		_update_focus()
+		return
+	if _busy > 0.0:
+		_busy -= delta
+		if input.length_squared() > 0.09 and _visual.rig and _visual.rig.is_playing_clip() and not _visual.rig.anim in ["open_door", "close_door"]:
+			_busy = 0.0          # moving interrupts a gesture
+		else:
+			_update_focus()
+			return
 	var dir := Vector2.ZERO
 	if input.length_squared() > 0.01:
 		if _target != null:
 			cancel_move_target()
-		dir = Iso.screen_input_to_world(input)
+		dir = Vector2(input.x, input.y * move_y_scale)
 		moved_by_input.emit()
 	elif _target != null:
 		dir = _steer_to_target()
@@ -85,9 +105,14 @@ func _physics_process(delta: float) -> void:
 	var before := global_position
 	move_and_slide()
 	_update_stuck(delta, before)
-	if velocity.length_squared() > 1.0:
-		facing = Iso.facing_index(velocity)
-	_visual.set_motion(velocity.length() / SPEED, facing)
+	# Facing follows the INTENDED direction (stick/target), not the slide
+	# velocity along a wall, with hysteresis so a stick held near a diagonal
+	# boundary does not flicker between two directions.
+	if dir.length_squared() > 0.0004:
+		facing = Iso.facing_with_hysteresis(dir, facing)
+	# Animation follows the ACTUAL movement: pushing against a wall stands.
+	var moved := (global_position - before).length() / maxf(delta, 0.0001) / SPEED
+	_visual.set_motion(moved if dir.length_squared() > 0.0004 else 0.0, facing)
 	_update_focus()
 
 
@@ -128,7 +153,7 @@ func try_interact() -> void:
 func _steer_to_target() -> Vector2:
 	var to: Vector2 = _target - global_position
 	# Ground-plane distance: vertical screen pixels count more (see Iso).
-	var ground := Vector2(to.x, to.y / Iso.MOVE_Y_SCALE)
+	var ground := Vector2(to.x, to.y / move_y_scale)
 	if ground.length() <= ARRIVE_DISTANCE:
 		cancel_move_target()
 		return Vector2.ZERO
@@ -159,7 +184,7 @@ func _update_focus() -> void:
 	var best: Interactable = null
 	var best_d := INF
 	for it in _nearby:
-		if not is_instance_valid(it):
+		if not is_instance_valid(it) or not it.proximity or not it.is_visible_in_tree():
 			continue
 		var d := global_position.distance_squared_to(it.get_approach_point())
 		if d < best_d:
@@ -180,6 +205,48 @@ func _arrive_and_interact() -> void:
 	_face_towards(it.global_position)
 	_visual.play_interact()
 	interaction_requested.emit(it)
+
+
+## Plays an action from the ActionLibrary: take the pose at `point` first
+## (sit / lie), else face the object and play the clip.
+func perform(action: Dictionary, target: Vector2, point: Variant = null) -> void:
+	cancel_move_target()
+	var clip := str(action.get("clip", ""))
+	var p := str(action.get("pose", ""))
+	if p != "" and point is Vector2:
+		_pose_return = global_position
+		pose = p
+		var tw := create_tween()
+		tw.tween_property(self, "global_position", point, 0.35)
+		_busy = 0.6
+		if p == "sit":
+			facing = 6
+		elif p == "lie":
+			facing = 0
+		_visual.set_motion(0.0, facing)
+		tw.tween_callback(func() -> void:
+			if _visual.rig:
+				_visual.rig.play(clip if clip != "" else ("sit_down" if p == "sit" else "lie_down"), true))
+		return
+	_face_towards(target)
+	if clip != "" and _visual.rig:
+		_visual.rig.play(clip, true)
+		var c: Dictionary = CharacterCatalog.clip(clip)
+		var frames := 0.0
+		for sg in c.get("segments", []):
+			frames += float(sg.get("seq", []).size()) / maxf(1.0, float(sg.get("fps", 8)))
+		_busy = minf(frames * float(c.get("repeat", 1)), 3.0)
+
+
+func _stand_up() -> void:
+	var was := pose
+	pose = ""
+	_busy = 0.55
+	if _visual.rig:
+		_visual.rig.play("stand_up" if was == "sit" else "get_up", true)
+	var tw := create_tween()
+	tw.tween_interval(0.25)
+	tw.tween_property(self, "global_position", _pose_return, 0.3)
 
 
 func _face_towards(world_pos: Vector2) -> void:

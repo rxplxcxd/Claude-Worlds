@@ -1,0 +1,41 @@
+{
+  "_comment": "Player/NPC object interactions: label (button), clip (data/character_catalog.json clips), pose (sit/lie = take the position first, then the held pose), toast (feedback text), note (development hint for systems of later phases – kept visible during development on purpose). Used by InteractionService (player) and the NPC behaviour tables.",
+  "actions": {
+    "sleep": {"label": "Hinlegen", "pose": "lie", "clip": "lie_down", "toast": "Du legst dich auf die Matratze und ruhst dich aus.", "note": "Schlafen mit Zeitfortschritt gibt es nicht – die Welt läuft in Echtzeit weiter."},
+    "rest": {"label": "Ausruhen", "clip": "yawn", "toast": "Du ruhst dich einen Moment aus."},
+    "shower": {"label": "Duschen", "clip": "use", "toast": "Das Wasser ist warm – du fühlst dich frisch."},
+    "toilet": {"label": "Benutzen", "clip": "use", "toast": "Erledigt."},
+    "wash_hands": {"label": "Hände waschen", "clip": "use", "toast": "Du wäschst dir die Hände."},
+    "cook": {"label": "Kochen", "clip": "use", "toast": "Ein einfaches Essen auf dem alten Herd.", "note": "Zutaten und Vorräte folgen mit der Wirtschaft (Phase 6)."},
+    "fridge": {"label": "Öffnen", "clip": "use", "toast": "Der Kühlschrank ist fast leer.", "note": "Einkaufen und Vorräte folgen mit der Wirtschaft (Phase 6)."},
+    "inspect_crate": {"label": "Durchsehen", "clip": "pick_up", "toast": "Deine Umzugskiste – ein paar Kleider und Erinnerungen."},
+    "look_goods": {"label": "Ansehen", "clip": "look_at", "toast": "Du siehst dir die Waren an.", "note": "Einkaufen und Preise folgen mit der Wirtschaft (Phase 6)."},
+    "counter": {"label": "An die Theke", "clip": "greet", "toast": "Du stellst dich an die Theke.", "note": "Kaufen und Verkaufen folgen mit der Wirtschaft (Phase 6)."},
+    "forge": {"label": "Wärmen", "clip": "look_at", "toast": "Die Esse glüht."},
+    "workbench": {"label": "Ansehen", "clip": "use", "toast": "Werkzeug, Späne, halbfertige Arbeiten."},
+    "meeting": {"label": "Hinsetzen", "clip": "look_at", "toast": "Hier tagt die Siedlungsversammlung.", "note": "Versammlungen und Politik folgen in Phase 9."},
+    "archive": {"label": "Stöbern", "clip": "look_at", "toast": "Gründungsurkunde, Pläne, Listen der Bewohner:innen."},
+    "administration": {"label": "Verwaltung", "clip": "greet", "opens": "town_hall"},
+    "reception": {"label": "Anmelden", "clip": "greet", "toast": "Die Praxis nimmt dich auf.", "note": "Gesundheit von Spieler:innen folgt in einer späteren Phase."},
+    "patient_bed": {"label": "Hinlegen", "pose": "lie", "clip": "lie_down", "toast": "Du legst dich auf die Liege."},
+    "drink": {"label": "Wasser trinken", "clip": "drink", "toast": "Das Brunnenwasser ist kühl und klar."},
+    "mailbox": {"label": "Briefkasten öffnen", "clip": "use", "toast": "Der Briefkasten ist leer.", "note": "Post und Nachrichten folgen mit Kommunikation/Multiplayer (Phase 12)."},
+    "read_board": {"label": "Lesen", "clip": "look_at"},
+    "sit_bench": {"label": "Hinsetzen", "pose": "sit", "clip": "sit_down"},
+    "trash": {"label": "Müll einwerfen", "clip": "put_down", "toast": "Ordnung muss sein."},
+    "crates": {"label": "Kiste anheben", "clip": "pick_up", "toast": "Schwer – du stellst sie wieder ab."},
+    "wait_bus": {"label": "Warten", "clip": "look_at", "toast": "Noch fährt hier kein Bus.", "note": "Busverbindungen entstehen mit weiteren Siedlungen (Phase 8)."},
+    "enter": {"label": "Betreten"},
+    "leave": {"label": "Verlassen"}
+  },
+  "props": {
+    "_comment": "Default actions of outdoor props by kind.",
+    "fountain": ["drink"],
+    "mailbox": ["mailbox"],
+    "bench": ["sit_bench"],
+    "notice_board": ["read_board"],
+    "trash_small": ["trash"],
+    "crates": ["crates"],
+    "bus_stop": ["wait_bus"]
+  }
+}

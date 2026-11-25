@@ -1,0 +1,304 @@
+{
+ "_comment": "Doors of the building sprites (file pixels of assets/penzilla/buildings/<key>.png, measured by hand on grid sheets). seed = a pixel inside the door leaf; type: single (hinged), double (two hinged leaves), sliding (glass, leaves slide apart), roller (rolls up), none (open structure). hinge: left/right (single). main = door used by people walking in and out. tools/assets/make_doors.py turns this into opening frames.",
+ "frames": 6,
+ "buildings": {
+  "player_home": [
+   {
+    "id": "main",
+    "seed": [
+     34,
+     372
+    ],
+    "type": "single",
+    "hinge": "left"
+   }
+  ],
+  "house_1": [
+   {
+    "id": "main",
+    "seed": [
+     40,
+     373
+    ],
+    "type": "single",
+    "hinge": "left"
+   }
+  ],
+  "house_2": [
+   {
+    "id": "main",
+    "seed": [
+     40,
+     341
+    ],
+    "type": "single",
+    "hinge": "left"
+   }
+  ],
+  "house_3": [
+   {
+    "id": "main",
+    "seed": [
+     42,
+     356
+    ],
+    "type": "single",
+    "hinge": "left"
+   }
+  ],
+  "house_4": [
+   {
+    "id": "main",
+    "seed": [
+     33,
+     326
+    ],
+    "type": "single",
+    "hinge": "left"
+   }
+  ],
+  "house_5": [
+   {
+    "id": "main",
+    "seed": [
+     44,
+     340
+    ],
+    "type": "single",
+    "hinge": "left"
+   }
+  ],
+  "house_6": [
+   {
+    "id": "main",
+    "seed": [
+     44,
+     375
+    ],
+    "type": "single",
+    "hinge": "left",
+    "tol": 20
+   }
+  ],
+  "shop_baker": [
+   {
+    "id": "main",
+    "seed": [
+     254,
+     265
+    ],
+    "type": "single",
+    "hinge": "right",
+    "tol": 30,
+    "clip": [
+     212,
+     222,
+     274,
+     372
+    ]
+   }
+  ],
+  "shop_grocer": [
+   {
+    "id": "main",
+    "seed": [
+     254,
+     265
+    ],
+    "type": "single",
+    "hinge": "right",
+    "tol": 30,
+    "clip": [
+     212,
+     222,
+     274,
+     372
+    ]
+   }
+  ],
+  "shop_smith": [
+   {
+    "id": "main",
+    "seed": [
+     254,
+     265
+    ],
+    "type": "single",
+    "hinge": "right",
+    "tol": 30,
+    "clip": [
+     212,
+     222,
+     274,
+     372
+    ]
+   }
+  ],
+  "town_hall": [
+   {
+    "id": "main",
+    "seed": [
+     172,
+     388
+    ],
+    "type": "double"
+   }
+  ],
+  "clinic": [
+   {
+    "id": "main",
+    "seed": [
+     189,
+     425
+    ],
+    "type": "sliding"
+   }
+  ],
+  "emergency_post": [
+   {
+    "id": "main",
+    "seed": [
+     106,
+     381
+    ],
+    "type": "single",
+    "hinge": "left"
+   },
+   {
+    "id": "garage",
+    "seed": [
+     291,
+     406
+    ],
+    "type": "roller",
+    "tol": 60,
+    "clip": [
+     262,
+     340,
+     352,
+     470
+    ]
+   }
+  ],
+  "depot": [
+   {
+    "id": "main",
+    "seed": [
+     138,
+     192
+    ],
+    "type": "roller"
+   }
+  ],
+  "energy_station": [
+   {
+    "id": "main",
+    "seed": [
+     110,
+     260
+    ],
+    "type": "single",
+    "hinge": "left",
+    "tol": 30,
+    "clip": [
+     84,
+     195,
+     142,
+     300
+    ],
+    "slope": 0.58
+   }
+  ],
+  "farm_shop": [
+   {
+    "id": "main",
+    "seed": [
+     203,
+     325
+    ],
+    "type": "single",
+    "hinge": "right"
+   }
+  ],
+  "workshop": [
+   {
+    "id": "main",
+    "seed": [
+     208,
+     368
+    ],
+    "type": "single",
+    "hinge": "right",
+    "tol": 30
+   }
+  ],
+  "water_works": [
+   {
+    "id": "main",
+    "seed": [
+     331,
+     402
+    ],
+    "type": "single",
+    "hinge": "left"
+   }
+  ],
+  "trade_post": [
+   {
+    "id": "main",
+    "type": "none"
+   }
+  ]
+ },
+ "nav_by_type": {
+  "_comment": "Which footprint face the main door is on (left = front-left face along the bottom row, right = front-right face) and where along it (t 0..1 from the left vertex / from the bottom vertex). Used by NavGrid so people walk to the door that is drawn on the sprite.",
+  "house": {
+   "face": "left",
+   "t": 0.5
+  },
+  "player_home": {
+   "face": "left",
+   "t": 0.5
+  },
+  "shop": {
+   "face": "right",
+   "t": 0.5
+  },
+  "town_hall": {
+   "face": "left",
+   "t": 0.75
+  },
+  "clinic": {
+   "face": "right",
+   "t": 0.25
+  },
+  "emergency_post": {
+   "face": "left",
+   "t": 0.25
+  },
+  "water_works": {
+   "face": "left",
+   "t": 0.75
+  },
+  "energy_station": {
+   "face": "left",
+   "t": 0.25
+  },
+  "workshop": {
+   "face": "right",
+   "t": 0.5
+  },
+  "depot": {
+   "face": "left",
+   "t": 0.5
+  },
+  "farm_shop": {
+   "face": "right",
+   "t": 0.5
+  },
+  "trade_post": {
+   "face": "left",
+   "t": 0.5
+  }
+ }
+}

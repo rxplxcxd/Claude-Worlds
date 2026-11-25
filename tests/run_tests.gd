@@ -648,6 +648,7 @@ func _run() -> void:
 	_test_world_authority()
 	_test_animations()
 	_test_settlement_foundation()
+	await _test_gameplay_polish()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
@@ -997,6 +998,32 @@ func _test_animations() -> void:
 	if not root_has_character_assets():
 		print("       (Penzilla character layers not imported – texture checks skipped)")
 		return
+	# facing: measure on the real sheet which way row 2 looks, then check that
+	# joystick right/left end up facing right/left on screen
+	var face_img: Image = (cat.layer_texture("idle", "face_regular") as Texture2D).get_image()
+	var body_img: Image = (cat.layer_texture("idle", "body") as Texture2D).get_image()
+	var fsz: Vector2 = cat.frame_size("idle")
+	var cx := func(img: Image, row: int) -> float:
+		var sum := 0.0
+		var n := 0
+		for y in range(int(row * fsz.y), int((row + 1) * fsz.y)):
+			for x in int(fsz.x):
+				if img.get_pixel(x, y).a > 0.5:
+					sum += x
+					n += 1
+		return sum / maxf(1.0, n)
+	var row2_looks_left: bool = cx.call(face_img, 2) < cx.call(body_img, 2) - 2.0
+	var screen_dir := func(stick: Vector2) -> int:
+		# +1 = figure looks right on screen, -1 = left
+		var rule: Array = CharacterRig.FACING_ROWS[Iso.facing_index(Iso.screen_input_to_world(stick))]
+		var looks_left_in_sheet: bool = int(rule[0]) in [1, 2, 3] and row2_looks_left
+		return (1 if rule[1] else -1) if looks_left_in_sheet else 0
+	print("       sheet row 2 looks %s; stick right → %d, stick left → %d" % ["left" if row2_looks_left else "right", screen_dir.call(Vector2(1, 0)), screen_dir.call(Vector2(-1, 0))])
+	check(screen_dir.call(Vector2(1, 0)) == 1 and screen_dir.call(Vector2(-1, 0)) == -1 and screen_dir.call(Vector2(0.7, 0.7)) == 1 and screen_dir.call(Vector2(-0.7, -0.7)) == -1, "joystick right/left (and diagonals) show the figure facing right/left")
+	check(CharacterRig.FACING_ROWS[2] == [4, false] and CharacterRig.FACING_ROWS[6] == [0, false], "up shows the back, down the front")
+	var f := 0
+	f = Iso.facing_with_hysteresis(Vector2(1, -0.45), 0)   # ~24° – just past the sector edge
+	check(f == 0 and Iso.facing_with_hysteresis(Vector2(1, -1), 0) == 1, "facing has hysteresis near diagonal boundaries (no flicker)")
 	var ok := true
 	for a in cat.data["anims"]:
 		var tex: Texture2D = cat.layer_texture(a, "body")
@@ -1018,17 +1045,45 @@ func _test_animations() -> void:
 	n.setup({"npc_id": "npc_anim", "name": "A B", "role": "farmer", "appearance": cat.role_appearance("farmer", 5)})
 	add_child(n)
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "leisure", "walking": false, "seat": true, "place": "park"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
-	var sat: bool = n.seated and n.rig.anim == "sit"
+	var sat: bool = n.seated and n.rig.anim == "sit_down"
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "leisure", "walking": false, "place": "park"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
-	var got_up: bool = n.rig.anim == "get_up" and not n.seated
+	var got_up: bool = n.rig.anim == "stand_up" and not n.seated
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "hurry": true, "place": "a", "target": "b"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
 	var ran: bool = n.rig.anim == "run"
+	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "door": "enter", "door_f": 0.4, "place": "a", "target": "bld:x"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
+	var opens: bool = n.rig.anim == "open_door" and n.modulate.a > 0.9
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "door": "enter", "door_f": 0.9, "place": "a", "target": "bld:x"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
-	var door: bool = n.modulate.a < 0.5 and n.rig.anim == "interact"
+	var door: bool = opens and n.modulate.a < 0.5
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "work", "walking": false, "place": "bld:farm"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
 	var dig: bool = n.rig.anim == "dig"
 	n.queue_free()
-	check(sat and got_up and ran and door and dig, "NPC animation states: sit down, get up, run when late, open the door and step in, dig at work")
+	check(sat and got_up and ran and door and dig, "NPC animation states: sit down, get up, run when late, open the door then step in, dig at work")
+	# the door opens with the hand on it and closes once the person is inside
+	check(SettlementScene.door_open_amount("enter", 0.2) == 0.0 and SettlementScene.door_open_amount("enter", 0.6) == 1.0 and SettlementScene.door_open_amount("enter", 1.0) == 0.0 and SettlementScene.door_open_amount("exit", 0.3) == 1.0, "doors open while people pass and close behind them")
+	# every clip refers to existing animations and frames
+	var clips_ok := true
+	for cid in cat.data["clips"]:
+		if cid.begins_with("_"):
+			continue
+		for sg in cat.data["clips"][cid]["segments"]:
+			var info: Dictionary = cat.anim_info(sg["base"])
+			if info.is_empty() or (sg["seq"] as Array).any(func(f): return int(f) >= int(info["frames"])):
+				clips_ok = false
+				print("       bad clip ", cid, " ", sg["base"])
+	check(clips_ok and cat.data["clips"].size() >= 25, "clip library: %d clips, all frames exist" % (cat.data["clips"].size() - 1))
+	var tables_ok := true
+	for act in cat.data["activity_clips"]:
+		if act.begins_with("_"):
+			continue
+		for o in cat.data["activity_clips"][act]:
+			if not cat.data["clips"].has(o[0]):
+				tables_ok = false
+	for aid in ActionLibrary.actions():
+		var c: String = ActionLibrary.actions()[aid].get("clip", "")
+		if c != "" and not cat.data["clips"].has(c):
+			tables_ok = false
+			print("       action without clip ", aid, " ", c)
+	check(tables_ok, "NPC activity tables and player actions use the same clip library")
 
 
 ## Phase 4 – Settlement Foundation.
@@ -1103,6 +1158,91 @@ func _test_settlement_foundation() -> void:
 	var sim := SettlementSim.create(old_rec, data, 1764547200 + 3 * 86400, cfg, 60)
 	var r0: Dictionary = old_rec["npcs"][0]
 	check(sim.roster.size() == 12 and r0["personality"]["curiosity"] == 0.8 and r0["personality"]["conscientiousness"] == 0.2 and r0.has("employment") and old_rec.has("core"), "0.5.0 saves migrate (personality keys, health, employment, settlement core)")
+
+
+## Gameplay polish: interiors, doors, footprints, lamps, version.
+func _test_gameplay_polish() -> void:
+	print("[gameplay polish]")
+	var v := WorldsVersion.data()
+	check(WorldsVersion.product() == "v0.1" and WorldsVersion.technical() == str(ProjectSettings.get_setting("application/config/version")), "one version source: product %s, build %s = project.godot" % [WorldsVersion.product(), WorldsVersion.technical()])
+	check(WorldsVersion.full_label().begins_with("WORLDS v0.1"), "version label shown in the menu and on the loading screen")
+	# footprints: the clinic's parking is walkable, the building is not
+	var data := SettlementData.load_from_file("res://data/settlement_templates/founding_basic.json")
+	var entry: Dictionary = {}
+	for b in data.buildings:
+		if b["id"] == "bld_clinic":
+			entry = b.duplicate(true)
+	var bld := Building.new()
+	bld.setup(entry)
+	add_child(bld)
+	var polys: Array = bld.get_children().filter(func(c): return c is CollisionPolygon2D)
+	var inside := func(g: Vector2) -> bool:
+		var w := Iso.grid_to_world(entry["grid_v"] + g) - bld.position
+		return polys.any(func(cp): return Geometry2D.is_point_in_polygon(w, cp.polygon))
+	check(not inside.call(Vector2(1.6, 1.0)) and inside.call(Vector2(0.5, 1.0)) and bld.surfaces.any(func(s): return s["kind"] == "parking"), "clinic: the parking inside the footprint is walkable, the building blocks")
+	bld.queue_free()
+	# street lamps are street-lamp sized (≈ 2.6 × a person)
+	check(StreetLamp.HEIGHT_SCALE >= 2.2, "street lamps are drawn ~4.5 m high (person 1.75 m)")
+	# doors: every building with a door has opening frames and a nav door on the painted side
+	var doors_ok := true
+	var spec: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/doors/doors.json"))
+	for ty in spec["nav_by_type"]:
+		if ty.begins_with("_"):
+			continue
+		for b in data.buildings:
+			if b["type"] == ty and NavGrid.door_front_cell(b).x < 0:
+				doors_ok = false
+	check(doors_ok, "people walk to the door that is painted on the sprite (door side per building type)")
+	if FileAccess.file_exists("res://assets/penzilla/doors/doors.json"):
+		var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/penzilla/doors/doors.json"))
+		var all_frames := true
+		for key in meta["doors"]:
+			for d in meta["doors"][key]:
+				if d["type"] != "none" and not ResourceLoader.exists("res://assets/penzilla/doors/" + str(d["file"])):
+					all_frames = false
+		check(all_frames and meta["doors"].size() >= 19, "door opening frames exist for all %d building sprites" % meta["doors"].size())
+	# interiors
+	if not InteriorScene.assets_available():
+		print("       (interior art not imported – interior checks skipped)")
+		return
+	for key in ["player_home", "shop_baker", "shop_grocer", "shop_smith", "town_hall", "clinic", "farm_shop", "workshop"]:
+		check(InteriorScene.has_layout(key), "interior exists: %s" % key)
+	var home := InteriorScene.create("player_home")
+	home.position = Vector2(0, 50000)
+	add_child(home)
+	await get_tree().process_frame
+	var acts := {}
+	for n in home.find_children("*", "Interactable", true, false):
+		acts[n.get_meta("action", n.kind)] = true
+	check(acts.has("sleep") and acts.has("shower") and acts.has("toilet") and acts.has("cook") and acts.has("interior_exit"), "starter home: mattress, shower, toilet, simple kitchen and a way out (%s)" % str(acts.keys()))
+	# the shape follows the building: L-shaped clinic, long workshop
+	var clinic := InteriorScene.create("clinic")
+	add_child(clinic)
+	await get_tree().process_frame
+	check(not clinic.is_inside(Vector2i(14, 1)) and clinic.is_inside(Vector2i(2, 1)) and clinic.is_inside(Vector2i(14, 8)), "the clinic interior is L-shaped like the building")
+	var ws: Array = InteriorScene.layouts()["workshop"]["size"]
+	check(int(ws[0]) >= int(ws[1]) * 1.6, "the long workshop has a long room")
+	check(clinic._is_entrance_cell(Vector2i(15, 8)) and home._is_entrance_cell(Vector2i(2, 9)), "entrances are on the same side as outside (clinic right, home left)")
+	# walking inside: the entrance is free, furniture blocks
+	var space := home.get_world_2d().direct_space_state
+	var q := PhysicsPointQueryParameters2D.new()
+	q.position = home.to_global(home.spawn_point)
+	check(space.intersect_point(q).is_empty(), "the player stands free at the entrance inside")
+	var fridge_blocked := false
+	for n in home.item_nodes:
+		if str(n.name).begins_with("fridge"):
+			q.position = n.global_position + Vector2(0, -6)
+			fridge_blocked = not space.intersect_point(q).is_empty()
+	check(fridge_blocked, "furniture blocks walking (fridge)")
+	# interaction buttons only at the object: the exit area is small
+	var exit_it: Interactable = home.find_children("*", "Interactable", true, false).filter(func(i): return i.kind == "interior_exit")[0]
+	var cp: CollisionPolygon2D = exit_it.get_child(0)
+	var r := Rect2(cp.polygon[0], Vector2.ZERO)
+	for pt in cp.polygon:
+		r = r.expand(pt)
+	check(r.size.x < 120 and r.size.y < 80, "the exit button area is only at the doorway (%s)" % str(r.size))
+	home.queue_free()
+	clinic.queue_free()
 
 
 ## Personality has measurable effects (population-level A/B with fixed seeds).

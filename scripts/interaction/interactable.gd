@@ -10,6 +10,9 @@ extends Area2D
 @export var interaction_id: String = ""
 ## "info", "notice_board", ... (handled by InteractionService).
 @export var kind: String = "info"
+## false = only reachable by tapping it (no interaction button by proximity),
+## e.g. the body of a building – its door has its own small interactable.
+@export var proximity: bool = true
 @export var title: String = ""
 @export var subtitle: String = ""
 @export_multiline var text: String = ""

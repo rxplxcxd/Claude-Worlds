@@ -1,0 +1,15 @@
+{
+  "_comment": "Solid parts of complex building footprints, in footprint grid units (0..w, 0..h; x = towards screen bottom-right, y = towards bottom-left), measured on the sprites (tests/tmp/fpshot.gd overlay). solid: polygons that block walking; surfaces: walkable areas with their own use (parking: later vehicles; plaza/market: people). Buildings not listed block their whole footprint.",
+  "clinic": {
+    "solid": [[[0, 0], [1.15, 0], [1.15, 2], [0, 2]]],
+    "surfaces": [{"kind": "parking", "poly": [[1.2, 0.05], [1.95, 0.05], [1.95, 1.95], [1.05, 1.85]], "spaces": 3}]
+  },
+  "emergency_post": {
+    "solid": [[[0, 0], [2, 0], [2, 1.0], [1.0, 1.0], [1.0, 1.5], [0, 1.5]]],
+    "surfaces": [{"kind": "apron", "poly": [[1.0, 1.0], [2, 1.0], [2, 2], [1.0, 2]]}, {"kind": "path", "poly": [[0.2, 1.5], [1.0, 1.5], [1.0, 2], [0.2, 2]]}]
+  },
+  "trade_post": {
+    "solid": [[[0, 0], [2, 0], [2, 0.5], [0.55, 0.5], [0.55, 2], [0, 2]], [[1.1, 1.15], [1.45, 1.15], [1.45, 1.5], [1.1, 1.5]]],
+    "surfaces": [{"kind": "market", "poly": [[0.55, 0.5], [2, 0.5], [2, 2], [0.55, 2]]}]
+  }
+}

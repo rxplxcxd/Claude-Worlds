@@ -1,0 +1,1229 @@
+{
+ "_comment": "Interior layouts per building (type or sprite key). Units: interior tiles (16 sheet px = 32 world px, ≈ 0.55 m). The outline follows the exterior: shape = list of rects minus cuts (L-shapes etc.). rooms: floor/wall per area; partitions: inner walls with openings (door = animated door on horizontal partitions). entrance: the outer door ({x, face:left} along the front-left edge or {y, face:right} along the front-right edge) – same face as on the exterior sprite (data/doors/doors.json nav_by_type: left face → bottom-left, right face → bottom-right). items: pieces from data/interiors/atlas.json at [x, y] (top-left, tiles); action = what the player can do there (data/interiors/actions.json). upgrade = what this piece can become later (Phase 6 economy / Phase 7 building) – shown in its card.",
+ "player_home": {
+  "label": "Dein Haus",
+  "size": [
+   13,
+   10
+  ],
+  "rooms": [
+   {
+    "name": "Wohnraum",
+    "rect": [
+     0,
+     0,
+     8,
+     10
+    ],
+    "floor": "planks_dark",
+    "wall": "wall_cream"
+   },
+   {
+    "name": "Bad",
+    "rect": [
+     8,
+     0,
+     5,
+     4
+    ],
+    "floor": "tiles_orange",
+    "wall": "wall_beige"
+   },
+   {
+    "name": "Küche",
+    "rect": [
+     8,
+     4,
+     5,
+     6
+    ],
+    "floor": "parquet_cream",
+    "wall": "wall_cream"
+   }
+  ],
+  "partitions": [
+   {
+    "from": [
+     8,
+     0
+    ],
+    "to": [
+     8,
+     10
+    ],
+    "openings": [
+     [
+      8,
+      6,
+      2
+     ]
+    ]
+   },
+   {
+    "from": [
+     8,
+     4
+    ],
+    "to": [
+     13,
+     4
+    ],
+    "doors": [
+     [
+      10,
+      4
+     ]
+    ]
+   }
+  ],
+  "entrance": {
+   "x": 2.5,
+   "face": "left"
+  },
+  "items": [
+   {
+    "item": "mattress",
+    "pos": [
+     0.6,
+     0.6
+    ],
+    "action": "sleep",
+    "upgrade": "Ein richtiges Bett gibt es später zu kaufen (Wirtschaft, Phase 6)."
+   },
+   {
+    "item": "lamp_table",
+    "pos": [
+     3.6,
+     0.1
+    ]
+   },
+   {
+    "item": "window_4",
+    "pos": [
+     1.0,
+     -2.0
+    ]
+   },
+   {
+    "item": "window_2",
+    "pos": [
+     5.0,
+     -2.0
+    ]
+   },
+   {
+    "item": "painting",
+    "pos": [
+     3.6,
+     -1.6
+    ]
+   },
+   {
+    "item": "crate_big",
+    "pos": [
+     6.6,
+     0.4
+    ],
+    "action": "inspect_crate",
+    "upgrade": "Ein Kleiderschrank kann die Umzugskiste später ersetzen."
+   },
+   {
+    "item": "crate",
+    "pos": [
+     6.9,
+     1.5
+    ]
+   },
+   {
+    "item": "rug_round",
+    "pos": [
+     2.0,
+     5.0
+    ]
+   },
+   {
+    "item": "table_round",
+    "pos": [
+     2.3,
+     4.0
+    ]
+   },
+   {
+    "item": "stool",
+    "pos": [
+     3.6,
+     4.9
+    ]
+   },
+   {
+    "item": "plant",
+    "pos": [
+     0.2,
+     7.6
+    ]
+   },
+   {
+    "item": "coat_rack",
+    "pos": [
+     5.2,
+     6.8
+    ]
+   },
+   {
+    "item": "toilet",
+    "pos": [
+     8.4,
+     -0.4
+    ],
+    "action": "toilet"
+   },
+   {
+    "item": "basin",
+    "pos": [
+     9.8,
+     -0.4
+    ],
+    "action": "wash_hands"
+   },
+   {
+    "item": "shower",
+    "pos": [
+     11.2,
+     0.3
+    ],
+    "action": "shower"
+   },
+   {
+    "item": "window_small",
+    "pos": [
+     9.4,
+     -2.0
+    ]
+   },
+   {
+    "item": "cooker",
+    "pos": [
+     8.4,
+     4.3
+    ],
+    "action": "cook",
+    "upgrade": "Eine neue Küche kann später gekauft und eingebaut werden (Phase 6/7)."
+   },
+   {
+    "item": "fridge",
+    "pos": [
+     11.9,
+     4.3
+    ],
+    "action": "fridge"
+   },
+   {
+    "item": "pot",
+    "pos": [
+     9.0,
+     5.0
+    ],
+    "lift": 66
+   },
+   {
+    "item": "cup",
+    "pos": [
+     3.0,
+     4.4
+    ],
+    "lift": 40
+   }
+  ]
+ },
+ "shop_baker": {
+  "label": "Bäckerei",
+  "size": [
+   11,
+   8
+  ],
+  "rooms": [
+   {
+    "name": "Verkaufsraum",
+    "rect": [
+     0,
+     0,
+     11,
+     8
+    ],
+    "floor": "tiles_orange",
+    "wall": "wall_orange"
+   }
+  ],
+  "entrance": {
+   "y": 5.5,
+   "face": "right"
+  },
+  "staff_spot": [
+   3.0,
+   1.2
+  ],
+  "items": [
+   {
+    "item": "shelf_low",
+    "pos": [
+     0.3,
+     -0.6
+    ],
+    "action": "look_goods"
+   },
+   {
+    "item": "shelf_low",
+    "pos": [
+     2.4,
+     -0.6
+    ],
+    "action": "look_goods"
+   },
+   {
+    "item": "bread",
+    "pos": [
+     0.6,
+     -0.4
+    ],
+    "lift": 48
+   },
+   {
+    "item": "bread",
+    "pos": [
+     1.4,
+     -0.2
+    ],
+    "lift": 48
+   },
+   {
+    "item": "bun",
+    "pos": [
+     2.8,
+     -0.4
+    ],
+    "lift": 48
+   },
+   {
+    "item": "bun",
+    "pos": [
+     3.6,
+     -0.3
+    ],
+    "lift": 48
+   },
+   {
+    "item": "cooker",
+    "pos": [
+     5.0,
+     -0.8
+    ],
+    "label": "Backofen"
+   },
+   {
+    "item": "counter_sink",
+    "pos": [
+     0.3,
+     2.8
+    ],
+    "action": "counter",
+    "label": "Ladentheke"
+   },
+   {
+    "item": "bread",
+    "pos": [
+     1.0,
+     3.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "pie",
+    "pos": [
+     2.2,
+     3.1
+    ],
+    "lift": 48
+   },
+   {
+    "item": "bun",
+    "pos": [
+     3.2,
+     3.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "cutting_board",
+    "pos": [
+     4.0,
+     3.1
+    ],
+    "lift": 48
+   },
+   {
+    "item": "window_4",
+    "pos": [
+     7.5,
+     -2.0
+    ]
+   },
+   {
+    "item": "table_round",
+    "pos": [
+     7.5,
+     4.0
+    ]
+   },
+   {
+    "item": "stool",
+    "pos": [
+     8.9,
+     4.6
+    ]
+   },
+   {
+    "item": "cup",
+    "pos": [
+     7.8,
+     4.1
+    ],
+    "lift": 48
+   },
+   {
+    "item": "plant",
+    "pos": [
+     10.0,
+     0.0
+    ]
+   }
+  ]
+ },
+ "shop_grocer": {
+  "label": "Gemischtwaren",
+  "size": [
+   11,
+   8
+  ],
+  "rooms": [
+   {
+    "name": "Laden",
+    "rect": [
+     0,
+     0,
+     11,
+     8
+    ],
+    "floor": "planks_light",
+    "wall": "wall_beige"
+   }
+  ],
+  "entrance": {
+   "y": 5.5,
+   "face": "right"
+  },
+  "staff_spot": [
+   8.4,
+   1.6
+  ],
+  "items": [
+   {
+    "item": "bookcase",
+    "pos": [
+     0.2,
+     -1.4
+    ],
+    "action": "look_goods",
+    "label": "Warenregal"
+   },
+   {
+    "item": "bookcase_dark",
+    "pos": [
+     3.2,
+     -1.4
+    ],
+    "action": "look_goods",
+    "label": "Warenregal"
+   },
+   {
+    "item": "crate_big",
+    "pos": [
+     0.4,
+     4.5
+    ],
+    "action": "look_goods",
+    "label": "Gemüsekiste"
+   },
+   {
+    "item": "crate_big",
+    "pos": [
+     1.6,
+     4.5
+    ],
+    "action": "look_goods",
+    "label": "Obstkiste"
+   },
+   {
+    "item": "crate",
+    "pos": [
+     2.9,
+     4.8
+    ]
+   },
+   {
+    "item": "jar",
+    "pos": [
+     0.6,
+     4.2
+    ],
+    "lift": 48
+   },
+   {
+    "item": "plate_food",
+    "pos": [
+     1.7,
+     4.3
+    ],
+    "lift": 48
+   },
+   {
+    "item": "counter_corner",
+    "pos": [
+     7.2,
+     0.6
+    ],
+    "action": "counter",
+    "label": "Kasse"
+   },
+   {
+    "item": "telephone",
+    "pos": [
+     7.5,
+     1.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "table_long",
+    "pos": [
+     4.6,
+     3.6
+    ],
+    "action": "look_goods",
+    "label": "Auslage"
+   },
+   {
+    "item": "bread",
+    "pos": [
+     4.9,
+     4.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "jar",
+    "pos": [
+     5.4,
+     5.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "teapot",
+    "pos": [
+     4.9,
+     5.7
+    ],
+    "lift": 48
+   },
+   {
+    "item": "window_2",
+    "pos": [
+     9.0,
+     -2.0
+    ]
+   }
+  ]
+ },
+ "shop_smith": {
+  "label": "Schmiede & Eisenwaren",
+  "size": [
+   11,
+   8
+  ],
+  "rooms": [
+   {
+    "name": "Werkstatt",
+    "rect": [
+     0,
+     0,
+     11,
+     8
+    ],
+    "floor": "planks_dark",
+    "wall": "wall_orange"
+   }
+  ],
+  "entrance": {
+   "y": 5.5,
+   "face": "right"
+  },
+  "staff_spot": [
+   2.2,
+   2.4
+  ],
+  "items": [
+   {
+    "item": "fireplace_lit",
+    "pos": [
+     0.3,
+     -1.0
+    ],
+    "action": "forge",
+    "label": "Esse"
+   },
+   {
+    "item": "utensils",
+    "pos": [
+     2.2,
+     -1.4
+    ],
+    "label": "Werkzeugleiste"
+   },
+   {
+    "item": "table_big",
+    "pos": [
+     2.0,
+     3.0
+    ],
+    "action": "workbench",
+    "label": "Werkbank"
+   },
+   {
+    "item": "utensils",
+    "pos": [
+     2.4,
+     3.2
+    ],
+    "lift": 48
+   },
+   {
+    "item": "pot",
+    "pos": [
+     3.8,
+     3.3
+    ],
+    "lift": 48
+   },
+   {
+    "item": "shelf_low",
+    "pos": [
+     5.0,
+     -0.6
+    ],
+    "action": "look_goods",
+    "label": "Eisenwaren"
+   },
+   {
+    "item": "crate_big",
+    "pos": [
+     8.6,
+     0.2
+    ]
+   },
+   {
+    "item": "crate",
+    "pos": [
+     9.8,
+     0.6
+    ]
+   },
+   {
+    "item": "crate",
+    "pos": [
+     0.4,
+     5.6
+    ]
+   },
+   {
+    "item": "window_small",
+    "pos": [
+     7.4,
+     -2.0
+    ]
+   }
+  ]
+ },
+ "town_hall": {
+  "label": "Gemeindehaus",
+  "size": [
+   18,
+   13
+  ],
+  "rooms": [
+   {
+    "name": "Halle",
+    "rect": [
+     0,
+     0,
+     12,
+     13
+    ],
+    "floor": "parquet_cream",
+    "wall": "wall_orange"
+   },
+   {
+    "name": "Verwaltung",
+    "rect": [
+     12,
+     0,
+     6,
+     13
+    ],
+    "floor": "carpet_olive",
+    "wall": "wall_orange"
+   }
+  ],
+  "partitions": [
+   {
+    "from": [
+     12,
+     0
+    ],
+    "to": [
+     12,
+     13
+    ],
+    "openings": [
+     [
+      12,
+      5,
+      3
+     ]
+    ]
+   }
+  ],
+  "entrance": {
+   "x": 9.0,
+   "face": "left"
+  },
+  "staff_spot": [
+   14.6,
+   3.2
+  ],
+  "items": [
+   {
+    "item": "rug_big",
+    "pos": [
+     3.0,
+     4.0
+    ]
+   },
+   {
+    "item": "table_big",
+    "pos": [
+     3.4,
+     4.2
+    ],
+    "action": "meeting",
+    "label": "Versammlungstisch"
+   },
+   {
+    "item": "chair_wood",
+    "pos": [
+     3.0,
+     2.8
+    ]
+   },
+   {
+    "item": "chair_wood",
+    "pos": [
+     4.6,
+     2.8
+    ]
+   },
+   {
+    "item": "chair_wood",
+    "pos": [
+     6.2,
+     2.8
+    ]
+   },
+   {
+    "item": "bookcase",
+    "pos": [
+     0.2,
+     -1.4
+    ],
+    "action": "archive",
+    "label": "Archiv"
+   },
+   {
+    "item": "bookcase_dark",
+    "pos": [
+     3.3,
+     -1.4
+    ],
+    "action": "archive",
+    "label": "Archiv"
+   },
+   {
+    "item": "clock_tall",
+    "pos": [
+     6.8,
+     -0.8
+    ]
+   },
+   {
+    "item": "window_4",
+    "pos": [
+     8.4,
+     -2.0
+    ]
+   },
+   {
+    "item": "window_4",
+    "pos": [
+     10.2,
+     -2.0
+    ]
+   },
+   {
+    "item": "plant",
+    "pos": [
+     11.0,
+     0.2
+    ]
+   },
+   {
+    "item": "plant",
+    "pos": [
+     0.3,
+     10.8
+    ]
+   },
+   {
+    "item": "table_long",
+    "pos": [
+     13.4,
+     1.0
+    ],
+    "action": "administration",
+    "label": "Verwaltungsschalter"
+   },
+   {
+    "item": "telephone",
+    "pos": [
+     13.8,
+     1.6
+    ],
+    "lift": 48
+   },
+   {
+    "item": "book",
+    "pos": [
+     14.0,
+     3.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "desk",
+    "pos": [
+     16.4,
+     6.4
+    ]
+   },
+   {
+    "item": "chair_white",
+    "pos": [
+     15.6,
+     6.6
+    ]
+   },
+   {
+    "item": "shelf_low",
+    "pos": [
+     15.8,
+     -0.6
+    ]
+   },
+   {
+    "item": "painting",
+    "pos": [
+     13.6,
+     -1.6
+    ]
+   }
+  ]
+ },
+ "clinic": {
+  "label": "Praxis",
+  "size": [
+   16,
+   11
+  ],
+  "shape_cut": [
+   [
+    10,
+    0,
+    6,
+    5
+   ]
+  ],
+  "rooms": [
+   {
+    "name": "Wartebereich",
+    "rect": [
+     0,
+     0,
+     10,
+     11
+    ],
+    "floor": "boards_cream",
+    "wall": "wall_beige"
+   },
+   {
+    "name": "Behandlung",
+    "rect": [
+     10,
+     5,
+     6,
+     6
+    ],
+    "floor": "tiles_orange",
+    "wall": "wall_beige"
+   }
+  ],
+  "partitions": [
+   {
+    "from": [
+     10,
+     5
+    ],
+    "to": [
+     10,
+     11
+    ],
+    "openings": [
+     [
+      10,
+      7,
+      2
+     ]
+    ]
+   }
+  ],
+  "entrance": {
+   "y": 8.5,
+   "face": "right"
+  },
+  "staff_spot": [
+   12.6,
+   7.4
+  ],
+  "items": [
+   {
+    "item": "chair_white",
+    "pos": [
+     0.4,
+     0.2
+    ]
+   },
+   {
+    "item": "chair_white",
+    "pos": [
+     1.5,
+     0.2
+    ]
+   },
+   {
+    "item": "chair_white",
+    "pos": [
+     2.6,
+     0.2
+    ]
+   },
+   {
+    "item": "plant",
+    "pos": [
+     3.9,
+     0.1
+    ]
+   },
+   {
+    "item": "table_round",
+    "pos": [
+     0.6,
+     3.0
+    ]
+   },
+   {
+    "item": "book",
+    "pos": [
+     0.8,
+     3.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "counter_corner",
+    "pos": [
+     6.4,
+     0.4
+    ],
+    "action": "reception",
+    "label": "Empfang"
+   },
+   {
+    "item": "telephone",
+    "pos": [
+     6.8,
+     0.9
+    ],
+    "lift": 48
+   },
+   {
+    "item": "window_2",
+    "pos": [
+     4.6,
+     -2.0
+    ]
+   },
+   {
+    "item": "mattress",
+    "pos": [
+     13.4,
+     5.6
+    ],
+    "action": "patient_bed",
+    "label": "Liege"
+   },
+   {
+    "item": "basin",
+    "pos": [
+     10.4,
+     4.6
+    ],
+    "action": "wash_hands"
+   },
+   {
+    "item": "cabinet_tall",
+    "pos": [
+     15.0,
+     8.2
+    ]
+   },
+   {
+    "item": "window_small",
+    "pos": [
+     12.0,
+     3.0
+    ]
+   }
+  ]
+ },
+ "farm_shop": {
+  "label": "Hofladen",
+  "size": [
+   10,
+   8
+  ],
+  "rooms": [
+   {
+    "name": "Hofladen",
+    "rect": [
+     0,
+     0,
+     10,
+     8
+    ],
+    "floor": "planks_light",
+    "wall": "wall_beige"
+   }
+  ],
+  "entrance": {
+   "y": 5.5,
+   "face": "right"
+  },
+  "staff_spot": [
+   2.0,
+   2.4
+  ],
+  "items": [
+   {
+    "item": "crate_big",
+    "pos": [
+     0.3,
+     0.2
+    ],
+    "action": "look_goods",
+    "label": "Kartoffeln"
+   },
+   {
+    "item": "crate_big",
+    "pos": [
+     1.5,
+     0.2
+    ],
+    "action": "look_goods",
+    "label": "Äpfel"
+   },
+   {
+    "item": "crate_big",
+    "pos": [
+     2.7,
+     0.2
+    ],
+    "action": "look_goods",
+    "label": "Möhren"
+   },
+   {
+    "item": "table_long",
+    "pos": [
+     0.6,
+     3.4
+    ],
+    "action": "counter",
+    "label": "Verkaufstisch"
+   },
+   {
+    "item": "jar",
+    "pos": [
+     0.9,
+     3.7
+    ],
+    "lift": 48
+   },
+   {
+    "item": "bread",
+    "pos": [
+     1.0,
+     4.6
+    ],
+    "lift": 48
+   },
+   {
+    "item": "plate_food",
+    "pos": [
+     1.1,
+     5.4
+    ],
+    "lift": 48
+   },
+   {
+    "item": "flower_pot",
+    "pos": [
+     8.6,
+     0.2
+    ]
+   },
+   {
+    "item": "window_4",
+    "pos": [
+     5.0,
+     -2.0
+    ]
+   }
+  ]
+ },
+ "workshop": {
+  "label": "Werkstatt",
+  "size": [
+   14,
+   7
+  ],
+  "rooms": [
+   {
+    "name": "Werkstatt",
+    "rect": [
+     0,
+     0,
+     14,
+     7
+    ],
+    "floor": "planks_dark",
+    "wall": "wall_beige"
+   }
+  ],
+  "entrance": {
+   "y": 4.5,
+   "face": "right"
+  },
+  "staff_spot": [
+   3.0,
+   2.2
+  ],
+  "items": [
+   {
+    "item": "table_big",
+    "pos": [
+     1.8,
+     2.8
+    ],
+    "action": "workbench",
+    "label": "Werkbank"
+   },
+   {
+    "item": "utensils",
+    "pos": [
+     2.1,
+     3.0
+    ],
+    "lift": 48
+   },
+   {
+    "item": "utensils",
+    "pos": [
+     0.4,
+     -1.4
+    ],
+    "label": "Werkzeugwand"
+   },
+   {
+    "item": "utensils",
+    "pos": [
+     2.2,
+     -1.4
+    ],
+    "label": "Werkzeugwand"
+   },
+   {
+    "item": "shelf_low",
+    "pos": [
+     5.0,
+     -0.6
+    ],
+    "action": "look_goods",
+    "label": "Ersatzteile"
+   },
+   {
+    "item": "crate_big",
+    "pos": [
+     8.2,
+     0.2
+    ]
+   },
+   {
+    "item": "crate",
+    "pos": [
+     9.4,
+     0.5
+    ]
+   },
+   {
+    "item": "crate",
+    "pos": [
+     0.3,
+     5.2
+    ]
+   },
+   {
+    "item": "window_2",
+    "pos": [
+     11.4,
+     -2.0
+    ]
+   }
+  ]
+ }
+}

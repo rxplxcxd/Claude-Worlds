@@ -16,9 +16,9 @@
     ],
     "rows": [
       "s",
-      "se",
-      "e",
-      "ne",
+      "sw",
+      "w",
+      "nw",
       "n"
     ]
   },
@@ -133,6 +133,73 @@
         40,
         385,
         462
+      ]
+    },
+    "damage": {
+      "source_folder": "Damage",
+      "frames": 2,
+      "fps": 8,
+      "loop": false,
+      "label": "Zusammenzucken",
+      "crop_src": [
+        50,
+        40,
+        385,
+        450
+      ]
+    },
+    "damage_tool": {
+      "source_folder": "DamageHoldingTool",
+      "frames": 2,
+      "fps": 8,
+      "loop": false,
+      "label": "Zusammenzucken mit Werkzeug",
+      "crop_src": [
+        50,
+        40,
+        385,
+        450
+      ]
+    },
+    "die": {
+      "source_folder": "Die(HoldingToolOrNot)",
+      "frames": 6,
+      "fps": 6,
+      "loop": false,
+      "hold": true,
+      "label": "Hinfallen/Hinlegen",
+      "crop_src": [
+        0,
+        40,
+        390,
+        462
+      ]
+    },
+    "fish": {
+      "source_folder": "Fish",
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "label": "Angeln",
+      "crop_src": [
+        5,
+        45,
+        390,
+        458
+      ],
+      "needs_tool": true
+    },
+    "interact_tool": {
+      "source_folder": "InteractHoldingTool",
+      "frames": 3,
+      "fps": 7,
+      "loop": false,
+      "label": "Benutzen mit Werkzeug",
+      "crop_src": [
+        35,
+        40,
+        385,
+        450
       ]
     }
   },
@@ -283,7 +350,10 @@
         "sit_tool",
         "run",
         "swing",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     },
     "tool_hammer_back": {
@@ -294,7 +364,10 @@
         "sit_tool",
         "run",
         "swing",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     },
     "tool_shovel": {
@@ -305,7 +378,10 @@
         "sit_tool",
         "run",
         "dig",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     },
     "tool_shovel_back": {
@@ -316,7 +392,10 @@
         "sit_tool",
         "run",
         "dig",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     },
     "tool_watercan": {
@@ -326,7 +405,10 @@
         "walk_tool",
         "sit_tool",
         "run",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     },
     "tool_watercan_back": {
@@ -336,7 +418,10 @@
         "walk_tool",
         "sit_tool",
         "run",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     },
     "tool_axe": {
@@ -347,7 +432,10 @@
         "sit_tool",
         "run",
         "swing",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     },
     "tool_axe_back": {
@@ -358,7 +446,10 @@
         "sit_tool",
         "run",
         "swing",
-        "get_up_tool"
+        "get_up_tool",
+        "damage_tool",
+        "die",
+        "interact_tool"
       ]
     }
   },
@@ -2334,5 +2425,855 @@
       },
       "workplace": []
     }
+  },
+  "clips": {
+    "_comment": "Animation clips built from the Penzilla frames (own sequences, face changes, head/body offsets in source pixels, event markers). Same style as the pack because every pixel is original Penzilla art. Used by players and NPCs alike (CharacterRig.play).",
+    "greet": {
+      "label": "Grüßen",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            1,
+            0
+          ],
+          "fps": 8,
+          "face": "happy",
+          "body_dy": [
+            0,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            -1,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "wave": {
+      "label": "Winken (Hand ausstrecken)",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            1,
+            2,
+            1,
+            2,
+            1,
+            2,
+            1
+          ],
+          "fps": 7,
+          "face": "happy"
+        }
+      ]
+    },
+    "talk": {
+      "label": "Sprechen",
+      "loop": true,
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 7,
+          "face_dy": [
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0
+          ]
+        }
+      ]
+    },
+    "gesture": {
+      "label": "Gestikulieren",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            0,
+            1,
+            1,
+            2,
+            1,
+            0
+          ],
+          "fps": 6
+        }
+      ]
+    },
+    "nod": {
+      "label": "Nicken",
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "fps": 8,
+          "face_dy": [
+            0,
+            2,
+            0,
+            2,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "shake_head": {
+      "label": "Kopfschütteln",
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "fps": 9,
+          "face_dx": [
+            0,
+            -2,
+            0,
+            2,
+            0,
+            -2,
+            0
+          ]
+        }
+      ]
+    },
+    "laugh": {
+      "label": "Lachen",
+      "repeat": 2,
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 12,
+          "face": "happy",
+          "body_dy": [
+            0,
+            -1,
+            0,
+            -2,
+            0,
+            -1,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "cheer": {
+      "label": "Freuen (Hüpfen)",
+      "repeat": 2,
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            2,
+            4,
+            6,
+            0,
+            2,
+            4,
+            6
+          ],
+          "fps": 10,
+          "face": "happy",
+          "body_dy": [
+            0,
+            -5,
+            -9,
+            -5,
+            0,
+            -5,
+            -9,
+            -5
+          ]
+        }
+      ]
+    },
+    "tired": {
+      "label": "Müde stehen",
+      "loop": true,
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 4,
+          "face": "tired",
+          "body_dy": [
+            0,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "yawn": {
+      "label": "Gähnen",
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            3,
+            3,
+            2,
+            1
+          ],
+          "fps": 5,
+          "face": "tired",
+          "face_dy": [
+            0,
+            0,
+            1,
+            2,
+            2,
+            2,
+            1,
+            0
+          ]
+        }
+      ]
+    },
+    "upset": {
+      "label": "Verärgert",
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "fps": 9,
+          "face": "angry",
+          "face_dx": [
+            0,
+            -1,
+            0,
+            1,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "flinch": {
+      "label": "Zusammenzucken (Verletzung)",
+      "segments": [
+        {
+          "base": "damage",
+          "seq": [
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "fps": 10,
+          "face": "angry"
+        }
+      ]
+    },
+    "hurt_idle": {
+      "label": "Verletzt stehen",
+      "loop": true,
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 4,
+          "face": "tired",
+          "body_dy": [
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "eat": {
+      "label": "Essen",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            0,
+            0,
+            1,
+            2,
+            2,
+            1,
+            0
+          ],
+          "fps": 5,
+          "face": "happy",
+          "face_dy": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "drink": {
+      "label": "Trinken",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            0,
+            1,
+            2,
+            2,
+            2,
+            2,
+            1,
+            0
+          ],
+          "fps": 5,
+          "face_dy": [
+            0,
+            0,
+            -1,
+            -2,
+            -2,
+            -1,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    "use": {
+      "label": "Bedienen",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            0,
+            1,
+            2,
+            2,
+            2,
+            1,
+            0
+          ],
+          "fps": 6,
+          "events": {
+            "2": "use"
+          }
+        }
+      ]
+    },
+    "look_at": {
+      "label": "Betrachten",
+      "segments": [
+        {
+          "base": "idle",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "fps": 3,
+          "face_dy": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        }
+      ]
+    },
+    "pick_up": {
+      "label": "Aufheben",
+      "segments": [
+        {
+          "base": "sit",
+          "seq": [
+            0,
+            1,
+            2
+          ],
+          "fps": 10,
+          "events": {
+            "2": "pick"
+          }
+        },
+        {
+          "base": "get_up",
+          "seq": [
+            1,
+            2,
+            3
+          ],
+          "fps": 10
+        }
+      ]
+    },
+    "put_down": {
+      "label": "Ablegen",
+      "segments": [
+        {
+          "base": "sit",
+          "seq": [
+            0,
+            1,
+            2
+          ],
+          "fps": 10,
+          "events": {
+            "2": "drop"
+          }
+        },
+        {
+          "base": "get_up",
+          "seq": [
+            1,
+            2,
+            3
+          ],
+          "fps": 10
+        }
+      ]
+    },
+    "tend": {
+      "label": "Pflanzen pflegen (knien)",
+      "segments": [
+        {
+          "base": "sit",
+          "seq": [
+            0,
+            1,
+            2
+          ],
+          "fps": 8
+        },
+        {
+          "base": "sit",
+          "seq": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "fps": 4,
+          "body_dy": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0
+          ],
+          "events": {
+            "3": "use"
+          }
+        },
+        {
+          "base": "get_up",
+          "seq": [
+            1,
+            2,
+            3
+          ],
+          "fps": 8
+        }
+      ]
+    },
+    "open_door": {
+      "label": "Tür öffnen",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            0,
+            1,
+            2,
+            2
+          ],
+          "fps": 8,
+          "events": {
+            "2": "door_open"
+          }
+        }
+      ]
+    },
+    "close_door": {
+      "label": "Tür schließen",
+      "segments": [
+        {
+          "base": "interact",
+          "seq": [
+            2,
+            1,
+            0
+          ],
+          "fps": 8,
+          "events": {
+            "0": "door_close"
+          }
+        }
+      ]
+    },
+    "sit_down": {
+      "label": "Hinsetzen",
+      "hold": true,
+      "segments": [
+        {
+          "base": "sit",
+          "seq": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 8
+        }
+      ]
+    },
+    "stand_up": {
+      "label": "Aufstehen",
+      "segments": [
+        {
+          "base": "get_up",
+          "seq": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "fps": 8
+        }
+      ]
+    },
+    "lie_down": {
+      "label": "Hinlegen (Schlafen)",
+      "hold": true,
+      "segments": [
+        {
+          "base": "die",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "fps": 5
+        }
+      ]
+    },
+    "fish": {
+      "label": "Angeln",
+      "loop": true,
+      "segments": [
+        {
+          "base": "fish",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "fps": 6
+        }
+      ]
+    },
+    "walk_hurt": {
+      "label": "Gehen (krank/verletzt)",
+      "loop": true,
+      "segments": [
+        {
+          "base": "walk",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "fps": 6,
+          "face": "tired",
+          "body_dy": [
+            0,
+            1,
+            0,
+            0,
+            1,
+            0
+          ]
+        }
+      ]
+    },
+    "walk_tired": {
+      "label": "Gehen (müde)",
+      "loop": true,
+      "segments": [
+        {
+          "base": "walk",
+          "seq": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "fps": 8,
+          "face": "tired"
+        }
+      ]
+    }
+  },
+  "activity_clips": {
+    "_comment": "What NPCs do while an activity is shown (weights). Data only – extend freely.",
+    "socialize": [
+      [
+        "talk",
+        5
+      ],
+      [
+        "gesture",
+        3
+      ],
+      [
+        "nod",
+        2
+      ],
+      [
+        "laugh",
+        2
+      ],
+      [
+        "shake_head",
+        1
+      ]
+    ],
+    "eat_out": [
+      [
+        "eat",
+        5
+      ],
+      [
+        "drink",
+        3
+      ],
+      [
+        "talk",
+        2
+      ]
+    ],
+    "errand": [
+      [
+        "look_at",
+        3
+      ],
+      [
+        "use",
+        3
+      ],
+      [
+        "pick_up",
+        1
+      ]
+    ],
+    "leisure": [
+      [
+        "look_at",
+        3
+      ],
+      [
+        "yawn",
+        1
+      ],
+      [
+        "tend",
+        1
+      ]
+    ],
+    "pause": [
+      [
+        "eat",
+        3
+      ],
+      [
+        "drink",
+        3
+      ],
+      [
+        "talk",
+        1
+      ],
+      [
+        "yawn",
+        1
+      ]
+    ],
+    "work": [
+      [
+        "use",
+        3
+      ],
+      [
+        "look_at",
+        1
+      ],
+      [
+        "pick_up",
+        1
+      ]
+    ],
+    "work@farm_shop": [
+      [
+        "tend",
+        3
+      ],
+      [
+        "pick_up",
+        2
+      ],
+      [
+        "use",
+        1
+      ]
+    ],
+    "work@depot": [
+      [
+        "pick_up",
+        3
+      ],
+      [
+        "put_down",
+        3
+      ],
+      [
+        "use",
+        1
+      ]
+    ],
+    "see_doctor": [
+      [
+        "hurt_idle",
+        1
+      ]
+    ]
   }
 }

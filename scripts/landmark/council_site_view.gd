@@ -25,6 +25,8 @@ var site: Dictionary = {}
 var landmark_id := Landmarks.WORLD_COUNCIL
 var stage := 1
 var camera: Camera2D
+var actors: Node2D
+var effects: Array[CPUParticles2D] = []
 var figure: Node2D
 var rig: CharacterRig
 var pos_m := Vector2.ZERO          # grid position (metres)
@@ -149,6 +151,7 @@ func _build_world() -> void:
 	var k := M_PX / float(site["px_per_m"])
 	var origin := Vector2(float(site["origin_m"][0]), -float(site["origin_m"][1])) * M_PX
 	var shader: Shader = load("res://shaders/landmark_occluder.gdshader")
+	var water_shader: Shader = load("res://shaders/landmark_water.gdshader")
 	var base := Node2D.new()
 	base.name = "Tiles"
 	base.z_index = 0
@@ -168,6 +171,12 @@ func _build_world() -> void:
 		s.centered = false
 		s.position = at
 		s.scale = Vector2(k, k)
+		var wmat := ShaderMaterial.new()      # living water (ripples, falling streaks)
+		wmat.shader = water_shader
+		wmat.set_shader_parameter("depth_tex", dtex)
+		wmat.set_shader_parameter("tile_origin", at)
+		wmat.set_shader_parameter("tile_size", Vector2(tex.get_width(), tex.get_height()) * k)
+		s.material = wmat
 		base.add_child(s)
 		var o := Sprite2D.new()
 		o.texture = tex
@@ -181,10 +190,16 @@ func _build_world() -> void:
 		o.visible = false
 		over.add_child(o)
 		_tiles.append({"sprite": s, "overlay": o, "rect": Rect2(at, Vector2(float(t["w"]), float(t["h"])) * k)})
+	# figure and water effects share one y-sorted layer: every node sits on its
+	# ground point (sort key), the visual is lifted by its height
+	actors = Node2D.new()
+	actors.name = "Actors"
+	actors.z_index = 1
+	actors.y_sort_enabled = true
+	add_child(actors)
 	figure = Node2D.new()
 	figure.name = "Figure"
-	figure.z_index = 1
-	add_child(figure)
+	actors.add_child(figure)
 	rig = CharacterRig.new()
 	rig.appearance = CharacterCatalog.normalize(LocalProfile.character) if LocalProfile.has_character() else CharacterCatalog.default_appearance()
 	figure.add_child(rig)
@@ -192,16 +207,113 @@ func _build_world() -> void:
 	camera.zoom = Vector2(0.55, 0.55)
 	camera.position_smoothing_enabled = true
 	figure.add_child(camera)
+	_build_effects()
 	camera.make_current()
 	_place_figure()
+
+
+## Animated water from site.json "fx": fountain jet, falling water veils,
+## spray at the foot of every cascade. CPU particles (GL Compatibility, iOS).
+func _build_effects() -> void:
+	var px_m := _cos_phi * M_PX          # screen px per vertical metre
+	var grav := 9.0 * px_m               # ~9 m/s² in screen units
+	var drop_tex := _drop_texture()
+	for fx in site.get("fx", []):
+		var at := Vector2(float(fx["at"][0]), float(fx["at"][1]))
+		var z := float(fx["at"][2])
+		var holder := Node2D.new()           # sits on the ground point (y-sort key)
+		holder.position = ground_to_world(at, 0.0)
+		var p := CPUParticles2D.new()
+		p.local_coords = true
+		p.gravity = Vector2(0, grav)
+		p.color_ramp = _water_ramp()
+		p.texture = drop_tex
+		p.scale_amount_min = 0.35
+		p.scale_amount_max = 0.7
+		var src := Vector2(0, -z * px_m)
+		match str(fx["type"]):
+			"jet":
+				var v0 := sqrt(2.0 * grav * float(fx["height"]) * px_m)
+				p.amount = 160
+				p.lifetime = 2.0 * v0 / grav
+				p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+				p.emission_sphere_radius = 2.0
+				p.position = src
+				p.direction = Vector2(0, -1)
+				p.spread = rad_to_deg(float(fx.get("spread", 0.15)))
+				p.initial_velocity_min = v0 * 0.92
+				p.initial_velocity_max = v0
+			"veil":
+				var r := float(fx["radius"])
+				var pts := PackedVector2Array()
+				for k in 24:
+					var a := TAU * k / 24.0
+					pts.append(ground_to_world(at + Vector2(cos(a), sin(a)) * r, z) - ground_to_world(at, 0.0))
+				p.amount = 130
+				p.emission_shape = CPUParticles2D.EMISSION_SHAPE_POINTS
+				p.emission_points = pts
+				p.direction = Vector2(0, 1)
+				p.spread = 12.0
+				p.initial_velocity_min = 8.0
+				p.initial_velocity_max = 22.0
+				p.lifetime = sqrt(2.0 * float(fx["drop"]) * px_m / grav)
+			"splash":
+				var half := float(fx.get("width", 4.0)) * 0.5
+				var axis := Vector2(1, 0) if str(fx.get("axis", "x")) == "x" else Vector2(0, 1)
+				var e := ground_to_world(at + axis * half, 0.0) - ground_to_world(at - axis * half, 0.0)
+				p.amount = 22
+				p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+				p.emission_rect_extents = Vector2(absf(e.x) * 0.5, maxf(absf(e.y) * 0.5, 2.0))
+				p.position = src
+				p.direction = Vector2(0, -1)
+				p.spread = 50.0
+				p.initial_velocity_min = 12.0
+				p.initial_velocity_max = 34.0
+				p.lifetime = 0.6
+				p.scale_amount_max = 0.55
+			_:
+				p.free()
+				holder.free()
+				continue
+		p.preprocess = p.lifetime
+		holder.add_child(p)
+		actors.add_child(holder)
+		effects.append(p)
+
+
+## Soft round droplet (16 px radial gradient).
+static func _drop_texture() -> Texture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	g.add_point(0.45, Color(1, 1, 1, 0.9))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 16
+	t.height = 16
+	return t
+
+
+static func _water_ramp() -> Gradient:
+	var g := Gradient.new()
+	g.set_color(0, Color(0.93, 0.98, 1.0, 0.95))
+	g.set_color(1, Color(0.62, 0.86, 0.95, 0.0))
+	g.add_point(0.6, Color(0.78, 0.93, 0.99, 0.8))
+	return g
 
 
 func _place_figure() -> void:
 	if figure == null:
 		return
-	figure.position = ground_to_world(pos_m, height_m)
+	figure.position = ground_to_world(pos_m, 0.0)
+	var lift := Vector2(0, -height_m * _cos_phi * M_PX)
+	rig.position = lift
+	camera.position = lift
 	var key := depth_key(pos_m)
-	var fr := Rect2(figure.position + Vector2(-40, -90), Vector2(80, 100))
+	var fr := Rect2(figure.position + lift + Vector2(-40, -90), Vector2(80, 100))
 	for t in _tiles:
 		var ov: Sprite2D = t["overlay"]
 		var on := (t["rect"] as Rect2).intersects(fr)
@@ -323,4 +435,7 @@ func perf_stats() -> Dictionary:
 	var vis := 0
 	for t in _tiles:
 		vis += 1 if (t["overlay"] as Sprite2D).visible else 0
-	return {"view": "council", "tiles": _tiles.size(), "overlays": vis}
+	var parts := 0
+	for e in effects:
+		parts += e.amount
+	return {"view": "council", "tiles": _tiles.size(), "overlays": vis, "effects": effects.size(), "particles": parts}

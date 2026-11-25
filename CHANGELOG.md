@@ -2,6 +2,22 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.8.1] – Concordium: Korrekturen und lebendiges Wasser (25.11.2026)
+Produktversion bleibt **v0.1**.
+
+### Behoben
+- Kaskade zum Spiegelbecken: durchgehender Wasserlauf über einen Zulaufkanal. Die obere Kaskade fällt direkt in den nächsten Kanal.
+- Forumskanal endet am Brunnenrand und fließt ins Becken, statt quer hindurch zu laufen.
+- Entfernt: Schutthügel am Aquädukt, Efeuballen, Mosaikmedaillon vor der Freitreppe.
+- Keine halb verdeckten Bäume mehr: Pflanzen, die in erhöhte oder abgesenkte Flächen ragen, werden automatisch entfernt. Laubbäume stehen auf freien Rasenflächen.
+- Theater kleiner (r 19 m) und mit Abstand zu Hecken, Blumenbeeten und Säulenhalle. Der Weg endet an einer Öffnung der Randmauer.
+- Laufraster erkennt niedrige Durchgänge (zweiter Messstrahl).
+
+### Hinzugefügt
+- **Lebendiges Wasser:** Shader für Wellen und Lichtreflexe auf allen Wasserflächen sowie fließende Schlieren an Kaskaden und Wasserfällen.
+- **Funktionsfähiger großer Brunnen** mit Fontäne und Wasserschleiern, Gischt an allen Kaskaden (Partikel).
+- Tests: Wassermarkierung in der Tiefenkachel, Effekte vorhanden, Shader auf allen Kacheln, gemeinsame y-Sortierung, Erreichbarkeit des Theatergartens.
+
 ## [0.8.0] – Concordium: verbindliche Entscheidungen des Projektinhabers (25.11.2026)
 Produktversion bleibt **v0.1** (erst nach Freigabe erhöht).
 

@@ -9,7 +9,8 @@ uniform float tolerance = 40.0;   // 0.4 m: figures may stand close to walls
 void fragment() {
 	vec4 d = texture(depth_tex, UV);
 	float key = floor(d.r * 255.0 + 0.5) * 256.0 + floor(d.g * 255.0 + 0.5);
-	if (d.a < 0.5 || d.b > 0.5 || key <= figure_key + tolerance) {
+	bool ground = floor(d.b * 255.0 + 0.5) >= 127.5;   // B: 128 = ground, + water code
+	if (d.a < 0.5 || ground || key <= figure_key + tolerance) {
 		discard;
 	}
 	COLOR = texture(TEXTURE, UV);

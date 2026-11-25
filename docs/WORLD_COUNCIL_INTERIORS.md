@@ -74,6 +74,8 @@ Alle Plätze gehören zum neutralen Gelände.
   - das Theaterinnere (Sitzstufen 0,68 m hoch),
   - Wasserflächen, Statuen, Pflanzen.
 
+Das Laufraster misst mit zwei Strahlhöhen (8,9 m und 3 m), damit auch niedrige Durchgänge in Mauern erkannt werden.
+
 Bei der Prüfung behobene Mängel des Entwurfs:
 - fehlende Treppen zu den oberen Wasserterrassen,
 - zu hohe Stufen an Ringkolonnade (0,65 m) und Säulenhallen (0,88 m),

@@ -440,8 +440,11 @@ def render(scene: Scene, materials: dict, px_per_m: float, ss: int = 2, tile: in
         img = pre
         depth = depth[ss // 2::ss, ss // 2::ss]
         part = part[ss // 2::ss, ss // 2::ss]
+        matid = matid[ss // 2::ss, ss // 2::ss]
+        normal = normal[ss // 2::ss, ss // 2::ss]
     origin = (sx0, sy1)  # metres of the image's top-left corner (screen space)
-    return img, {"depth": depth, "part": part, "part_names": list(part_index.keys()), "origin": origin, "px_per_m": px_per_m}
+    return img, {"depth": depth, "part": part, "part_names": list(part_index.keys()), "origin": origin, "px_per_m": px_per_m,
+                 "mat": matid, "mat_names": mat_names, "normal": normal}
 
 
 def save_png(img, path):
@@ -484,3 +487,19 @@ def height_field(scene: Scene, x0, y0, x1, y1, cell=1.0, z_top=200.0):
     z = np.where(np.isfinite(best), z_top - best, -10.0)
     shp = gx.shape
     return z.reshape(shp), nz.reshape(shp), mat.reshape(shp), part.reshape(shp)
+
+
+def surface_z(solids, pts_xy, z_top=200.0):
+    """Top surface height at points (vertical rays) over the given solids."""
+    down = np.array([0.0, 0.0, -1.0])
+    o = np.stack([pts_xy[:, 0], pts_xy[:, 1], np.full(len(pts_xy), z_top)], 1)
+    best = np.full(len(pts_xy), np.inf)
+    for so in solids:
+        a, b = so.aabb
+        sel = (o[:, 0] >= a[0]) & (o[:, 0] <= b[0]) & (o[:, 1] >= a[1]) & (o[:, 1] <= b[1])
+        if not sel.any():
+            continue
+        t, _, _ = so.hit(o[sel], down)
+        idx = np.nonzero(sel)[0]
+        best[idx] = np.minimum(best[idx], t)
+    return np.where(np.isfinite(best), z_top - best, -10.0)

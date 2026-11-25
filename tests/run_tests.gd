@@ -1614,13 +1614,42 @@ func _test_world_council() -> void:
 	check(at.call(Vector2(-40, 45)) and at.call(Vector2(-9.5, 12.0)) and at.call(Vector2(-56, 40)), "reachable from the gate: forum, portico/podium (stairs), west stoa")
 	check(at.call(Vector2(4.0, 4.0)), "peristyle walkway around the rotunda reachable")
 	check(at.call(Vector2(25.0, -6.0)) and at.call(Vector2(42.0, -6.0)) and at.call(Vector2(60.0, -40.0)), "all three water terraces reachable over the stair flights")
-	check(at.call(Vector2(66.0, 66.0)), "theatre surroundings reachable")
+	check(at.call(Vector2(76.0, 71.0)) and at.call(Vector2(38.5, 41.5)) and at.call(Vector2(31.0, 41.5)), "theatre garden reachable (stoa passage, path to the theatre)")
 	check(v.screen_dir_to_grid(Vector2(1, 0)).normalized().distance_to(Vector2(1, -1).normalized()) < 0.01, "screen right = grid (+x, -y)")
 	var k := v.depth_key(Vector2(3, 4))
 	check(is_equal_approx(k, 20700.0), "depth key = (x + y + 200) * 100")
 	var img: Image = (load("res://assets/landmarks/world_council/stage1/depth_%s.png" % v.site["tiles"][0]["name"]) as Texture2D).get_image()
 	check(img.get_width() > 0, "per-pixel depth tiles present")
+	# living water: effects list + water codes in the depth tiles
+	var kinds := {}
+	for fx in v.site.get("fx", []):
+		kinds[fx["type"]] = int(kinds.get(fx["type"], 0)) + 1
+	check(kinds.get("jet", 0) >= 1 and kinds.get("veil", 0) >= 2 and kinds.get("splash", 0) >= 8, "fountain jet, falling veils and cascade spray defined (%s)" % str(kinds))
+	var fpt := Vector2(-16.0, 58.8 + 5.0)                      # basin water south of the fountain column
+	var wpos := v.ground_to_world(fpt, 0.1)
+	var org := Vector2(float(v.site["origin_m"][0]), -float(v.site["origin_m"][1])) * CouncilSiteView.M_PX
+	var kk := CouncilSiteView.M_PX / float(v.site["px_per_m"])
+	var ipx := (wpos - org) / kk
+	var code := -1
+	for tl in v.site["tiles"]:
+		if ipx.x >= tl["x"] and ipx.y >= tl["y"] and ipx.x < tl["x"] + tl["w"] and ipx.y < tl["y"] + tl["h"]:
+			var di: Image = (load("res://assets/landmarks/world_council/stage1/depth_%s.png" % tl["name"]) as Texture2D).get_image()
+			code = int(round(di.get_pixel(int(ipx.x - tl["x"]), int(ipx.y - tl["y"])).b * 255.0)) % 128
+	check(code == 1, "fountain basin is marked as water surface in the depth tile (code %d)" % code)
 	v.free()
+	var live := CouncilSiteView.new()
+	add_child(live)
+	await get_tree().process_frame
+	var st2: Dictionary = live.perf_stats()
+	var wat := 0
+	for tl in live._tiles:
+		var m: ShaderMaterial = (tl["sprite"] as Sprite2D).material
+		if m and m.shader.resource_path.ends_with("landmark_water.gdshader"):
+			wat += 1
+	check(int(st2["effects"]) >= 11 and int(st2["particles"]) < 1200, "water effects running (%d emitters, %d particles)" % [st2["effects"], st2["particles"]])
+	check(wat == live._tiles.size(), "every tile draws living water (shader)")
+	check(live.figure.get_parent() == live.actors and live.actors.y_sort_enabled, "figure and fountains share one y-sorted layer")
+	live.queue_free()
 	# globe marker on the drawn surface point
 	var gv := GlobeView.new()
 	add_child(gv)

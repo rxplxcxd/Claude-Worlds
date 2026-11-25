@@ -29,6 +29,8 @@ RC = (-16.0, -16.0)        # rotunda centre
 INSCRIPTIONS = []          # gilded lettering panels (+Y faces), filled by build()
 DOMES = {}                 # material name -> centre (ribs per dome)
 MOSAICS = {}
+REMOVED_PLANTS = []
+FX = []                    # animated effects (site metres): fountain jets, veils, splashes
 PODIUM_Z = 6.0
 HEIGHT_M = 56.25           # highest point of the rotunda (lantern sphere)
 
@@ -70,11 +72,13 @@ def statue(sc, x, y, z0, part, mat='marble', scale=1.0, broken=False, pedestal=1
 
 
 def cypress(sc, x, y, z0, h, part, r=None):
+    part = f"{part}_{len(sc.solids)}"     # one group per plant (vegetation check)
     r = r or h * 0.16
     sc.add(ell(x, y, z0 + h * 0.5, r, r, h * 0.55, 'cypress', part, zmin=z0))
 
 
 def tree(sc, x, y, z0, part, k=1.0, seed=0):
+    part = f"{part}_{len(sc.solids)}"
     rng = np.random.default_rng(seed)
     sc.add(cyl(x, y, z0, z0 + 2.2 * k, 0.28 * k, 'bronze', part))
     for i in range(4):
@@ -105,14 +109,15 @@ def arch_cutters(axis, along0, along1, spacing, width, z0, spring, depth0, depth
 
 def build(stage: int = 1):
     INSCRIPTIONS.clear()
+    FX.clear()
     sc = Scene()
     ruin = stage <= 1
     rng = np.random.default_rng(7)
     rx, ry = RC
 
     # ---------------------------------------------------------- ground
-    theatre_c = (50.0, 50.0)
-    theatre_r = 22.0
+    theatre_c = (57.0, 52.0)    # between the hedges (y 30..74) and clear of the east stoa
+    theatre_r = 19.0
     hole = cyl(theatre_c[0], theatre_c[1], -8.0, 1.0, theatre_r)
     sc.add(box(-84, -84, -2.0, 84, 84, 0.0, 'grass', 'ground', cuts=[hole]))
 
@@ -255,9 +260,10 @@ def build(stage: int = 1):
             z = PODIUM_Z - i * 1.2
             y = sy0 + i * 2.4
             sc.add(box(xc - 2.8, y, 0.0, xc + 2.8, y + 2.4, z, 'marble_warm', 'cascade'))
-            sc.add(box(xc - 2.2, y + 0.2, z - 0.05, xc + 2.2, y + 2.4, z + 0.02, 'water_murky' if ruin else 'water', 'cascade_water'))
-            if not ruin:
-                sc.add(box(xc - 2.2, y + 2.35, z - 1.2, xc + 2.2, y + 2.45, z, 'water', 'cascade_fall'))
+            sc.add(box(xc - 2.2, y + 0.2, z - 0.05, xc + 2.2, y + 2.4, z + 0.02, 'water', 'cascade_water'))
+            if i < 4:
+                sc.add(box(xc - 2.2, y + 2.35, z - 1.2, xc + 2.2, y + 2.45, z + 0.02, 'water', 'cascade_fall'))
+                FX.append({"type": "splash", "at": [xc, y + 2.6, z - 1.2 + 0.02], "width": 4.4, "axis": "x"})
 
     # ---------------------------------------------------------- forum
     fx0, fx1 = -52.0, 20.0
@@ -266,29 +272,38 @@ def build(stage: int = 1):
     canal = (cx_axis - 3.2, sy1 + 4.0, cx_axis + 3.2, fy1 - 6.0)
     fountain_c = (cx_axis, (sy1 + fy1) / 2.0 + 2.0)
     sc.add(box(fx0, fy0, 0.0, fx1, fy1, 0.12, 'paving', 'forum', cuts=[box(*canal[:2], -1, *canal[2:], 1), cyl(fountain_c[0], fountain_c[1], -1, 1, 8.5)]))
-    # canal: basin, rim, water
-    sc.add(box(canal[0], canal[1], -1.2, canal[2], canal[3], -0.9, 'paving_dark', 'canal'))
-    sc.add(box(canal[0], canal[1], -1.2, canal[2], canal[3], 0.06, 'water_murky' if ruin else 'water', 'canal_water'))
-    for (a0, a1) in ((canal[0] - 0.6, canal[0]), (canal[2], canal[2] + 0.6)):
-        sc.add(box(a0, canal[1] - 0.6, 0.0, a1, canal[3] + 0.6, 0.45, 'marble', 'canal_rim'))
-    for (b0, b1) in ((canal[1] - 0.6, canal[1]), (canal[3], canal[3] + 0.6)):
-        sc.add(box(canal[0], b0, 0.0, canal[2], b1, 0.45, 'marble', 'canal_rim'))
-    # great fountain (stage 1: dry, broken top tier)
+    # canal: two reaches that end at the fountain's rim (water flows into the basin)
+    fyc = fountain_c[1]
+    for (cy0, cy1, open_end) in ((canal[1], fyc - 8.3, 'far'), (fyc + 8.3, canal[3], 'near')):
+        sc.add(box(canal[0], cy0, -1.2, canal[2], cy1, -0.9, 'paving_dark', 'canal'))
+        sc.add(box(canal[0], cy0, -1.2, canal[2], cy1, 0.06, 'water', 'canal_water'))
+        for (a0, a1) in ((canal[0] - 0.6, canal[0]), (canal[2], canal[2] + 0.6)):
+            sc.add(box(a0, cy0 - (0.6 if open_end == 'far' else 0.0), 0.0, a1, cy1 + (0.6 if open_end == 'near' else 0.0), 0.45, 'marble', 'canal_rim'))
+        # closed end away from the fountain
+        if open_end == 'far':
+            sc.add(box(canal[0], cy0 - 0.6, 0.0, canal[2], cy0, 0.45, 'marble', 'canal_rim'))
+        else:
+            sc.add(box(canal[0], cy1, 0.0, canal[2], cy1 + 0.6, 0.45, 'marble', 'canal_rim'))
+    # great fountain – works in every stage (lively water)
     fx, fy = fountain_c
-    sc.add(cyl(fx, fy, -0.6, 0.8, 8.5, 'marble', 'great_fountain', cuts=[cyl(fx, fy, 0.0, 2.0, 7.8)]))
-    sc.add(cyl(fx, fy, -0.6, 0.1, 7.8, 'water_murky' if ruin else 'water', 'fountain_water'))
+    sc.add(cyl(fx, fy, -0.6, 0.8, 8.5, 'marble', 'great_fountain', cuts=[cyl(fx, fy, 0.0, 2.0, 7.8),
+               box(canal[0], fy - 9.0, 0.1, canal[2], fy - 7.0, 2.0), box(canal[0], fy + 7.0, 0.1, canal[2], fy + 9.0, 2.0)]))
+    for sy_ in (-1, 1):       # water fills the openings between canal and basin
+        sc.add(box(canal[0], fy + sy_ * 7.0 if sy_ > 0 else fy - 8.6, -0.6, canal[2], fy + 8.6 if sy_ > 0 else fy - 7.0, 0.08, 'water', 'canal_water'))
+    sc.add(cyl(fx, fy, -0.6, 0.1, 7.8, 'water', 'fountain_water'))
     sc.add(cyl(fx, fy, 0.1, 2.0, 1.6, 'marble', 'great_fountain'))
     sc.add(ell(fx, fy, 2.4, 4.2, 4.2, 1.0, 'marble', 'great_fountain', zmin=2.0, cuts=[ell(fx, fy, 3.0, 3.6, 3.6, 0.9)]))
     sc.add(cyl(fx, fy, 2.4, 4.6, 0.9, 'marble', 'great_fountain'))
-    if not ruin:
-        sc.add(ell(fx, fy, 5.2, 2.4, 2.4, 0.6, 'marble', 'great_fountain', zmin=4.6))
-        statue(sc, fx, fy, 5.0, 'fountain_statue', 'gold', 1.1, pedestal=0.8)
-    else:
-        sc.add(hcyl('x', fx + 3.0, fx + 5.4, fy - 4.5, 0.6, 0.6, 'marble', 'debris'))
-        statue(sc, fx, fy, 4.6, 'fountain_statue', 'marble', 1.0, broken=True, pedestal=0.6)
+    sc.add(ell(fx, fy, 2.95, 3.5, 3.5, 0.2, 'water', 'fountain_bowl_water', zmin=2.8))   # water in the lower bowl
+    sc.add(ell(fx, fy, 5.2, 2.4, 2.4, 0.6, 'marble', 'great_fountain', zmin=4.6, cuts=[ell(fx, fy, 5.75, 2.0, 2.0, 0.5)]))
+    sc.add(ell(fx, fy, 5.5, 1.9, 1.9, 0.12, 'water', 'fountain_bowl_water', zmin=5.4))
+    sc.add(cyl(fx, fy, 5.4, 6.0, 0.35, 'gold' if not ruin else 'bronze', 'fountain_nozzle'))
+    FX.append({"type": "jet", "at": [fx, fy, 6.0], "height": 3.2, "spread": 0.18})
+    FX.append({"type": "veil", "at": [fx, fy, 5.75], "radius": 2.1, "drop": 2.6})
+    FX.append({"type": "veil", "at": [fx, fy, 3.1], "radius": 4.2, "drop": 2.9})
+    FX.append({"type": "ripples", "at": [fx, fy, 0.1], "radius": 7.6})
     # mosaic medallion in front of the stairs
-    MOSAICS['mosaic_forum'] = (cx_axis, fy0 + 2.6)
-    sc.add(cyl(cx_axis, fy0 + 2.6, 0.0, 0.16, 2.4, 'mosaic_forum', 'forum_medallion'))
+    # (no medallion in front of the stairs: the gap to the canal is too narrow)
     # bronze braziers (fire bowls) along the forum
     for i in range(5):
         y = fy0 + 6.0 + i * 11.0
@@ -405,16 +420,23 @@ def build(stage: int = 1):
             sc.add(box(a, yy, z + 1.0, b, yy + 0.5, z + 1.3, 'marble', f'terrace_{li}_bal'))
         # channel / pool on the axis
         if li < 2:
-            sc.add(box(a + 1.0, ry - 3.0, z + 0.05, b, ry + 3.0, z + 0.4, 'marble', f'channel_{li}',
-                       cuts=[box(a + 1.6, ry - 2.4, z + 0.1, b + 1, ry + 2.4, z + 1)]))
-            sc.add(box(a + 1.6, ry - 2.4, z + 0.1, b, ry + 2.4, z + 0.3, 'water_murky' if ruin else 'water', 'channel_water'))
-            # cascade lip
-            sc.add(box(b - 0.1, ry - 2.4, levels[li + 1][2], b + 0.25, ry + 2.4, z + 0.3, 'water_murky' if ruin else 'water', 'cascade_fall'))
+            c0 = a + 1.6 if li == 0 else a - 0.05          # upper channel starts at the podium, lower ones at the falls
+            sc.add(box(c0 - 0.6, ry - 3.0, z + 0.05, b, ry + 3.0, z + 0.4, 'marble', f'channel_{li}',
+                       cuts=[box(c0 if li == 0 else c0 - 1.0, ry - 2.4, z + 0.1, b + 1, ry + 2.4, z + 1)]))
+            sc.add(box(c0, ry - 2.4, z + 0.1, b, ry + 2.4, z + 0.3, 'water', 'channel_water'))
+            # cascade lip: falls straight into the next channel / the pool feed
+            z_next = levels[li + 1][2]
+            sc.add(box(b - 0.1, ry - 2.4, z_next + 0.1, b + 0.25, ry + 2.4, z + 0.3, 'water', 'cascade_fall'))
+            FX.append({"type": "splash", "at": [b + 0.5, ry, z_next + 0.25], "width": 4.8, "axis": "y"})
         else:
             pool = (a + 3.0, ty0 + 5.0, b - 6.0, ty1 - 5.0)
+            # short feed channel from the last cascade into the pool (continuous flow)
+            sc.add(box(a - 0.05, ry - 3.0, 0.0, pool[0], ry - 2.4, 0.5, 'marble', 'pool_feed'))
+            sc.add(box(a - 0.05, ry + 2.4, 0.0, pool[0], ry + 3.0, 0.5, 'marble', 'pool_feed'))
+            sc.add(box(a - 0.05, ry - 2.4, -0.8, pool[0] + 0.1, ry + 2.4, 0.2, 'water', 'pool_feed_water'))
             sc.add(box(pool[0] - 0.8, pool[1] - 0.8, 0.0, pool[2] + 0.8, pool[3] + 0.8, 0.5, 'marble', 'pool_rim',
-                       cuts=[box(pool[0], pool[1], -1.0, pool[2], pool[3], 1.0)]))
-            sc.add(box(pool[0], pool[1], -0.8, pool[2], pool[3], 0.15, 'water_murky' if ruin else 'water', 'pool_water'))
+                       cuts=[box(pool[0], pool[1], -1.0, pool[2], pool[3], 1.0), box(pool[0] - 1.0, ry - 2.4, 0.15, pool[0] + 0.1, ry + 2.4, 1.0)]))
+            sc.add(box(pool[0], pool[1], -0.8, pool[2], pool[3], 0.15, 'water', 'pool_water'))
             # island pavilion (tholos) in the pool
             tcx, tcy = (pool[0] + pool[2]) / 2, (pool[1] + pool[3]) / 2
             sc.add(cyl(tcx, tcy, -0.5, 1.2, 5.0, 'marble_warm', 'tholos'))
@@ -435,8 +457,6 @@ def build(stage: int = 1):
     cuts = arch_cutters('x', 8.0, 84.0, 7.6, 4.6, 0.0, 9.5, ay - 3, ay + 3)
     sc.add(box(8.0, ay - 1.6, 0.0, 84.0, ay + 1.6, 15.0, 'sandstone', 'aqueduct', cuts=cuts))
     sc.add(box(8.0, ay - 2.0, 15.0, 84.0, ay + 2.0, 15.8, 'sandstone', 'aqueduct_top', cuts=[box(7, ay - 0.9, 15.3, 85, ay + 0.9, 17)]))
-    if ruin:   # a collapsed span
-        sc.add(ell(55.0, ay + 2.0, 0.3, 4.0, 2.5, 1.2, 'sandstone', 'debris'))
     sc.add(cyl(4.0, ay, 0.0, 18.0, 4.5, 'sandstone', 'castellum'))
     sc.add(cyl(4.0, ay, 18.0, 19.0, 5.0, 'marble_warm', 'castellum'))
     sc.add(ell(4.0, ay, 19.0, 4.2, 4.2, 2.6, 'roof', 'castellum', zmin=19.0))
@@ -514,20 +534,20 @@ def build(stage: int = 1):
     sc.add(cyl(tcx, tcy, -8.0, -6.0, theatre_r, 'paving_dark', 'theatre_floor'))
     keep_far = [((1, 1, 0), (tcx + tcy) * 1.0 + 1.5)]   # half facing away from the camera
     for k in range(9):
-        r0 = 9.0 + k * 1.45
-        top = -6.0 + (k + 1) * 0.68
-        sc.add(cyl(tcx, tcy, -6.0, top, r0 + 1.45, 'marble_warm', 'theatre_cavea',
+        r0 = 7.0 + k * 1.3
+        top = -6.0 + (k + 1) * 0.66
+        sc.add(cyl(tcx, tcy, -6.0, top, r0 + 1.3, 'marble_warm', 'theatre_cavea',
                    cuts=[cyl(tcx, tcy, -7, 3, r0)], extra_planes=keep_far))
     MOSAICS['mosaic_theatre'] = (tcx, tcy)
-    sc.add(cyl(tcx, tcy, -6.0, -5.7, 8.6, 'mosaic_theatre', 'theatre_orchestra'))
+    sc.add(cyl(tcx, tcy, -6.0, -5.7, 6.6, 'mosaic_theatre', 'theatre_orchestra'))
     # stage (scaena) on the near side, low
-    sc.add(oriented_box(tcx + 9.5, tcy + 9.5, -6.0, -4.6, 1.8, 9.0, math.pi / 4, 'marble', 'theatre_stage'))
+    sc.add(oriented_box(tcx + 8.0, tcy + 8.0, -6.0, -4.6, 1.6, 7.5, math.pi / 4, 'marble', 'theatre_stage'))
     # rim wall with arches
     sc.add(cyl(tcx, tcy, -6.0, 0.8, theatre_r + 1.2, 'marble', 'theatre_rim',
-               cuts=[cyl(tcx, tcy, -7, 3, theatre_r)], extra_planes=keep_far))
+               cuts=[cyl(tcx, tcy, -7, 3, theatre_r), box(tcx - theatre_r - 3, 39.8, -0.2, tcx - theatre_r + 3, 43.2, 3)], extra_planes=keep_far))
 
     # ---------------------------------------------------------- paths
-    for (x0, y0, x1, y1) in ((fx1 + 9.0, 40.0, 84.0, 43.0), (22.0, ry + 22.0, 25.0, 84.0), (-64.0, 14.0, fx0 - 9.0, 17.0),
+    for (x0, y0, x1, y1) in ((fx1 + 9.0, 40.0, 37.5, 43.0), (22.0, ry + 22.0, 25.0, 84.0), (-64.0, 14.0, fx0 - 9.0, 17.0),
                              (-64.0, -64.0, -61.0, 14.0), (-61.0, -64.0, 2.0, -61.0)):
         sc.add(box(x0, y0, 0.0, x1, y1, 0.08, 'paving_dark', 'path'))
 
@@ -537,11 +557,13 @@ def build(stage: int = 1):
     for (y0, y1) in ((26.0, 30.0), (74.0, 78.0)):     # hedges with a gap (garden gate) at x 47..53
         hedge(sc, 24.0, y0, 47.0, y1, 0.0, 'hedge')
         hedge(sc, 53.0, y0, 84.0, y1, 0.0, 'hedge')
-    for (x0, y0, x1, y1) in ((26.0, 32.0, 32.0, 72.0),):
+    for (x0, y0, x1, y1) in ((31.0, 32.0, 35.0, 38.5), (31.0, 44.5, 35.0, 72.0)):
         sc.add(box(x0, y0, 0.0, x1, y1, 0.35, 'flowers', 'flower_bed'))
     for k in range(7):
         cypress(sc, 30.0 + k * 8.0, 28.0, 0.0, 10.0 + (k % 2) * 1.5, 'cypress')
-    for k, (x, y) in enumerate(((76, 36), (80, 64), (34, 80), (-40, -40), (-50, -30), (-30, -52), (-56, 30), (-58, 50), (-60, 70), (-44, 84))):
+    # broad-leaved trees on open lawns only (west front lawn, east lawn, back courtyard, theatre garden)
+    for k, (x, y) in enumerate(((78, 37), (80, 66), (35, 80), (-75, 45), (-70, 60), (-78, 73), (-68, 82), (-52, -58), (-58, -50),
+                                (66, 17), (80, 16), (42, 17))):
         tree(sc, x, y, 0.0, 'tree', k=1.0 + (k % 3) * 0.15, seed=k)
     # back courtyard garden between the wings and the rotunda
     for k in range(6):
@@ -549,12 +571,37 @@ def build(stage: int = 1):
         cypress(sc, -56.0 + k * 9.0, -58.0, 0.0, 9.0, 'cypress')
     # ivy / overgrowth masses on ruined parts
     if ruin:
-        for (x, y, z, r) in ((fx1 + 9.0, fy0 + 22.0, 4.0, 2.6), (fx0 - 9.0, fy0 + 30.0, 3.0, 2.2), (-64.0, -20.0, 5.0, 2.8),
-                             (-30.0, -64.0, 4.0, 2.5), (rx + 24.0, ry + 8.0, 9.0, 2.0), (70.0, ay + 1.6, 6.0, 3.0)):
-            sc.add(ell(x, y, z, r * 0.7, r * 0.7, r * 1.6, 'ivy', 'ivy', zmin=max(0.0, z - r * 1.6)))
         for (x, y) in ((-20, 60), (10, 40), (-40, 36), (14, 70), (44, -10), (64, 10)):
-            sc.add(ell(x, y, 0.5, 1.6, 1.6, 0.9, 'foliage', 'weeds', zmin=0.0))
+            sc.add(ell(x, y, 0.5, 1.6, 1.6, 0.9, 'foliage', f'weeds_{len(sc.solids)}', zmin=0.0))
+    remove_clipping_plants(sc)
     return sc
+
+
+VEG = ('tree', 'cypress', 'weeds')
+
+
+def remove_clipping_plants(sc):
+    """Drops every plant whose footprint (+0.4 m) touches a raised or sunken
+    surface (podium, terraces, walls, theatre bowl) – no half-hidden trees."""
+    from isorender import surface_z
+    groups = {}
+    for so in sc.solids:
+        if so.part.startswith(VEG):
+            groups.setdefault(so.part, []).append(so)
+    obst = [so for so in sc.solids if not so.part.startswith(VEG) and not so.part.startswith('hedge')]
+    bad = set()
+    for name, ss in groups.items():
+        lo = np.min([so.aabb[0] for so in ss], 0)
+        hi = np.max([so.aabb[1] for so in ss], 0)
+        c = (lo[:2] + hi[:2]) / 2
+        r = max(hi[0] - lo[0], hi[1] - lo[1]) / 2 + 0.4
+        pts = [c] + [c + np.array([math.cos(a), math.sin(a)]) * rr for rr in (r * 0.5, r) for a in np.linspace(0, 2 * math.pi, 12, endpoint=False)]
+        z = surface_z(obst, np.array(pts))
+        base = lo[2]
+        if np.any(np.abs(z - base) > 0.25):
+            bad.add(name)
+    sc.solids = [so for so in sc.solids if so.part not in bad]
+    REMOVED_PLANTS[:] = sorted(bad)
 
 
 def Solid_arch_top(cx, cy, z, half_w, ang):

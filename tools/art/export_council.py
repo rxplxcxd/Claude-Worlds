@@ -65,7 +65,20 @@ if not GRID_ONLY:
   dimg = np.zeros((H, W, 4), np.uint8)
   dimg[..., 0] = (enc >> 8).astype(np.uint8)
   dimg[..., 1] = (enc & 255).astype(np.uint8)
-  dimg[..., 2] = np.where(ground, 255, 0)
+  # B = ground flag (128) + water code: 1 still water surface, 2 falling water
+  mids = buf['mat']
+  water_ids = [i for i, n in enumerate(buf['mat_names']) if n.startswith('water')]
+  is_water = np.isin(mids, water_ids)
+  if (~fin & (alpha > 0)).any():
+      is_water = is_water[iy, ix]
+  nz = np.abs(buf['normal'][..., 2])
+  if (~fin & (alpha > 0)).any():
+      nz = nz[iy, ix]
+  code = np.where(is_water & (nz > 0.6), 1, np.where(is_water, 2, 0))
+  # ink outlines keep code 0 (contours do not shimmer)
+  ink = (np.abs(img[..., :3] - ir.INK[None, None, :]).sum(-1) < 0.05)
+  code[ink] = 0
+  dimg[..., 2] = np.where(ground, 128, 0) + code
   dimg[..., 3] = np.where(alpha > 0.0, 255, 0)
   cimg = np.clip(img * 255 + 0.5, 0, 255).astype(np.uint8)
   tiles = []
@@ -95,6 +108,14 @@ X0, Y0, X1, Y1 = -84, -84, 84, 84
 # report their roof and are blocked.
 CELL = 0.5
 z, nz, mat, part = ir.height_field(sc, X0, Y0, X1, Y1, CELL, z_top=8.9)
+# second, low ray (3 m): ground-level passages lower than 8.9 m (doorways,
+# arches in walls) – used where the high ray started inside masonry
+z2, nz2, mat2, part2 = ir.height_field(sc, X0, Y0, X1, Y1, CELL, z_top=3.0)
+low = (z >= 8.85) & (z2 < 2.85)
+z = np.where(low, z2, z)
+nz = np.where(low, nz2, nz)
+mat = np.where(low, mat2, mat)
+part = np.where(low, part2, part)
 kind = np.zeros(z.shape, np.uint8)            # 0 walk, 1 blocked, 2 water, 3 vegetation
 blocked_mats = {'cypress', 'foliage', 'ivy', 'bronze', 'gold', 'flowers', 'dark', 'roof', 'dome', 'earth'}
 for k, m in np.ndenumerate(mat):
@@ -120,6 +141,8 @@ site = {
              "kind": base64.b64encode(kind.tobytes()).decode()},
     "spawn": [float(wc.RC[0]), 83.4],
     "height_m": float(max(so.aabb[1][2] for so in sc.solids)),
+    "fx": wc.FX,
+    "removed_plants": len(wc.REMOVED_PLANTS),
     "site_frame": {"x_axis": "east", "y_axis": "south"},
     "points": {"forum": [float(wc.RC[0]) + 6.0, 60.0], "portico": [float(wc.RC[0]), 26.0], "theatre": [44.0, 44.0], "terraces": [40.0, -12.0]},
 }

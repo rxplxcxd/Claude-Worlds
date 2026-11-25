@@ -64,6 +64,12 @@ Blender als Python-Modul aus PyPI wurde in dieser Umgebung nicht zugelassen (Reg
 3. Nischen und Öffnungen unterschieden. Kuppelrippen je Pavillon zentriert. Wasser trüb-blau statt rasengrün. Dezentere Mosaike. Triumphtor, Feuerschalen, Kieswege, Mosaikmedaillon. Kanalwasser sichtbar gemacht.
 4. Spieltauglichkeit: Antrittsstufen am Portikus, Laufraster mit Durchgängen unter Bögen und Säulenhallen, Zoomgrenze passend zur Bildauflösung. → **Entwurf 1**, gesichert (Commit `d21e116`, `docs/world_council/concordium_entwurf_1.png`).
 5. Entscheidungen des Projektinhabers (25.11.2026): Höhe auf **56,25 m** (Kuppel −1,2 m, Laterne/Spitze kürzer; alles andere unverändert); echte **vergoldete Antiqua-Inschriften** (Liberation Serif Bold, SIL OFL, als Pixel in die Grafik gerastert): Portikusfries „CONCILIUM MUNDI“ (Fries vergrößert), Tor „CONCORDIUM / UBI MUNDUS CONVENIT“; **Treppenläufe** zwischen Podium und Wasserterrassen (vorher waren die oberen Terrassen unerreichbar), niedrigere Unterbauten (Ringkolonnade 0,5 m, Antrittsstufe an den Säulenhallen), Bogendurchgang zum Theatergarten, Heckentore.
+6. Korrekturen nach Durchsicht durch den Projektinhaber:
+   - **Wasser:** Die letzte Kaskade fällt jetzt in einen Zulaufkanal, der ins Spiegelbecken mündet; die obere Kaskade fällt direkt in den nächsten Kanal. Der Forumskanal endet beidseitig am Brunnenrand und fließt hinein, statt durch das Becken zu laufen.
+   - **Entfernt:** Schutthügel am Aquädukt, Efeuballen, Mosaikmedaillon vor der Treppe.
+   - **Pflanzen:** Jede Pflanze, die in Podium, Terrassen, Mauern oder das Theater ragt, wird automatisch entfernt (`remove_clipping_plants`). Die Laubbäume stehen jetzt auf freien Rasenflächen.
+   - **Theater:** Radius 19 statt 22 m, mit Abstand zu Hecken und Säulenhalle. Der Weg endet an einer Öffnung der Randmauer.
+   - **Brunnen:** In jeder Stufe funktionsfähig, mit klarem Wasser in Becken und Schalen.
 
 ## 4. Lizenzen und Quellen
 - Alle Grafiken des Weltratssitzes sind **eigene Erzeugnisse** dieses Projekts (Code und Modell in `tools/art/`). Es stecken keine Fremd- oder Penzilla-Pixel darin, daher dürfen sie ins Repository (`assets/landmarks/`).
@@ -92,3 +98,17 @@ Blender als Python-Modul aus PyPI wurde in dieser Umgebung nicht zugelassen (Reg
   - Joystick und Tastatur, Zoom per Knöpfen, Mausrad oder Pinch.
   - Tag und Nacht nach der Sonnenzeit am Ort.
   - Erreichbar vom Globus aus über „Ansehen (Vorschau)“.
+
+## 7. Animation (lebendiges Wasser)
+- **Wasser-Shader** `shaders/landmark_water.gdshader` auf allen Kacheln:
+  - Die Tiefenkachel markiert pro Pixel stehendes Wasser (Code 1) oder fallendes Wasser (Code 2).
+  - Stehendes Wasser bekommt wandernde Lichtreflexe und ein langsames Schimmern.
+  - Kaskaden und Wasserfälle bekommen nach unten laufende Schlieren.
+  - Konturlinien bleiben ruhig.
+- **Partikel** (`CPUParticles2D`, GL Compatibility, iOS-tauglich) aus der Effektliste `site.json → fx`:
+  - Fontäne des großen Brunnens: 3,2 m hoch.
+  - Zwei Wasserschleier von den Brunnenschalen.
+  - Gischt am Fuß jeder Kaskade (Freitreppe und Terrassen).
+  - Zusammen 13 Emitter mit rund 600 Tropfen.
+  - Die Effekte stehen in derselben y-sortierten Ebene wie die Figur, sie verdecken sich also korrekt.
+- Kosten: ein zusätzlicher Texturzugriff pro Pixel, keine weiteren Bilddaten.

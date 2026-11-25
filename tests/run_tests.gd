@@ -647,6 +647,7 @@ func _run() -> void:
 	_test_living_world()
 	_test_world_authority()
 	_test_animations()
+	_test_settlement_foundation()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
@@ -1028,6 +1029,80 @@ func _test_animations() -> void:
 	var dig: bool = n.rig.anim == "dig"
 	n.queue_free()
 	check(sat and got_up and ran and door and dig, "NPC animation states: sit down, get up, run when late, open the door and step in, dig at work")
+
+
+## Phase 4 – Settlement Foundation.
+func _test_settlement_foundation() -> void:
+	print("[phase 4: settlement foundation]")
+	var cfg := SettlementSim.load_config()
+	var data := SettlementData.load_from_file("res://data/settlement_templates/founding_basic.json")
+	var comp: Array = cfg["founding_population"]["composition"]
+	var day0 := 20800
+	# resources: the site decides the basic supply
+	var food := {}
+	for site in ["rich", "poor"]:
+		var site_in := {"factors": {"soil": 1.0 if site == "rich" else 0.05, "climate": 0.9 if site == "rich" else 0.2, "water": 1.0 if site == "rich" else 0.2, "resources": 0.8 if site == "rich" else 0.1, "terrain": 1.0}, "difficulty": {"drivers": {"cold_heat": 0.0 if site == "rich" else 0.6}}}
+		var rf := WorldState.region_factors(site_in)
+		var rec := {"settlement_id": "stl_res", "npcs": NpcRoster.generate("stl_res", data.buildings, comp), "resident_player_ids": ["plr_a"], "region_factors": rf}
+		SettlementCore.ensure(rec, cfg, day0)
+		var prod := 0.0
+		for d in 28:
+			SettlementCore.day_step(rec, data, cfg, day0 + d, 60)
+			prod += float(rec["core"]["stats"]["food_prod"])
+		food[site] = [prod / 28.0, rf]
+	print("       food production per day: rich site %.1f %s, poor site %.1f %s" % [food["rich"][0], str(food["rich"][1]), food["poor"][0], str(food["poor"][1])])
+	check(float(food["rich"][0]) > float(food["poor"][0]) * 1.3 and float(food["poor"][1]["energy"]) < float(food["rich"][1]["energy"]), "the site's soil, water and climate shape the basic supply (Ressourcen)")
+	# basic supply reaches the inhabitants: a food shortage makes meals less filling
+	var needs := {"food": 300000, "energy": 500000, "social": 500000, "leisure": 500000, "hygiene": 500000}
+	var fed: int = NpcBrain._integrate(needs, "eat_home", 1800, {}, cfg)["food"]
+	var short: int = NpcBrain._integrate(needs, "eat_home", 1800, {}, cfg, {"food_short": true})["food"]
+	var dirty: int = NpcBrain._integrate(needs, "wash", 1200, {}, cfg, {"water_short": true})["hygiene"]
+	var clean: int = NpcBrain._integrate(needs, "wash", 1200, {}, cfg)["hygiene"]
+	check(short < fed and dirty < clean, "shortages are felt in daily life (less filling meals, poor hygiene without water)")
+	# administration (town hall)
+	var rec2 := {"settlement_id": "stl_adm", "founder_player_id": "plr_boss", "resident_player_ids": ["plr_boss", "plr_guest"], "npcs": NpcRoster.generate("stl_adm", data.buildings, comp), "region_factors": {"food": 1.0, "water": 1.0, "energy": 1.0, "materials": 1.0}}
+	SettlementCore.ensure(rec2, cfg, day0)
+	for d in 15:
+		SettlementCore.day_step(rec2, data, cfg, day0 + d, 60)
+	var t := SettlementCore.day_start_utc(day0 + 14, 60) + 10 * 3600
+	var txt := SettlementReport.town_hall_text(rec2, data, cfg, t, 60)
+	check(txt.contains("Bevölkerung") and txt.contains("Grundversorgung") and txt.contains("Dienste heute") and txt.contains("Chronik") and txt.contains("Entwicklung"), "the town hall shows population, supply, services, development and the chronicle")
+	check(not SettlementReport.admin_actions(rec2, "plr_boss").is_empty() and SettlementReport.admin_actions(rec2, "plr_guest").is_empty(), "only the administration gets the administration buttons")
+	var recs: Array = [rec2]
+	var auth := WorldAuthority.create(func(): return recs, func(): return t, cfg)
+	var boss := LocalWorldClient.connect_to(auth, "plr_boss")
+	var cmd := SettlementReport.admin_command(rec2, "admin_toggle_newcomers")
+	check(boss.submit(cmd).get("ok", false) and rec2["core"]["policy"]["open_for_newcomers"] == false, "closing the settlement for newcomers is an authority command")
+	check(boss.submit(SettlementReport.admin_command(rec2, "admin_prio_bau")).get("ok", false) and rec2["core"]["policy"]["priorities"][0] == "bau", "the administration sets which jobs are filled first")
+	# jobs: a death opens a position, the administration fills it from the pool
+	var victim: Dictionary = SettlementCore.staff_of(rec2, "bld_clinic")[0]
+	victim["alive"] = false
+	check(SettlementReport.vacancies(rec2, data, cfg).any(func(v): return v["building_id"] == "bld_clinic"), "a vacancy appears when a medic dies")
+	var p := ["medizin"]
+	for f in SettlementCore.FUNCTIONS:
+		if f != "medizin":
+			p.append(f)
+	rec2["core"]["policy"]["priorities"] = p
+	var hired := false
+	for d in range(15, 25):
+		for e in SettlementCore.day_step(rec2, data, cfg, day0 + d, 60):
+			if e["kind"] == "hired" and e.get("building", "") == "bld_clinic":
+				hired = true
+	check(hired, "the administration hires a general worker for the vacant clinic post")
+	# building cards
+	var card := SettlementReport.building_text(rec2, data, cfg, "bld_water_works", "", SettlementCore.day_start_utc(day0 + 20, 60) + 10 * 3600, 60)
+	var night := SettlementReport.building_text(rec2, data, cfg, "bld_town_hall", "", SettlementCore.day_start_utc(day0 + 20, 60) + 2 * 3600, 60)
+	check(card.contains("jetzt geöffnet") and card.contains("Personal") and night.contains("jetzt geschlossen") and card.contains("Zustand"), "building cards show operating hours, open/closed, staff and condition")
+	var house := SettlementReport.building_text(rec2, data, cfg, "bld_house_1", "", t, 60)
+	check(house.contains("Bewohner"), "houses list their inhabitants and capacity")
+	# migration of a 0.5.0 save (12 NPCs, old personality keys)
+	var old_rec := {"settlement_id": "stl_old", "npcs": NpcRoster.generate("stl_old", data.buildings), "founded_at_unix": 1764547200, "time_zone": {"name": "X", "offset_min": 60}, "resident_player_ids": ["plr_a"]}
+	for r in old_rec["npcs"]:
+		r["personality"] = {"openness": 0.8, "diligence": 0.2, "sociability": 0.5, "ambition": 0.5, "risk": 0.5}
+		r["birth_day"] = 1000
+	var sim := SettlementSim.create(old_rec, data, 1764547200 + 3 * 86400, cfg, 60)
+	var r0: Dictionary = old_rec["npcs"][0]
+	check(sim.roster.size() == 12 and r0["personality"]["curiosity"] == 0.8 and r0["personality"]["conscientiousness"] == 0.2 and r0.has("employment") and old_rec.has("core"), "0.5.0 saves migrate (personality keys, health, employment, settlement core)")
 
 
 ## Personality has measurable effects (population-level A/B with fixed seeds).

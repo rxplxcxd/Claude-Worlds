@@ -348,7 +348,7 @@ static func day_step(record: Dictionary, data: SettlementData, cfg: Dictionary, 
 	bids.sort()
 	for bid in bids:
 		condition[bid] = snappedf(maxf(0.0, float(condition.get(bid, 1.0)) - decay), 0.0001)
-	var repair := float(hours_by_fn.get("bau", 0.0)) * float(sup.get("repair_per_builder_hour", 0.012))
+	var repair := float(hours_by_fn.get("bau", 0.0)) * float(sup.get("repair_per_builder_hour", 0.012)) * float(region.get("materials", 1.0))
 	while repair > 0.0001 and not bids.is_empty():
 		var worst: String = bids[0]
 		for bid in bids:
@@ -426,6 +426,13 @@ static func day_step(record: Dictionary, data: SettlementData, cfg: Dictionary, 
 	stats["pool"] = _pool(record).size()
 	stats["ill"] = alive_npcs(record).filter(func(r): return r["health"]["status"] != "healthy").size()
 	core["stats"] = stats
+	# population development: weekly history (5 years kept)
+	if posmod(day, 7) == 0:
+		var hist: Array = core.get("history", [])
+		hist.append({"day": day, "population": stats["population"], "humans": stats["humans"], "food_days": snappedf(float(stocks["food"]) / maxf(1.0, float(people)), 0.1), "employed": alive_npcs(record).filter(func(r): return r["employment"].get("status", "") == "employed").size()})
+		if hist.size() > 260:
+			hist = hist.slice(hist.size() - 260)
+		core["history"] = hist
 	core["day"] = day
 	var evlog: Array = core.get("events", [])
 	evlog.append_array(events)

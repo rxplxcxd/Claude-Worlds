@@ -19,6 +19,9 @@ var accent_color := Color("6b4e3a")
 
 var _corners: PackedVector2Array
 var _sprite: Sprite2D
+var _world_per_src := 1.0
+var _living: Node2D
+var _living_key := ""
 
 
 ## Builds the node from a settlement data entry.
@@ -69,7 +72,34 @@ func setup(entry: Dictionary) -> void:
 		_sprite.scale = Vector2.ONE * float(info["scale"])
 		_sprite.position = _corners[2] + info["offset"]
 		add_child(_sprite)
+		_world_per_src = float(info.get("world_per_src", 1.0))
 	queue_redraw()
+
+
+## Living Assets (Phase 4): shows the building's persistent visual state
+## (wear, fire traces, overgrowth, damage) from the simulation. Pristine
+## buildings keep the original sprite; missing state files fall back to it.
+func apply_visual_state(vs: VisualState, profile: String) -> void:
+	if _sprite == null:
+		return
+	var key := JSON.stringify([vs.structure, vs.wear, vs.damage, vs.fire, vs.overgrowth, vs.repair, profile])
+	if key == _living_key:
+		return
+	_living_key = key
+	if _living:
+		_living.queue_free()
+		_living = null
+	_sprite.visible = true
+	if vs.structure == "intact" and vs.wear == 0 and vs.damage == 0 and vs.fire == 0 and vs.overgrowth == 0 and vs.repair == 0:
+		return
+	var asset := _sprite.texture.resource_path.trim_prefix("res://assets/penzilla/").get_basename()
+	if not LivingComposer.has_asset(asset):
+		return
+	_living = LivingComposer.build(asset, vs, _sprite.texture, profile)
+	_living.scale = Vector2.ONE * _world_per_src
+	_living.position = _sprite.position
+	add_child(_living)
+	_sprite.visible = false
 
 
 func is_placeholder() -> bool:

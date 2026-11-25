@@ -273,7 +273,15 @@ func _build_npcs() -> void:
 	sim.store()
 	WorldState.save_world()
 	_sync_npc_nodes()
+	_sync_building_visuals()
 	_update_lod(true)
+
+
+## Building visuals follow the persistent Living-Assets states of the record.
+func _sync_building_visuals() -> void:
+	var profile := GraphicsProfile.current()
+	for bid in building_nodes:
+		(building_nodes[bid] as Building).apply_visual_state(VisualEventRouter.visual_state_of(record, bid), profile)
 
 
 ## One node per LIVING inhabitant: newcomers appear, the deceased leave.
@@ -361,6 +369,8 @@ func _process(delta: float) -> void:
 		sim.advance_to(int(GameClock.get_utc_unix()))
 		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived"]):
 			_sync_npc_nodes()
+		if sim.last_events.any(func(e): return e.get("kind", "") in ["building_condition", "fire"]):
+			_sync_building_visuals()
 		_update_lod(false)
 	_render_npcs(false)
 	_save_timer -= delta
@@ -622,9 +632,38 @@ func _make_effect(e: Dictionary) -> Node2D:
 func _on_interaction_requested(it: Interactable) -> void:
 	if it and it.kind == "npc" and _npc_by_id.has(it.interaction_id) and sim:
 		(_npc_by_id[it.interaction_id] as Npc).refresh_card(render_sim(), int(render_time()), _names)
+	elif it and sim and building_nodes.has(it.interaction_id):
+		_refresh_building_card(it)
+
+
+var _base_cards: Dictionary = {}   # building id -> [text, actions] from the template
+
+
+## Phase 4: live building cards; the town hall is the administration.
+func _refresh_building_card(it: Interactable) -> void:
+	var bid := it.interaction_id
+	if not _base_cards.has(bid):
+		_base_cards[bid] = [it.text, it.actions.duplicate()]
+	var t := int(GameClock.get_utc_unix())
+	var ty := ""
+	for b in data.buildings:
+		if b.get("id", "") == bid:
+			ty = str(b.get("type", ""))
+	if ty == "town_hall":
+		it.text = SettlementReport.town_hall_text(record, data, sim.config, t, sim.offset_min())
+		it.actions = _base_cards[bid][1] + SettlementReport.admin_actions(record, LocalProfile.player_id)
+	else:
+		it.text = SettlementReport.building_text(record, data, sim.config, bid, _base_cards[bid][0], t, sim.offset_min())
 
 
 func _on_interaction_action(interaction_id: String, action_id: String) -> void:
+	if action_id.begins_with("admin_") and sim and WorldState.client:
+		var cmd := SettlementReport.admin_command(record, action_id)
+		if not cmd.is_empty():
+			var res := WorldState.client.submit(cmd)
+			EventBus.toast_requested.emit("Die Verwaltung hat entschieden." if res.get("ok", false) else "Abgelehnt: " + str(res.get("reason", "")))
+			persist()
+		return
 	if action_id != "talk" or not _npc_by_id.has(interaction_id) or sim == null:
 		return
 	var t := int(GameClock.get_utc_unix())

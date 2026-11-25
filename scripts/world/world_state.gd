@@ -213,7 +213,23 @@ func _apply_site(record: Dictionary, site: Dictionary) -> void:
 	var diff: Dictionary = site.get("difficulty", {})
 	record["difficulty"] = diff.get("class", "")
 	record["difficulty_requirements"] = diff.get("requirements", [])
+	record["region_factors"] = region_factors(site)
 	_ensure_area(record)
+
+
+## Phase 4 "Ressourcen": what the site gives the settlement's basic supply
+## (multipliers on food, water and energy production and on building
+## materials for maintenance), derived from the site rating (Phase 2).
+static func region_factors(site: Dictionary) -> Dictionary:
+	var f: Dictionary = site.get("factors", {})
+	var drv: Dictionary = site.get("difficulty", {}).get("drivers", {})
+	var cold := float(drv.get("cold_heat", 0.0))
+	return {
+		"food": snappedf(clampf(0.55 + 0.45 * float(f.get("soil", 0.5)) + 0.25 * float(f.get("climate", 0.5)), 0.55, 1.2), 0.01),
+		"water": snappedf(clampf(0.55 + 0.5 * float(f.get("water", 0.5)), 0.6, 1.05), 0.01),
+		"energy": snappedf(clampf(0.7 + 0.3 * float(f.get("resources", 0.5)) + 0.2 * float(f.get("terrain", 0.5)) - 0.3 * cold, 0.6, 1.1), 0.01),
+		"materials": snappedf(clampf(0.6 + 0.5 * float(f.get("resources", 0.5)), 0.6, 1.1), 0.01),
+	}
 
 
 ## Settlement area (the locally playable grid) – distinct from the territory.

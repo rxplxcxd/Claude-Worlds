@@ -396,7 +396,7 @@ func needs_now(npc_id: String, t: int) -> Dictionary:
 	var i := int(_index.get(npc_id, -1))
 	if i < 0:
 		return {}
-	return NpcBrain.needs_at(states[npc_id], roster[i], config, t)
+	return NpcBrain.needs_at(states[npc_id], roster[i], config, t, record.get("core", {}).get("stats", {}))
 
 
 ## The player talks to an NPC (interaction event, persisted with the state).

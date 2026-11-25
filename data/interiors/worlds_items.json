@@ -1431,6 +1431,1114 @@
     21
    ],
    "action": "eat"
+  },
+  "delegate_seat_small": {
+   "sheet": "worlds/delegate_seat_small.png",
+   "rect": [
+    0,
+    0,
+    17,
+    32
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    14,
+    17,
+    18
+   ],
+   "action": "sit"
+  },
+  "delegate_seat_small_navy": {
+   "sheet": "worlds/delegate_seat_small_navy.png",
+   "rect": [
+    0,
+    0,
+    17,
+    32
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    14,
+    17,
+    18
+   ],
+   "action": "sit"
+  },
+  "delegate_seat_small_green": {
+   "sheet": "worlds/delegate_seat_small_green.png",
+   "rect": [
+    0,
+    0,
+    17,
+    32
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    14,
+    17,
+    18
+   ],
+   "action": "sit"
+  },
+  "delegate_seat_r-90": {
+   "sheet": "worlds/delegate_seat_r-90.png",
+   "rect": [
+    0,
+    0,
+    19,
+    33
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    21,
+    19,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    9.7,
+    25.2
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-75": {
+   "sheet": "worlds/delegate_seat_r-75.png",
+   "rect": [
+    0,
+    0,
+    22,
+    32
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    20,
+    22,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.5,
+    24.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-60": {
+   "sheet": "worlds/delegate_seat_r-60.png",
+   "rect": [
+    0,
+    0,
+    24,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    12.0,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-45": {
+   "sheet": "worlds/delegate_seat_r-45.png",
+   "rect": [
+    0,
+    0,
+    24,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    12.2,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-30": {
+   "sheet": "worlds/delegate_seat_r-30.png",
+   "rect": [
+    0,
+    0,
+    23,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    23,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    12.1,
+    25.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-15": {
+   "sheet": "worlds/delegate_seat_r-15.png",
+   "rect": [
+    0,
+    0,
+    20,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    20,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    10.9,
+    25.3
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r0": {
+   "sheet": "worlds/delegate_seat_r0.png",
+   "rect": [
+    0,
+    0,
+    17,
+    31
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    19,
+    17,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    8.6,
+    24.4
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r15": {
+   "sheet": "worlds/delegate_seat_r15.png",
+   "rect": [
+    0,
+    0,
+    20,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    20,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    9.5,
+    25.3
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r30": {
+   "sheet": "worlds/delegate_seat_r30.png",
+   "rect": [
+    0,
+    0,
+    23,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    23,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.2,
+    25.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r45": {
+   "sheet": "worlds/delegate_seat_r45.png",
+   "rect": [
+    0,
+    0,
+    24,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.7,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r60": {
+   "sheet": "worlds/delegate_seat_r60.png",
+   "rect": [
+    0,
+    0,
+    24,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.8,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r75": {
+   "sheet": "worlds/delegate_seat_r75.png",
+   "rect": [
+    0,
+    0,
+    22,
+    32
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    20,
+    22,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    10.6,
+    24.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r90": {
+   "sheet": "worlds/delegate_seat_r90.png",
+   "rect": [
+    0,
+    0,
+    18,
+    33
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    21,
+    18,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    8.8,
+    25.2
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-90_navy": {
+   "sheet": "worlds/delegate_seat_r-90_navy.png",
+   "rect": [
+    0,
+    0,
+    19,
+    33
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    21,
+    19,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    9.7,
+    25.2
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-75_navy": {
+   "sheet": "worlds/delegate_seat_r-75_navy.png",
+   "rect": [
+    0,
+    0,
+    22,
+    32
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    20,
+    22,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.5,
+    24.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-60_navy": {
+   "sheet": "worlds/delegate_seat_r-60_navy.png",
+   "rect": [
+    0,
+    0,
+    24,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    12.0,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-45_navy": {
+   "sheet": "worlds/delegate_seat_r-45_navy.png",
+   "rect": [
+    0,
+    0,
+    24,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    12.2,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-30_navy": {
+   "sheet": "worlds/delegate_seat_r-30_navy.png",
+   "rect": [
+    0,
+    0,
+    23,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    23,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    12.1,
+    25.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r-15_navy": {
+   "sheet": "worlds/delegate_seat_r-15_navy.png",
+   "rect": [
+    0,
+    0,
+    20,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    20,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    10.9,
+    25.3
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r0_navy": {
+   "sheet": "worlds/delegate_seat_r0_navy.png",
+   "rect": [
+    0,
+    0,
+    17,
+    31
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    19,
+    17,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    8.6,
+    24.4
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r15_navy": {
+   "sheet": "worlds/delegate_seat_r15_navy.png",
+   "rect": [
+    0,
+    0,
+    20,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    20,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    9.5,
+    25.3
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r30_navy": {
+   "sheet": "worlds/delegate_seat_r30_navy.png",
+   "rect": [
+    0,
+    0,
+    23,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    23,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.2,
+    25.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r45_navy": {
+   "sheet": "worlds/delegate_seat_r45_navy.png",
+   "rect": [
+    0,
+    0,
+    24,
+    35
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    23,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.7,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r60_navy": {
+   "sheet": "worlds/delegate_seat_r60_navy.png",
+   "rect": [
+    0,
+    0,
+    24,
+    34
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    22,
+    24,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    11.8,
+    25.9
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r75_navy": {
+   "sheet": "worlds/delegate_seat_r75_navy.png",
+   "rect": [
+    0,
+    0,
+    22,
+    32
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    20,
+    22,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    10.6,
+    24.7
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "delegate_seat_r90_navy": {
+   "sheet": "worlds/delegate_seat_r90_navy.png",
+   "rect": [
+    0,
+    0,
+    18,
+    33
+   ],
+   "label": "Delegiertenplatz",
+   "origin": "worlds",
+   "solid": [
+    0,
+    21,
+    18,
+    12
+   ],
+   "action": "sit",
+   "anchor": [
+    8.8,
+    25.2
+   ],
+   "footprint": [
+    0.75,
+    0.75
+   ]
+  },
+  "presidium_grand": {
+   "sheet": "worlds/presidium_grand.png",
+   "rect": [
+    0,
+    0,
+    192,
+    87
+   ],
+   "label": "Präsidium",
+   "origin": "worlds",
+   "solid": [
+    0,
+    39,
+    192,
+    48
+   ],
+   "action": "look"
+  },
+  "rostrum_grand": {
+   "sheet": "worlds/rostrum_grand.png",
+   "rect": [
+    0,
+    0,
+    62,
+    88
+   ],
+   "label": "Rednerpult",
+   "origin": "worlds",
+   "solid": [
+    0,
+    40,
+    62,
+    48
+   ],
+   "action": "speak"
+  },
+  "column_great": {
+   "sheet": "worlds/column_great.png",
+   "rect": [
+    0,
+    0,
+    26,
+    143
+   ],
+   "label": "Säule",
+   "origin": "worlds",
+   "solid": [
+    0,
+    117,
+    26,
+    26
+   ]
+  },
+  "statue_orator": {
+   "sheet": "worlds/statue_orator.png",
+   "rect": [
+    0,
+    0,
+    29,
+    83
+   ],
+   "label": "Statue eines Redners",
+   "origin": "worlds",
+   "solid": [
+    0,
+    54,
+    29,
+    29
+   ],
+   "action": "look"
+  },
+  "statue_goddess": {
+   "sheet": "worlds/statue_goddess.png",
+   "rect": [
+    0,
+    0,
+    29,
+    89
+   ],
+   "label": "Statue der Concordia",
+   "origin": "worlds",
+   "solid": [
+    0,
+    60,
+    29,
+    29
+   ],
+   "action": "look"
+  },
+  "mural_grand": {
+   "sheet": "worlds/mural_grand.png",
+   "rect": [
+    0,
+    0,
+    128,
+    53
+   ],
+   "label": "Wandgemälde: Die Versammlung der Völker",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "action": "look"
+  },
+  "relief_frieze": {
+   "sheet": "worlds/relief_frieze.png",
+   "rect": [
+    0,
+    0,
+    96,
+    25
+   ],
+   "label": "Relief",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "action": "look"
+  },
+  "lamp_hanging": {
+   "sheet": "worlds/lamp_hanging.png",
+   "rect": [
+    0,
+    0,
+    25,
+    32
+   ],
+   "label": "Hängeleuchter",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "flag_ring": {
+   "sheet": "worlds/flag_ring.png",
+   "rect": [
+    0,
+    0,
+    100,
+    56
+   ],
+   "label": "Flaggen der Nationen",
+   "origin": "worlds",
+   "solid": [
+    0,
+    46,
+    100,
+    10
+   ]
+  },
+  "door_antique_0": {
+   "sheet": "worlds/door_antique_0.png",
+   "rect": [
+    0,
+    0,
+    41,
+    71
+   ],
+   "label": "Tür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "door_double_0": {
+   "sheet": "worlds/door_double_0.png",
+   "rect": [
+    0,
+    0,
+    41,
+    71
+   ],
+   "label": "Doppeltür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "gate_bronze_0": {
+   "sheet": "worlds/gate_bronze_0.png",
+   "rect": [
+    0,
+    0,
+    78,
+    100
+   ],
+   "label": "Bronzetor",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "door_antique_1": {
+   "sheet": "worlds/door_antique_1.png",
+   "rect": [
+    0,
+    0,
+    41,
+    71
+   ],
+   "label": "Tür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "door_double_1": {
+   "sheet": "worlds/door_double_1.png",
+   "rect": [
+    0,
+    0,
+    41,
+    71
+   ],
+   "label": "Doppeltür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "gate_bronze_1": {
+   "sheet": "worlds/gate_bronze_1.png",
+   "rect": [
+    0,
+    0,
+    78,
+    100
+   ],
+   "label": "Bronzetor",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "door_antique_2": {
+   "sheet": "worlds/door_antique_2.png",
+   "rect": [
+    0,
+    0,
+    41,
+    78
+   ],
+   "label": "Tür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "door_double_2": {
+   "sheet": "worlds/door_double_2.png",
+   "rect": [
+    0,
+    0,
+    41,
+    71
+   ],
+   "label": "Doppeltür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "gate_bronze_2": {
+   "sheet": "worlds/gate_bronze_2.png",
+   "rect": [
+    0,
+    0,
+    78,
+    103
+   ],
+   "label": "Bronzetor",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "door_antique_3": {
+   "sheet": "worlds/door_antique_3.png",
+   "rect": [
+    0,
+    0,
+    41,
+    83
+   ],
+   "label": "Tür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "door_double_3": {
+   "sheet": "worlds/door_double_3.png",
+   "rect": [
+    0,
+    0,
+    41,
+    71
+   ],
+   "label": "Doppeltür",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "gate_bronze_3": {
+   "sheet": "worlds/gate_bronze_3.png",
+   "rect": [
+    0,
+    0,
+    78,
+    108
+   ],
+   "label": "Bronzetor",
+   "origin": "worlds",
+   "wall": true,
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
   }
  },
  "floors": {

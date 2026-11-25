@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 from PIL import Image
 import isorender as ir
-from isorender import Scene, box, cyl, hcyl, ell, prism_gable
+from isorender import Scene, box, cyl, hcyl, ell, prism_gable, oriented_box
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 OUT = os.path.join(ROOT, 'assets', 'interior', 'worlds')
@@ -178,10 +178,10 @@ def bed(sc, w, blanket, double=False, frame='wood'):
 def build_items():
     items = {}
 
-    def item(name, label, fp, fn, wall=False, action=None):
+    def item(name, label, fp, fn, wall=False, action=None, pivot=None):
         sc = Scene()
         fn(sc)
-        items[name] = {'scene': sc, 'label': label, 'fp': fp, 'wall': wall, 'action': action}
+        items[name] = {'scene': sc, 'label': label, 'fp': fp, 'wall': wall, 'action': action, 'pivot': pivot}
 
     # -- bedroom
     for col, nm in (('blanket_red', 'red'), ('blanket_blue', 'blue'), ('blanket_green', 'green'), ('blanket_ochre', 'ochre')):
@@ -429,7 +429,143 @@ def build_items():
         sc.add(box(0, 0, 0, 4.0, 1.3, 1.4, 'metal')), sc.add(box(-0.05, -0.05, 1.4, 4.05, 1.35, 1.5, 'chrome')),
         [sc.add(cyl(0.7 + k * 1.3, 0.6, 1.5, 1.9, 0.38, 'iron')) for k in range(3)],
         [sc.add(cyl(0.7 + k * 1.3, 0.6, 1.88, 1.92, 0.3, ['veg', 'bread', 'blanket_ochre'][k])) for k in range(3)]), action='eat')
+    # -- great council chamber (compact delegate places for > 1000 seats, facing south to the rostrum)
+    # seen from behind: the delegates face north, to the presidium and the rostrum
+    for cush, nm in (('crimson', ''), ('navy', '_navy'), ('green', '_green')):
+        item('delegate_seat_small' + nm, 'Delegiertenplatz', (1.0, 1.1), lambda sc, c=cush: (
+            sc.add(box(0.0, 0.0, 0, 1.0, 0.46, 0.78, 'wood')),                       # desk (north), runs on as a bench row
+            sc.add(box(-0.03, -0.02, 0.78, 1.03, 0.49, 0.86, 'wood_light')),
+            sc.add(box(0.15, 0.07, 0.86, 0.5, 0.3, 0.88, 'paper')),
+            sc.add(cyl(0.82, 0.2, 0.86, 1.12, 0.025, 'bronze')), sc.add(ell(0.82, 0.2, 1.14, 0.05, 0.05, 0.04, 'gold')),
+            sc.add(box(0.1, 0.52, 0, 0.9, 0.92, 0.45, c)),                           # seat
+            sc.add(box(0.06, 0.9, 0.12, 0.94, 1.1, 1.02, c)),                        # upholstered back (south face seen)
+            sc.add(box(0.04, 0.88, 1.02, 0.96, 1.12, 1.1, 'wood_dark')),
+            sc.add(box(0.42, 1.11, 0.7, 0.58, 1.14, 0.86, 'gold'))), action='sit')
+    # the same place turned towards the rostrum: 13 headings (-90..90 degrees, 15-degree steps);
+    # collision is a compact 0.75-tile square under the chair, the art is anchored at its pivot
+    for cush, nm in (('crimson', ''), ('navy', '_navy')):
+        for deg in range(-90, 91, 15):
+            item('delegate_seat_r%d%s' % (deg, nm), 'Delegiertenplatz', (0.75, 0.75),
+                 lambda sc, c=cush, d=deg: seat_turned(sc, math.radians(d), c), action='sit', pivot=(0.5, 0.55))
+    item('presidium_grand', 'Präsidium', (12.0, 3.0), lambda sc: (
+        sc.add(box(0, 0, 0, 12.0, 3.0, 0.6, 'marble_warm')), sc.add(box(0.3, 0.3, 0.6, 11.7, 2.7, 0.9, 'marble')),
+        [sc.add(box(1.0 + k * 2.1, 0.45, 0.9, 2.2 + k * 2.1, 1.1, 2.9 if k == 2 else 2.4, 'crimson' if k == 2 else 'navy')) for k in range(5)],
+        sc.add(box(0.6, 1.35, 0.9, 11.4, 2.55, 2.0, 'wood_dark')), sc.add(box(0.5, 1.3, 2.0, 11.5, 2.6, 2.15, 'wood')),
+        [sc.add(box(1.2 + k * 2.1, 2.55, 1.1, 1.9 + k * 2.1, 2.6, 1.8, 'gold')) for k in range(5)],
+        sc.add(box(5.6, 2.56, 0.95, 6.4, 2.62, 1.0, 'bronze'))), action='look')
+    item('rostrum_grand', 'Rednerpult', (4.0, 3.0), lambda sc: (
+        sc.add(cyl(2.0, 1.5, 0, 0.35, 1.95, 'marble_warm')), sc.add(cyl(2.0, 1.5, 0.35, 0.7, 1.6, 'marble')),
+        sc.add(box(1.3, 0.9, 0.7, 2.7, 1.8, 2.5, 'marble_warm')), sc.add(box(1.2, 0.8, 2.5, 2.8, 1.9, 2.7, 'marble')),
+        sc.add(box(1.5, 1.78, 1.0, 2.5, 1.84, 2.2, 'gold')), sc.add(cyl(2.0, 1.2, 2.7, 3.2, 0.03, 'bronze')),
+        sc.add(ell(2.0, 1.2, 3.22, 0.07, 0.07, 0.05, 'iron'))), action='speak')
+    item('column_great', 'Säule', (1.6, 1.6), lambda sc: (
+        sc.add(box(0, 0, 0, 1.6, 1.6, 0.5, 'marble_dark')), sc.add(cyl(0.8, 0.8, 0.5, 0.75, 0.72, 'marble_warm')),
+        sc.add(cyl(0.8, 0.8, 0.75, 6.6, 0.58, 'marble')),
+        sc.add(cyl(0.8, 0.8, 1.2, 1.3, 0.6, 'marble_warm')), sc.add(cyl(0.8, 0.8, 6.1, 6.2, 0.6, 'marble_warm')),
+        sc.add(cyl(0.8, 0.8, 6.6, 6.9, 0.7, 'marble_warm')), sc.add(ell(0.35, 0.95, 7.0, 0.2, 0.15, 0.18, 'marble')),
+        sc.add(ell(1.25, 0.95, 7.0, 0.2, 0.15, 0.18, 'marble')), sc.add(box(0, 0, 7.0, 1.6, 1.6, 7.35, 'marble_warm'))))
+    def figure(sc, kind, base=1.1, k=1.45):
+        """A standing marble figure (orator with raised arm, or draped goddess with staff), scaled by k."""
+        Z = lambda z: base + (z - 1.65) * k
+        E = lambda x, y, z, rx, ry, rz, m='marble': sc.add(ell(0.9 + (x - 0.9) * k, 0.95 + (y - 0.95) * k, Z(z), rx * k, ry * k, rz * k, m))
+        if kind == 'orator':
+            E(0.74, 0.95, 2.1, 0.13, 0.13, 0.5); E(1.06, 0.95, 2.1, 0.13, 0.13, 0.5)
+            E(0.9, 0.95, 2.7, 0.36, 0.26, 0.62); E(0.82, 1.06, 2.45, 0.32, 0.12, 0.6, 'marble_warm')
+            E(0.58, 0.95, 3.0, 0.09, 0.09, 0.34); E(1.26, 0.95, 3.4, 0.08, 0.08, 0.3); E(1.31, 0.95, 3.75, 0.07, 0.07, 0.08)
+            E(0.9, 0.95, 3.42, 0.11, 0.1, 0.1); E(0.9, 0.98, 3.64, 0.16, 0.16, 0.19)
+        else:
+            sc.add(cyl(0.9, 0.95, base, Z(2.2), 0.42 * k, 'marble'))
+            E(0.9, 0.95, 2.5, 0.36, 0.28, 0.75); E(0.9, 1.04, 3.08, 0.29, 0.21, 0.38, 'marble_warm')
+            E(0.58, 0.95, 3.02, 0.08, 0.08, 0.34); E(1.24, 1.0, 3.08, 0.08, 0.08, 0.3)
+            sc.add(cyl(0.9 + 0.44 * k, 1.0, base, Z(4.15), 0.035, 'gold'))
+            E(0.9, 0.95, 3.58, 0.1, 0.1, 0.1); E(0.9, 0.98, 3.8, 0.16, 0.16, 0.19); E(0.9, 0.98, 3.98, 0.19, 0.17, 0.05, 'gold')
+
+    for nm, lab, kind in (('statue_orator', 'Statue eines Redners', 'orator'), ('statue_goddess', 'Statue der Concordia', 'goddess')):
+        item(nm, lab, (1.8, 1.8), lambda sc, kind=kind: (
+            sc.add(box(0, 0, 0, 1.8, 1.8, 0.3, 'marble_dark')), sc.add(box(0.15, 0.15, 0.3, 1.65, 1.65, 0.95, 'marble_warm')),
+            sc.add(box(0.08, 0.08, 0.95, 1.72, 1.72, 1.1, 'marble_dark')), figure(sc, kind)), action='look')
+    item('mural_grand', 'Wandgemälde: Die Versammlung der Völker', (8.0, 0.2), lambda sc: (
+        sc.add(box(0, 0, 0, 8.0, 0.12, 3.2, 'gold')), sc.add(box(0.15, 0.1, 0.15, 7.85, 0.14, 3.05, 'teal')),
+        sc.add(box(0.15, 0.12, 0.15, 7.85, 0.16, 0.9, 'marble_warm')),
+        [sc.add(box(0.3 + k * 0.5, 0.14, 0.25, 0.55 + k * 0.5, 0.18, 0.32, 'crimson')) for k in range(15)],          # meander band
+        [sc.add(box(0.3 + k * 0.5, 0.14, 0.62, 0.55 + k * 0.5, 0.18, 0.69, 'crimson')) for k in range(15)],
+        [(sc.add(ell(0.9 + k * 0.9, 0.16, 1.55, 0.2, 0.04, 0.48, ['crimson', 'blue', 'marble_warm', 'green', 'purple', 'ochre' and 'gold', 'blue', 'crimson'][k])),
+          sc.add(ell(0.9 + k * 0.9, 0.17, 2.18, 0.12, 0.04, 0.13, 'marble_warm'))) for k in range(8)],              # figures
+        sc.add(ell(4.0, 0.18, 2.7, 0.5, 0.03, 0.22, 'gold'))), wall=True, action='look')
+    item('relief_frieze', 'Relief', (6.0, 0.2), lambda sc: (
+        sc.add(box(0, 0, 0, 6.0, 0.14, 1.4, 'marble_warm')), sc.add(box(0, 0, 0, 6.0, 0.18, 0.15, 'marble')),
+        sc.add(box(0, 0, 1.25, 6.0, 0.18, 1.4, 'marble')),
+        [(sc.add(ell(0.5 + k * 0.72, 0.16, 0.65, 0.16, 0.06, 0.4, 'marble')), sc.add(ell(0.5 + k * 0.72, 0.17, 1.1, 0.1, 0.05, 0.1, 'marble'))) for k in range(8)]), wall=True, action='look')
+    item('lamp_hanging', 'Hängeleuchter', (1.6, 0.2), lambda sc: (
+        sc.add(cyl(0.8, 0.1, 3.3, 4.8, 0.03, 'bronze')), sc.add(box(0.1, 0.06, 3.22, 1.5, 0.14, 3.3, 'bronze')),
+        [sc.add(cyl(0.8 + dx, 0.1, 3.0, 3.22, 0.03, 'bronze')) for dx in (-0.6, 0.0, 0.6)],
+        [sc.add(ell(0.8 + dx, 0.1, 2.95, 0.17, 0.1, 0.1, 'bronze')) for dx in (-0.6, 0.0, 0.6)],
+        [sc.add(ell(0.8 + dx, 0.1, 3.1, 0.07, 0.07, 0.13, 'fire')) for dx in (-0.6, 0.0, 0.6)]), wall=True)
+    item('flag_ring', 'Flaggen der Nationen', (6.0, 0.6), lambda sc: (
+        [(sc.add(cyl(0.3 + k * 1.08, 0.3, 0, 3.4, 0.04, 'bronze')),
+          sc.add(box(0.34 + k * 1.08, 0.28, 2.3, 1.1 + k * 1.08, 0.32, 3.3, ['red', 'blue', 'green', 'gold', 'purple', 'white'][k]))) for k in range(6)]))
+    # -- doors and gates in four opening phases (0 closed .. 3 open), 2 resp. 4 tiles wide
+    for k in range(4):
+        a = math.radians(k * 28)
+        item(f'door_antique_{k}', 'Tür', (2.0, 0.4), lambda sc, a=a: door_frame(sc, 2.0, 3.0, 1, a, 'wood_dark'), wall=True)
+        item(f'door_double_{k}', 'Doppeltür', (2.0, 0.4), lambda sc, a=a: door_frame(sc, 2.0, 3.0, 2, a, 'bronze'), wall=True)
+        item(f'gate_bronze_{k}', 'Bronzetor', (4.0, 0.5), lambda sc, a=a: door_frame(sc, 4.0, 4.6, 2, a, 'bronze', grand=True), wall=True)
     return items
+
+
+def seat_turned(sc, th, cush):
+    """Delegate place (desk north, chair south) rotated by th about its pivot (0.5, 0.55)."""
+    px, py = 0.5, 0.55
+    ct, st = math.cos(th), math.sin(th)
+
+    def rot(x, y):
+        dx, dy = x - px, y - py
+        return px + dx * ct - dy * st, py + dx * st + dy * ct
+
+    def B(x0, y0, z0, x1, y1, z1, mat):
+        cx, cy = rot((x0 + x1) / 2, (y0 + y1) / 2)
+        sc.add(oriented_box(cx, cy, z0, z1, (x1 - x0) / 2, (y1 - y0) / 2, th, mat))
+    B(0.0, 0.0, 0, 1.0, 0.46, 0.78, 'wood')
+    B(-0.04, -0.03, 0.78, 1.04, 0.5, 0.86, 'wood_light')
+    B(0.15, 0.07, 0.86, 0.5, 0.3, 0.88, 'paper')
+    mx, my = rot(0.62, 0.2)
+    sc.add(cyl(mx, my, 0.86, 1.12, 0.025, 'bronze'))
+    sc.add(ell(mx, my, 1.14, 0.05, 0.05, 0.04, 'gold'))
+    B(0.1, 0.52, 0, 0.9, 0.92, 0.45, cush)
+    B(0.06, 0.9, 0.12, 0.94, 1.1, 1.02, cush)
+    B(0.04, 0.88, 1.02, 0.96, 1.12, 1.1, 'wood_dark')
+
+
+def door_frame(sc, w, h, leaves, a, mat, grand=False):
+    """Marble frame with leaves swung inward (north) by angle a, hinge at the jambs."""
+    j = 0.28 if grand else 0.2
+    sc.add(box(-j, 0, 0, 0, 0.4, h + 0.1, 'marble_warm'))
+    sc.add(box(w, 0, 0, w + j, 0.4, h + 0.1, 'marble_warm'))
+    sc.add(box(-j - 0.08, -0.02, h, w + j + 0.08, 0.44, h + (0.55 if grand else 0.35), 'marble'))
+    sc.add(box(-j - 0.08, -0.7, h, w + j + 0.08, -0.02, h + (0.55 if grand else 0.35), 'marble_warm'))   # wall thickness above
+    if grand:
+        sc.add(box(-j - 0.15, 0.2, h + 0.55, w + j + 0.15, 0.48, h + 0.7, 'marble_warm'))
+        sc.add(ell(w / 2, 0.42, h + 0.32, 0.35, 0.05, 0.2, 'gold'))
+    sc.add(box(0, 0.05, 0, w, 0.35, 0.02, 'marble_dark'))                       # threshold
+    sc.add(box(0, 0.0, 0.02, w, 0.06, h, 'iron'))                              # dark doorway behind
+    lw = w / leaves
+    for k in range(leaves):
+        hx = 0.0 if k == 0 else w
+        sgn = 1.0 if k == 0 else -1.0
+        ang = -a if k == 0 else math.pi + a                                    # swing north (y-)
+        cx = hx + sgn * 0.0 + math.cos(ang) * lw / 2 * (1 if k == 0 else 1)
+        cy = 0.2 + math.sin(ang) * lw / 2
+        if k == 1:
+            cx = hx + math.cos(ang) * lw / 2
+        sc.add(oriented_box(cx, cy, 0.02, h - 0.02, lw / 2 - 0.02, 0.06, ang, mat))
+        # panels and studs
+        for z0, z1 in ((0.3, h * 0.45), (h * 0.52, h - 0.3)):
+            pcx = hx + math.cos(ang) * lw / 2
+            pcy = 0.2 + math.sin(ang) * lw / 2
+            nx, ny = -math.sin(ang), math.cos(ang)
+            if ny < 0:
+                nx, ny = -nx, -ny                                              # the face towards the viewer
+            sc.add(oriented_box(pcx + nx * 0.07, pcy + ny * 0.07, z0, z1, lw / 2 - 0.22, 0.02, ang, 'gold' if mat == 'bronze' else 'wood'))
 
 
 # ---------------------------------------------------------------- floors / walls (tileable, 64 px)
@@ -527,6 +663,10 @@ def main():
         img, buf = ir.render(sc, MATS, PX, ss=1, line_px=(1.0, 1.0, 1.0), log=lambda m: None)
         a = img[..., 3] > 0.5
         ys, xs = np.nonzero(a)
+        anchor = None
+        if it.get('pivot'):
+            u, v = ir.CAM.project(np.array([it['pivot'][0], it['pivot'][1], 0.0]))
+            anchor = [round(float((u - buf['origin'][0]) * PX - xs.min()), 1), round(float((buf['origin'][1] - v) * PX - ys.min()), 1)]
         img = img[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
         rgb = img[..., :3]
         ink = np.abs(rgb - INK[None, None, :]).sum(-1) < 0.02
@@ -545,6 +685,9 @@ def main():
             e['solid'] = [0, max(0, h - dpx), w, min(h, dpx)]
         if it['action']:
             e['action'] = it['action']
+        if anchor:
+            e['anchor'] = anchor                                  # source px of the pivot (footprint centre) at floor level
+            e['footprint'] = list(it['fp'])
         entries[name] = e
     for name, arr in floor_textures().items():
         q = quantise(arr[..., :3], pal)

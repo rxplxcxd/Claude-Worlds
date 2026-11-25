@@ -324,15 +324,18 @@ func _place_figure() -> void:
 
 ## Doors of the Concordium buildings (site metres, +x east, +y south): the
 ## interiors of docs/WORLD_COUNCIL_INTERIORS.md in the interior standard.
-## (Tholos and Wasserschloss: interiors exist; their doors are not reachable
-## on the stage-1 site – the tholos stands on an island in the pool.)
+## The tholos is reached over the footbridge across the pool, the
+## Wasserschloss by its arched door beside the north pavilion. `kind` is the
+## kind of opening (door, double door, gate, arcade) for the opening animation.
 const DOORS := [
-	{"key": "concordium_chamber", "label": "Großer Ratssaal", "at": Vector2(-16.0, 8.5)},
-	{"key": "concordium_exhibition", "label": "Ausstellungshalle (Westflügel)", "at": Vector2(-62.5, -20.0)},
-	{"key": "concordium_diplomacy", "label": "Diplomatieflügel (Nordflügel)", "at": Vector2(-30.0, -62.5)},
-	{"key": "concordium_archive", "label": "Archiv der Welt (Zugang im Innenhof)", "at": Vector2(-62.5, -63.0)},
-	{"key": "concordium_refuge", "label": "Zufluchtsort (Westpavillon)", "at": Vector2(-63.0, 22.0)},
-	{"key": "concordium_guest", "label": "Gästehaus (Nordpavillon)", "at": Vector2(10.0, -63.0)},
+	{"key": "concordium_chamber", "label": "Großer Ratssaal", "at": Vector2(-16.0, 8.5), "kind": "gate"},
+	{"key": "concordium_exhibition", "label": "Ausstellungshalle (Westflügel)", "at": Vector2(-62.5, -20.0), "kind": "arcade"},
+	{"key": "concordium_diplomacy", "label": "Diplomatieflügel (Nordflügel)", "at": Vector2(-30.0, -62.5), "kind": "arcade"},
+	{"key": "concordium_archive", "label": "Archiv der Welt (Zugang im Innenhof)", "at": Vector2(-62.5, -63.0), "kind": "double"},
+	{"key": "concordium_refuge", "label": "Zufluchtsort (Westpavillon)", "at": Vector2(-63.0, 22.0), "kind": "double"},
+	{"key": "concordium_guest", "label": "Gästehaus (Nordpavillon)", "at": Vector2(10.0, -63.0), "kind": "double"},
+	{"key": "concordium_tholos", "label": "Rundtempel (Tholos)", "at": Vector2(65.0, -11.0), "kind": "arcade"},
+	{"key": "concordium_castellum", "label": "Wasserschloss", "at": Vector2(25.0, -70.5), "kind": "door"},
 ]
 const DOOR_RADIUS := 3.0
 const INSIDE_SPEED := 150.0
@@ -344,6 +347,7 @@ var _act_button: Button
 var _toast: Label
 var _toast_left := 0.0
 var _context := {}
+var _interactables: Array = []
 
 
 ## The door zone the figure stands in (outside), or {}.
@@ -408,9 +412,14 @@ func _show_toast(t: String) -> void:
 func _on_act() -> void:
 	match str(_context.get("kind", "")):
 		"door":
-			enter_interior(str(_context["door"]["key"]))
+			_enter_with_transition(_context["door"])
 		"exit":
 			leave_interior()
+		"seat":
+			var sd: Dictionary = interior.seats.get(_context["seat"], {})
+			if walker_rig:
+				walker_rig.play("sit", true)
+			_show_toast("Delegiertenplatz %s – Reihe %d, Sektor %d\nSitzordnung und Abstimmungen folgen mit dem Ratssystem (Phase 10)." % [_context["seat"], int(sd.get("row", 0)), int(sd.get("sector", 0))])
 		"item":
 			var act: String = _context["action"]
 			var adef: Dictionary = ActionLibrary.actions().get(act, {})
@@ -420,6 +429,84 @@ func _on_act() -> void:
 			if str(_context.get("text", "")) != "":
 				txt += "\n" + str(_context["text"]).replace("[i]", "").replace("[/i]", "")
 			_show_toast(txt)
+
+
+var _entering := false
+
+
+## Door opening, then a loading view (no black screen), then the interior.
+func _enter_with_transition(d: Dictionary) -> void:
+	if _entering or interior:
+		return
+	_entering = true
+	_set_context({})
+	var dur := 0.9 if str(d.get("kind", "door")) == "gate" else 0.5
+	if str(d.get("kind", "door")) != "arcade":
+		_door_animation(d, dur)
+		await get_tree().create_timer(dur).timeout
+	var ov := _loading_view(str(d["label"]))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	enter_interior(str(d["key"]))
+	var tw := create_tween()
+	tw.tween_property(ov.get_child(0), "modulate:a", 0.0, 0.35)
+	tw.tween_callback(ov.queue_free)
+	_entering = false
+
+
+## Two leaves (one for a plain door) swing open in the doorway of the asset.
+func _door_animation(d: Dictionary, dur: float) -> void:
+	var at: Vector2 = d["at"]
+	var node := Node2D.new()
+	node.position = ground_to_world(at, surface_height(at))
+	node.z_index = 5
+	actors.add_child(node)
+	var kind := str(d.get("kind", "door"))
+	var w := (3.4 if kind == "gate" else 2.2) * M_PX * 0.5
+	var h := (5.0 if kind == "gate" else 2.6) * M_PX * 0.5
+	var col := Color("8a5a2e") if kind == "gate" else Color("6b4426")
+	var leaves := 1 if kind == "door" else 2
+	var back := Polygon2D.new()
+	back.polygon = PackedVector2Array([Vector2(-w, -h), Vector2(w, -h), Vector2(w, 0), Vector2(-w, 0)])
+	back.color = Color(0.08, 0.06, 0.05, 0.9)
+	node.add_child(back)
+	for k in leaves:
+		var leaf := Polygon2D.new()
+		var lw := w * 2.0 / leaves
+		var x0 := -w + lw * k
+		leaf.position = Vector2(x0 if k == 0 else x0 + lw, 0)
+		var sgn := 1.0 if k == 0 else -1.0
+		leaf.polygon = PackedVector2Array([Vector2(0, -h), Vector2(lw * sgn, -h), Vector2(lw * sgn, 0), Vector2(0, 0)])
+		leaf.color = col
+		var stud := Polygon2D.new()
+		stud.polygon = PackedVector2Array([Vector2(lw * sgn * 0.2, -h * 0.55), Vector2(lw * sgn * 0.8, -h * 0.55), Vector2(lw * sgn * 0.8, -h * 0.5), Vector2(lw * sgn * 0.2, -h * 0.5)])
+		stud.color = Color("d4a64a") if kind == "gate" else col.darkened(0.3)
+		leaf.add_child(stud)
+		node.add_child(leaf)
+		create_tween().tween_property(leaf, "scale:x", 0.12, dur).set_trans(Tween.TRANS_SINE)
+	var tw := create_tween()
+	tw.tween_interval(dur + 0.6)
+	tw.tween_callback(node.queue_free)
+
+
+## A loading view over everything while a (large) interior is built.
+func _loading_view(label: String) -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.layer = 50
+	var bg := ColorRect.new()
+	bg.color = Color("1c1712")
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var l := Label.new()
+	l.text = "%s\nwird betreten …" % label
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.set_anchors_preset(Control.PRESET_FULL_RECT)
+	l.add_theme_color_override("font_color", Color("efe3c8"))
+	l.add_theme_font_size_override("font_size", 22)
+	bg.add_child(l)
+	layer.add_child(bg)
+	add_child(layer)
+	return layer
 
 
 ## Enters a Concordium building: the interior (interior standard) replaces
@@ -445,6 +532,7 @@ func enter_interior(key: String) -> void:
 	walker_rig.world_per_src = Iso.WORLD_PER_SRC_PX * 0.62 * InteriorScene.PERSON_SCALE
 	walker.add_child(walker_rig)
 	interior.objects.add_child(walker)
+	walker.collision_mask = InteriorScene.LAYER_SOLID | InteriorScene.LAYER_LEVEL_BASE
 	walker.position = interior.spawn_point
 	camera.reparent(walker)
 	camera.position = Vector2(0, -40)
@@ -472,6 +560,7 @@ func leave_interior() -> void:
 	camera.reset_smoothing()
 	interior.queue_free()
 	interior = null
+	_interactables = []
 	walker = null
 	walker_rig = null
 	for n in [get_node_or_null("Tiles"), get_node_or_null("Occluders"), actors]:
@@ -488,12 +577,15 @@ func _process_inside(_delta: float) -> void:
 		input = _joystick
 	walker.velocity = input.limit_length(1.0) * INSIDE_SPEED
 	walker.move_and_slide()
+	interior.carry(walker, walker_rig)
 	if input.length() > 0.05:
 		_facing = Iso.facing_with_hysteresis(input, _facing)
 	walker_rig.set_motion(clampf(walker.velocity.length() / INSIDE_SPEED, 0.0, 1.0), _facing)
 	# context: exit at the doormat, else the object under the figure
 	var lp := walker.position
-	for it in interior.find_children("*", "Interactable", true, false):
+	if _interactables.is_empty():
+		_interactables = interior.find_children("*", "Interactable", true, false)
+	for it in _interactables:
 		var cp := it.get_child(0) as CollisionPolygon2D
 		if cp == null or not Geometry2D.is_point_in_polygon(lp - it.position, cp.polygon):
 			continue
@@ -504,6 +596,10 @@ func _process_inside(_delta: float) -> void:
 			var act := str(it.get_meta("action", ""))
 			_set_context({"kind": "item", "action": act, "label": "%s: %s" % [it.verb, it.title], "text": it.text})
 			return
+	var seat := interior.nearest_seat(lp)
+	if seat != "":
+		_set_context({"kind": "seat", "seat": seat, "label": "Platz nehmen (%s)" % seat})
+		return
 	_set_context({})
 
 

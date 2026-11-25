@@ -29,6 +29,8 @@ RC = (-16.0, -16.0)        # rotunda centre
 INSCRIPTIONS = []          # gilded lettering panels (+Y faces), filled by build()
 DOMES = {}                 # material name -> centre (ribs per dome)
 MOSAICS = {}
+CASTELLUM = []
+THOLOS = []
 REMOVED_PLANTS = []
 FX = []                    # animated effects (site metres): fountain jets, veils, splashes
 PODIUM_Z = 6.0
@@ -439,7 +441,14 @@ def build(stage: int = 1):
             sc.add(box(pool[0], pool[1], -0.8, pool[2], pool[3], 0.15, 'water', 'pool_water'))
             # island pavilion (tholos) in the pool
             tcx, tcy = (pool[0] + pool[2]) / 2, (pool[1] + pool[3]) / 2
+            THOLOS[:] = [tcx, tcy]
             sc.add(cyl(tcx, tcy, -0.5, 1.2, 5.0, 'marble_warm', 'tholos'))
+            # footbridge from the south rim to the island (two steps up)
+            sc.add(box(tcx - 1.6, tcy + 4.6, -0.6, tcx + 1.6, pool[3] + 0.8, 1.2, 'marble', 'tholos_bridge'))
+            for side in (-1, 1):
+                sc.add(box(tcx + side * 1.6 - (0.25 if side > 0 else 0), tcy + 4.8, 1.2, tcx + side * 1.6 + (0 if side > 0 else 0.25), pool[3] + 0.8, 2.0, 'marble_warm', 'tholos_bridge_rail'))
+            sc.add(box(tcx - 1.6, pool[3] + 0.8, 0.0, tcx + 1.6, pool[3] + 1.6, 0.8, 'marble_warm', 'tholos_bridge'))
+            sc.add(box(tcx - 1.6, pool[3] + 1.6, 0.0, tcx + 1.6, pool[3] + 2.4, 0.4, 'marble_warm', 'tholos_bridge'))
             for k in range(10):
                 a2 = 2 * math.pi * k / 10
                 column(sc, tcx + math.cos(a2) * 4.2, tcy + math.sin(a2) * 4.2, 1.2, 6.2, 0.38, f'tholos_c{k}',
@@ -454,12 +463,17 @@ def build(stage: int = 1):
                 cypress(sc, a + 2.5 + k * 5.0, yy, 0.0, 9.0 + rng.uniform(-1, 1.5), 'cypress')
     # aqueduct from the hills (north-east = grid +X / -Y)
     ay = -76.0
-    cuts = arch_cutters('x', 8.0, 84.0, 7.6, 4.6, 0.0, 9.5, ay - 3, ay + 3)
-    sc.add(box(8.0, ay - 1.6, 0.0, 84.0, ay + 1.6, 15.0, 'sandstone', 'aqueduct', cuts=cuts))
-    sc.add(box(8.0, ay - 2.0, 15.0, 84.0, ay + 2.0, 15.8, 'sandstone', 'aqueduct_top', cuts=[box(7, ay - 0.9, 15.3, 85, ay + 0.9, 17)]))
-    sc.add(cyl(4.0, ay, 0.0, 18.0, 4.5, 'sandstone', 'castellum'))
-    sc.add(cyl(4.0, ay, 18.0, 19.0, 5.0, 'marble_warm', 'castellum'))
-    sc.add(ell(4.0, ay, 19.0, 4.2, 4.2, 2.6, 'roof', 'castellum', zmin=19.0))
+    # castellum east of the north pavilion (it used to stand inside it), the
+    # aqueduct starts at the castellum; an arched door on its south side
+    CASTELLUM[:] = [25.0, ay]
+    cuts = arch_cutters('x', 30.0, 84.0, 7.7, 4.6, 0.0, 9.5, ay - 3, ay + 3)
+    sc.add(box(30.0, ay - 1.6, 0.0, 84.0, ay + 1.6, 15.0, 'sandstone', 'aqueduct', cuts=cuts))
+    sc.add(box(29.5, ay - 2.0, 15.0, 84.0, ay + 2.0, 15.8, 'sandstone', 'aqueduct_top', cuts=[box(29, ay - 0.9, 15.3, 85, ay + 0.9, 17)]))
+    cdoor = [box(23.6, ay + 2.0, 0.0, 26.4, ay + 6.0, 3.0), hcyl('y', ay + 2.0, ay + 6.0, 25.0, 3.0, 1.4)]
+    sc.add(cyl(25.0, ay, 0.0, 18.0, 4.5, 'sandstone', 'castellum', cuts=cdoor))
+    sc.add(box(23.8, ay + 3.6, 0.0, 26.2, ay + 3.8, 2.9, 'bronze', 'castellum_door'))
+    sc.add(cyl(25.0, ay, 18.0, 19.0, 5.0, 'marble_warm', 'castellum'))
+    sc.add(ell(25.0, ay, 19.0, 4.2, 4.2, 2.6, 'roof', 'castellum', zmin=19.0))
 
     # ---------------------------------------------------------- palace wings (back L)
     def wing(x0, y0, x1, y1, name, front_axis):
@@ -533,11 +547,16 @@ def build(stage: int = 1):
     tcx, tcy = theatre_c
     sc.add(cyl(tcx, tcy, -8.0, -6.0, theatre_r, 'paving_dark', 'theatre_floor'))
     keep_far = [((1, 1, 0), (tcx + tcy) * 1.0 + 1.5)]   # half facing away from the camera
+    aisle_a = math.atan2(41.5 - tcy, (tcx - theatre_r - 1.0) - tcx)      # towards the rim opening
+    ux, uy = math.cos(aisle_a), math.sin(aisle_a)
+    aisle_cut = oriented_box(tcx + ux * 13.5, tcy + uy * 13.5, -7.0, 3.0, 7.0, 0.85, aisle_a)
     for k in range(9):
         r0 = 7.0 + k * 1.3
         top = -6.0 + (k + 1) * 0.66
         sc.add(cyl(tcx, tcy, -6.0, top, r0 + 1.3, 'marble_warm', 'theatre_cavea',
-                   cuts=[cyl(tcx, tcy, -7, 3, r0)], extra_planes=keep_far))
+                   cuts=[cyl(tcx, tcy, -7, 3, r0), aisle_cut], extra_planes=keep_far))
+        for (dr, zt) in ((0.325, top - 0.33), (0.975, top)):     # half steps in the aisle
+            sc.add(oriented_box(tcx + ux * (r0 + dr), tcy + uy * (r0 + dr), -6.0, zt, 0.33, 0.85, aisle_a, 'marble', 'theatre_aisle'))
     MOSAICS['mosaic_theatre'] = (tcx, tcy)
     sc.add(cyl(tcx, tcy, -6.0, -5.7, 6.6, 'mosaic_theatre', 'theatre_orchestra'))
     # stage (scaena) on the near side, low

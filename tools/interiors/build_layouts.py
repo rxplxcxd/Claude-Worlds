@@ -1,3 +1,4 @@
+import math
 """Writes data/interiors/layouts.json – every enterable interior of WORLDS in
 the interior standard (docs/INTERIOR_STANDARD.md): straight 3/4 view,
 rectangular rooms, coordinates in floor tiles (x → right, y → south).
@@ -308,14 +309,122 @@ chamber_items += [
                     text='Waffen und gefährliche Gegenstände werden hier verwahrt – das Concordium ist neutrales Gelände.'),
                   I('bench_marble', 9.0, 27.6, action='sit'), I('statue', 20.2, 27.4, action='look'), I('candelabrum', 11.8, 24.4),
                   I('planter', 8.3, 25.6)]
-L_OUT['concordium_chamber'] = {
-    'label': 'Großer Ratssaal', 'own_art_only': True, 'size': [30, 30], 'wall_tiles': 6,
-    'shape_circle': {'room': 0, 'centre': [15, 13], 'r': 12.6},
-    'rooms': [room('Ratssaal', [0, 0, 30, 24], 'marble_floor', 'wall_marble'),
-              room('Vestibül', [8, 24, 14, 6], 'mosaic', 'wall_fresco')],
-    'partitions': [dict(P([8, 24], [22, 24], openings=[[13, 24, 4]]), wall_tiles=3)],
-    'entrance': {'x': 15.0}, 'staff_spot': [19.8, 25.0], 'items': chamber_items,
-}
+# ---- the Great Council Chamber (Bouleuterion-inspired: hemicycle, galleries, ambulatories)
+# 1 tile ≈ 0.6 m. Hall 120 × 62 tiles (≈ 72 × 37 m) inside the rotunda's drum; the
+# delegates face north to presidium and rostrum (seen from behind by the camera).
+HALL_W, HALL_H = 120, 62
+HC = (60.0, 7.0)                   # hemicycle centre (orchestra) in front of the rostrum
+ROW_R0, ROW_STEP, ROWS = 8.5, 2.5, 16
+DIAZOMA = 1.0
+AISLES = (32.0, 90.0, 148.0)                    # radial aisles (degrees, 0 = east, 90 = south)
+AISLE_HALF = 0.8
+SEAT_C = 0.75                      # collision square under a chair
+SEAT_PITCH = 1.08                  # spacing along a row (desks almost touch)
+SECTOR_COLS = ['', '_navy', '_navy', '']
+
+
+def hemicycle_seats():
+    """Delegate seats on concentric rows, each turned to the rostrum (15-degree art steps):
+    unique ids (row/sector/number) and positions. Collision is a compact square, so the
+    spacing along the arc only has to keep those squares (and the art) apart."""
+    out = []
+    for row in range(ROWS):
+        r = ROW_R0 + ROW_STEP * row + (DIAZOMA if row >= 8 else 0.0)   # a wide ring walkway half-way up
+        a = 0.0
+        n = 0
+        while a <= 180.0:
+            ar = math.radians(a)
+            sa, ca = abs(math.sin(ar)), abs(math.cos(ar))
+            s_need = max(SEAT_PITCH, min(0.8 / sa if sa > 1e-3 else 99, 0.8 / ca if ca > 1e-3 else 99))
+            half_t = 0.5 * SEAT_PITCH
+            near_aisle = any(abs(math.radians(a - al)) * r < half_t + AISLE_HALF for al in AISLES)
+            if not near_aisle:
+                sector = sum(1 for al in AISLES if a > al)
+                x = HC[0] + r * math.cos(ar) - SEAT_C / 2
+                y = HC[1] + r * math.sin(ar) - SEAT_C / 2
+                if x >= 9.0 and x + SEAT_C <= HALL_W - 9.0:
+                    n += 1
+                    turn = int(round((a - 90.0) / 15.0)) * 15
+                    out.append(I('delegate_seat_r%d%s' % (turn, SECTOR_COLS[sector]), round(x, 2), round(y, 2), action='',
+                                 seat='D%02d-%d-%03d' % (row + 1, sector + 1, n), row=row + 1, sector=sector + 1))
+            a += math.degrees(s_need / r)
+    return out
+
+
+def chamber_layout():
+    seats = hemicycle_seats()
+    items = [
+        # presidium, rostrum and the north wall (scaenae frons: columns, statues, murals)
+        I('presidium_grand', 54.0, 0.6, action='look', label='Präsidium des Concilium Mundi'),
+        I('rostrum_grand', 58.0, 4.2, action='speak', label='Rostrum'),
+        I('flag_ring', 38.6, 0.4, label='Flaggen der Nationen'), I('flag_ring', 75.0, 0.4, label='Flaggen der Nationen'),
+        W('emblem', 59.2, 4.6), W('mural_grand', 14.0, 2.2, label='Wandgemälde: Die Versammlung der Völker'),
+        W('mural_grand', 98.0, 2.2, label='Wandgemälde: Der Friedensschluss'),
+        W('relief_frieze', 47.0, 5.4), W('relief_frieze', 67.0, 5.4),
+        W('banner_blue', 51.0, 1.2), W('banner_red', 67.6, 1.2), W('banner_gold', 32.0, 1.4), W('banner_purple', 86.6, 1.4),
+    ]
+    for x in (10.0, 24.0, 36.0, 82.0, 94.0, 108.4):
+        items.append(I('column_great', x, 0.4))
+    for x, kind in ((29.6, 'statue_orator'), (88.6, 'statue_orator'), (45.6, 'statue_goddess'), (72.6, 'statue_goddess')):
+        items.append(I(kind, x, 0.3, action='look'))
+    for x in (6.0, 19.0, 101.0, 113.0):
+        items.append(W('lamp_hanging', x, 4.6))
+    items += [I('candelabrum', 52.4, 4.4), I('candelabrum', 66.8, 4.4), I('brazier', 49.6, 6.0), I('brazier', 69.2, 6.0)]
+    items += seats
+    # galleries: benches for observers and press, statues at the corners
+    for x in range(2, 40, 4):
+        items.append(I('bench_marble', float(x), 59.6, level='gallery', action='sit', label='Galerie'))
+    for x in range(78, 116, 4):
+        items.append(I('bench_marble', float(x), 59.6, level='gallery', action='sit', label='Galerie'))
+    for y in range(16, 52, 5):
+        items.append(I('bench_marble', 2.0, float(y), level='gallery', action='sit', label='Galerie'))
+        items.append(I('bench_marble', 115.0, float(y), level='gallery', action='sit', label='Galerie'))
+    items += [I('bust', 3.0, 12.4, level='gallery', action='look'), I('bust', 116.0, 12.4, level='gallery', action='look')]
+    # portal wall between vestibule and hall (row 62): reliefs and statues
+    items += [W('relief_frieze', 52.4, 4.0, row=62), W('relief_frieze', 61.6, 4.0, row=62)]
+    # vestibule: reception, security check and weapons storage, statue of Concordia
+    items += [
+        I('statue_goddess', 59.1, 66.0, action='look'), I('reception_desk', 44.0, 66.5, action='reception', label='Akkreditierung'),
+        I('reception_desk', 72.0, 66.5, action='reception', label='Sicherheitskontrolle'),
+        I('archive_cabinet', 42.0, 72.0, action='files', label='Waffenverwahrung'), I('archive_cabinet', 76.0, 72.0, action='files', label='Waffenverwahrung'),
+        I('bench_marble', 46.0, 75.5, action='sit'), I('bench_marble', 71.0, 75.5, action='sit'),
+        I('planter', 41.0, 77.8), I('planter', 77.6, 77.8), I('candelabrum', 53.0, 63.2), I('candelabrum', 66.0, 63.2),
+        I('fountain_small', 49.0, 71.0, action='drink'), I('fountain_small', 68.4, 71.0, action='drink'),
+        W('mural', 41.5, 1.2, row=62), W('mural', 74.5, 1.2, row=62),
+    ]
+    # ambulatories (west and east): busts, statues, reliefs, lamps, benches – representative corridors
+    for x0 in (1.0, 81.0):
+        for k in range(4):
+            items.append(I('statue_orator' if k % 2 == 0 else 'bust', x0 + 2.0 + k * 9.0, 63.0, action='look'))
+            items.append(I('bench_marble', x0 + 5.0 + k * 9.0, 67.6, action='sit'))
+        items += [W('relief_frieze', x0 + 6.0, 2.6, row=62), W('lamp_hanging', x0 + 28.0, 3.0, row=62), I('planter', x0 + 34.0, 63.0)]
+    return {
+        'label': 'Großer Ratssaal', 'own_art_only': True, 'size': [HALL_W, 80], 'wall_tiles': 8, 'monumental': True,
+        'rooms': [room('Ratssaal', [0, 0, HALL_W, HALL_H], 'marble_floor', 'wall_fresco'),
+                  room('Westlicher Umgang', [0, 62, 40, 8], 'mosaic', 'wall_marble'),
+                  room('Vestibül', [40, 62, 40, 18], 'mosaic', 'wall_fresco'),
+                  room('Östlicher Umgang', [80, 62, 40, 8], 'mosaic', 'wall_marble')],
+        'partitions': [
+            dict(P([0, 62], [52, 62], openings=[[20, 62, 4]]), wall_tiles=1.2),        # gallery parapet, stair up from the ambulatory
+            dict(P([52, 62], [68, 62], doors=[[58, 62, 'gate']]), wall_tiles=6),     # portal wall with the bronze gate
+            dict(P([68, 62], [120, 62], openings=[[96, 62, 4]]), wall_tiles=1.2),
+            dict(P([40, 62], [40, 70], doors=[[40, 64.5, 'double']]), wall_tiles=5),
+            dict(P([80, 62], [80, 70], doors=[[80, 64.5, 'double']]), wall_tiles=5),
+        ],
+        'levels': [{'id': 'gallery', 'z': 4.0, 'floor': 'marble_floor', 'face': 'wall_marble',
+                    'rects': [[0, 12, 8, 43], [0, 55, 44, 7], [112, 12, 8, 43], [76, 55, 44, 7]],
+                    'rails': [[0, 'east'], [1, 'north'], [2, 'west'], [3, 'north']]}],
+        'stairs': [{'rect': [44, 56.5, 8, 5], 'dir': 'west', 'level': 'gallery'},
+                   {'rect': [68, 56.5, 8, 5], 'dir': 'east', 'level': 'gallery'},
+                   {'rect': [20, 62, 4, 7.5], 'dir': 'north', 'level': 'gallery'},
+                   {'rect': [96, 62, 4, 7.5], 'dir': 'north', 'level': 'gallery'}],
+        'entrance': {'x': 60.0}, 'staff_spot': [50.0, 69.5], 'items': items,
+        'seat_count': sum(1 for e in seats),
+    }
+
+
+L_OUT['concordium_chamber'] = chamber_layout()
+print('chamber seats', L_OUT['concordium_chamber']['seat_count'])
 L_OUT['concordium_diplomacy'] = {
     'label': 'Diplomatieflügel', 'own_art_only': True, 'size': [32, 12], 'wall_tiles': 4,
     'rooms': [room('Verhandlung', [0, 0, 8, 8], 'mosaic', 'wall_fresco'), room('Besprechung', [8, 0, 8, 8], 'marble_floor', 'wall_marble'),

@@ -49,6 +49,18 @@ var exit_point := Vector2.ZERO
 var item_nodes: Array = []
 var placed: Array = []                  # [{id, rect (tiles), wall}] for checks
 var _doors: Array = []
+var _blockers: Array = []               # [{rect (world px), kind}] – walls, furniture, doors (walk grid)
+var seats: Dictionary = {}              # seat id -> {pos (px), row, sector}
+var levels: Dictionary = {}             # level id -> {z (tiles), rects (tiles)}
+var stairs: Array = []                  # [{rect (tiles), dir, z}]
+# walk grid (NAV_RES cells per tile): height in tiles, -1 = blocked / outside
+const LAYER_SOLID := 1
+const LAYER_LEVEL_BASE := 2
+const LAYER_LEVEL_EDGE := 4
+const NAV_RES := 4
+const STEP_MAX := 0.5                   # tiles a figure can step up or down between cells
+var nav_size := Vector2i.ZERO
+var nav_h := PackedFloat32Array()
 var _textures: Dictionary = {}
 var _staff: Array = []
 var _sheet_swap := {}
@@ -148,9 +160,11 @@ func _ready() -> void:
 	_build_floors()
 	_build_walls()
 	_build_partitions()
+	_build_levels()
 	_build_items()
 	_build_entrance()
 	_build_staff()
+	build_nav()
 
 
 ## Camera bounds in global coordinates (the room plus its back wall).
@@ -352,10 +366,12 @@ func _is_entrance_cell(c: Vector2i) -> bool:
 	return cells.has(c) and not cells.has(c + Vector2i(0, 1))
 
 
-func _add_rect(body: StaticBody2D, r: Rect2) -> void:
+func _add_rect(body: StaticBody2D, r: Rect2, kind := "solid") -> CollisionPolygon2D:
 	var sh := CollisionPolygon2D.new()
 	sh.polygon = PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
 	body.add_child(sh)
+	_blockers.append({"rect": r, "kind": kind})
+	return sh
 
 
 ## Inner walls: horizontal ones are full-height front faces (y-sorted with the
@@ -373,7 +389,7 @@ func _build_partitions() -> void:
 		for o in p.get("openings", []):
 			gaps.append([float(o[1]) if vertical else float(o[0]), float(o[2])])
 		for dd in p.get("doors", []):
-			gaps.append([float(dd[1]) if vertical else float(dd[0]), 2.0])
+			gaps.append([float(dd[1]) if vertical else float(dd[0]), door_width(dd)])
 		var n := int(round((b.y - a.y) if vertical else (b.x - a.x)))
 		for i in n:
 			var along := (a.y if vertical else a.x) + i
@@ -391,41 +407,107 @@ func _build_partitions() -> void:
 				_rect_poly(null, Rect2(Vector2(0, -wh - CAP), Vector2(T, CAP)), Vector2.ZERO, holder, CAP_COLOR)
 				_add_rect(body, Rect2(Vector2(along * T, a.y * T - 10), Vector2(T, 14)))
 			objects.add_child(holder)
-		if not vertical:
-			for dd in p.get("doors", []):
-				_add_inner_door(Vector2(float(dd[0]), float(dd[1])))
+		for dd in p.get("doors", []):
+			_add_inner_door(Vector2(float(dd[0]), float(dd[1])), str(dd[2]) if dd.size() > 2 else "single", vertical, body)
 
 
-## An inner door (Penzilla door art, drawn front-on in its 2-tile gap); it
-## swings open (closed → ajar → open) when someone comes close.
-func _add_inner_door(cell: Vector2) -> void:
+## Door types: single leaf (Penzilla art in houses, own antique art in the
+## Concordium), double doors and monumental gates (two heavy leaves, slow).
+const DOOR_TYPES := {
+	"single": {"width": 2.0, "speed": 4.0, "reach": 1.6},
+	"double": {"width": 2.0, "speed": 2.5, "reach": 2.0},
+	"gate": {"width": 4.0, "speed": 1.1, "reach": 3.2},
+}
+
+
+static func door_width(dd: Array) -> float:
+	return float(DOOR_TYPES.get(str(dd[2]) if dd.size() > 2 else "single", DOOR_TYPES["single"])["width"])
+
+
+## An inner door in its gap. It opens when someone comes close (the people
+## of the room, the player, NPCs), at a speed that fits its weight; while it
+## is (mostly) closed its collision blocks the gap – opening and passage
+## stay in sync (collision off from 60 % open).
+func _add_inner_door(cell: Vector2, type: String, vertical: bool, body: StaticBody2D) -> void:
+	var spec: Dictionary = DOOR_TYPES.get(type, DOOR_TYPES["single"])
+	var w := float(spec["width"])
 	var holder := Node2D.new()
-	holder.name = "InnerDoor"
-	holder.position = Vector2((cell.x + 1.0) * T, cell.y * T)
+	holder.name = "Door_" + type
 	var spr := Sprite2D.new()
-	spr.texture = _tex("TopDownHouse_DoorsAndWindows.png")
-	spr.region_enabled = true
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	spr.scale = Vector2(S, S)
 	spr.centered = false
+	var frames: Array = []
+	var own := bool(layout.get("own_art_only", false)) or type != "single"
+	if own:
+		var base := "door_antique" if type == "single" else ("door_double" if type == "double" else "gate_bronze")
+		for k in 4:
+			frames.append(_tex("worlds/%s_%d.png" % [base, k]))
+	else:
+		spr.texture = _tex("TopDownHouse_DoorsAndWindows.png")
+		spr.region_enabled = true
+	var gap: Rect2
+	if vertical:
+		# a door in a north-south wall is seen edge-on: a narrow frame strip
+		holder.position = Vector2(cell.x * T, (cell.y + w) * T)
+		gap = Rect2(Vector2(cell.x * T - 5, cell.y * T), Vector2(10, w * T))
+		spr.visible = false
+		var strip := Polygon2D.new()
+		strip.polygon = PackedVector2Array([Vector2(-3, -w * T), Vector2(3, -w * T), Vector2(3, 0), Vector2(-3, 0)])
+		strip.color = Color("8a5a34")
+		holder.add_child(strip)
+		holder.set_meta("strip", strip)
+	else:
+		holder.position = Vector2((cell.x + w * 0.5) * T, cell.y * T)
+		gap = Rect2(Vector2(cell.x * T, cell.y * T - 10), Vector2(w * T, 14))
 	holder.add_child(spr)
 	objects.add_child(holder)
-	_doors.append({"node": spr, "pos": holder.position, "state": -1})
-	_set_door_frame(_doors[_doors.size() - 1], 0)
+	var col := _add_rect(body, gap, "door")
+	var d := {"node": spr, "holder": holder, "pos": holder.position + (Vector2(0, -w * T * 0.5) if vertical else Vector2.ZERO),
+		"frames": frames, "open": 0.0, "target": 0.0, "spec": spec, "collision": col, "state": -1, "type": type, "vertical": vertical}
+	_doors.append(d)
+	_set_door_frame(d, 0)
 
 
 func _set_door_frame(d: Dictionary, frame: int) -> void:
 	if int(d["state"]) == frame:
 		return
 	d["state"] = frame
-	var item: Dictionary = atlas.get("items", {}).get(["door_closed", "door_half", "door_open"][frame], {})
-	var r: Array = item.get("rect", [0, 0, 1, 1])
 	var spr: Sprite2D = d["node"]
-	spr.region_rect = Rect2(r[0], r[1], r[2], r[3])
-	spr.position = Vector2(-r[2] * S * 0.5, -r[3] * S)
+	var frames: Array = d["frames"]
+	if not frames.is_empty():
+		var tex: Texture2D = frames[clampi(frame, 0, frames.size() - 1)]
+		spr.texture = tex
+		if tex:
+			spr.position = Vector2(-tex.get_width() * S * 0.5, -tex.get_height() * S)
+	else:
+		var item: Dictionary = atlas.get("items", {}).get(["door_closed", "door_half", "door_open"][clampi(frame, 0, 2)], {})
+		var r: Array = item.get("rect", [0, 0, 1, 1])
+		spr.region_rect = Rect2(r[0], r[1], r[2], r[3])
+		spr.position = Vector2(-r[2] * S * 0.5, -r[3] * S)
+	if d.get("vertical", false):
+		var strip: Polygon2D = (d["holder"] as Node2D).get_meta("strip")
+		strip.scale = Vector2(1.0, 1.0 - 0.85 * float(d["open"]))
 
 
-func _process(_delta: float) -> void:
+## The free seat nearest to a point (within max_d px), or "".
+func nearest_seat(p_px: Vector2, max_d := T * 1.2) -> String:
+	var best := ""
+	var bd := max_d
+	for id in seats:
+		var d := p_px.distance_to(seats[id]["pos"])
+		if d < bd:
+			bd = d
+			best = id
+	return best
+
+
+## How far a door is open (0..1); for tests and NPC logic.
+func door_states() -> Array:
+	return _doors.map(func(d): return {"type": d["type"], "open": d["open"], "blocking": not (d["collision"] as CollisionPolygon2D).disabled, "pos": d["pos"]})
+
+
+func _process(delta: float) -> void:
 	if _doors.is_empty():
 		return
 	var people: Array = []
@@ -436,7 +518,306 @@ func _process(_delta: float) -> void:
 		var near := INF
 		for p in people:
 			near = minf(near, (p as Vector2).distance_to(d["pos"]))
-		_set_door_frame(d, 2 if near < T * 1.6 else (1 if near < T * 2.8 else 0))
+		var spec: Dictionary = d["spec"]
+		d["target"] = 1.0 if near < T * float(spec["reach"]) * (1.0 + float(spec["width"]) * 0.25) else 0.0
+		d["open"] = move_toward(float(d["open"]), float(d["target"]), delta * float(spec["speed"]))
+		(d["collision"] as CollisionPolygon2D).disabled = float(d["open"]) > 0.6
+		var n_frames := 4 if not (d["frames"] as Array).is_empty() else 3
+		_set_door_frame(d, int(round(float(d["open"]) * (n_frames - 1))))
+
+
+# --- levels (galleries) and stairs -------------------------------------------------------
+
+## Raised walkable levels (a gallery): top surface lifted by z, a front face
+## down to the floor, balustrades on the open edges; stairs lead up. The
+## space below a level is solid (its base). Walk-grid heights follow.
+func _build_levels() -> void:
+	var body := StaticBody2D.new()
+	body.name = "Levels"
+	body.collision_layer = LAYER_LEVEL_BASE
+	add_child(body)
+	var edges := StaticBody2D.new()
+	edges.name = "LevelEdges"
+	edges.collision_layer = LAYER_LEVEL_EDGE
+	add_child(edges)
+	var rails := StaticBody2D.new()
+	rails.name = "StairRails"
+	add_child(rails)
+	var stair_rects: Array = []
+	for st in layout.get("stairs", []):
+		stair_rects.append(Rect2(float(st["rect"][0]), float(st["rect"][1]), float(st["rect"][2]), float(st["rect"][3])))
+	for lv in layout.get("levels", []):
+		var z := float(lv["z"])
+		var rects: Array = []
+		for r in lv["rects"]:
+			rects.append(Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3])))
+		for ri in rects.size():
+			var rr: Rect2 = rects[ri]
+			var floor_tex := _patch(atlas.get("floors", {}).get(str(lv.get("floor", "marble_floor")), {}))
+			var face_tex := _patch(atlas.get("walls", {}).get(str(lv.get("face", "wall_marble")), {}))
+			# top surface: sorted just before anything standing on it
+			var top := Node2D.new()
+			top.position = Vector2(0, rr.position.y * T - 0.5)
+			_rect_poly(floor_tex, Rect2(Vector2(rr.position.x * T, 0.5 - z * T), rr.size * T), rr.position * SRC_TILE, top)
+			objects.add_child(top)
+			# front face (south edge) down to the floor
+			var face := Node2D.new()
+			face.position = Vector2(0, rr.end.y * T)
+			_rect_poly(face_tex, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, z * T)), Vector2(rr.position.x * SRC_TILE, 0), face, Color(0.86, 0.84, 0.82))
+			_rect_poly(null, Rect2(Vector2(rr.position.x * T, -z * T), Vector2(rr.size.x * T, 3)), Vector2.ZERO, face, CAP_COLOR)
+			objects.add_child(face)
+			_add_rect(body, Rect2(rr.position * T, rr.size * T), "level_base")
+			var joins: Array = stair_rects.duplicate()
+			for rj in rects.size():
+				if rj != ri:
+					joins.append(rects[rj])
+			_add_level_edges(edges, rr, joins)
+			for edge in lv.get("rails", []):
+				if int(edge[0]) == ri:
+					_add_rail(rr, z, str(edge[1]))
+		levels[str(lv["id"])] = {"z": z, "rects": rects}
+	for st in layout.get("stairs", []):
+		var r := Rect2(float(st["rect"][0]), float(st["rect"][1]), float(st["rect"][2]), float(st["rect"][3]))
+		var z := float(levels.get(str(st["level"]), {}).get("z", 1.0))
+		var dir := str(st.get("dir", "north"))
+		stairs.append({"rect": r, "dir": dir, "z": z})
+		# balustrades along the long sides of a flight (everyone collides)
+		var th := 4.0
+		if dir == "north":
+			_add_rect(rails, Rect2(Vector2(r.position.x * T - th, r.position.y * T), Vector2(th, r.size.y * T)), "rail")
+			_add_rect(rails, Rect2(Vector2(r.end.x * T, r.position.y * T), Vector2(th, r.size.y * T)), "rail")
+		else:
+			_add_rect(rails, Rect2(Vector2(r.position.x * T, r.position.y * T - th), Vector2(r.size.x * T, th)), "rail")
+			_add_rect(rails, Rect2(Vector2(r.position.x * T, r.end.y * T), Vector2(r.size.x * T, th)), "rail")
+		var n := maxi(2, int(ceil(z / 0.4)))
+		var holder := Node2D.new()
+		holder.position = Vector2(0, r.end.y * T + 0.25)
+		for k in n:
+			var h := z * float(k + 1) / float(n)
+			var seg: Rect2
+			if dir == "north":
+				seg = Rect2(Vector2(r.position.x, r.end.y - r.size.y * float(k + 1) / n), Vector2(r.size.x, r.size.y / n))
+			elif dir == "west":
+				seg = Rect2(Vector2(r.end.x - r.size.x * float(k + 1) / n, r.position.y), Vector2(r.size.x / n, r.size.y))
+			else:
+				seg = Rect2(Vector2(r.position.x + r.size.x * float(k) / n, r.position.y), Vector2(r.size.x / n, r.size.y))
+			var tread := Rect2(Vector2(seg.position.x * T, seg.position.y * T - h * T - r.end.y * T), seg.size * T)
+			_rect_poly(null, tread, Vector2.ZERO, holder, Color("e8dfcf").darkened(0.04 * (k % 2)))
+			var riser_h := z / n * T
+			if dir == "north":
+				_rect_poly(null, Rect2(Vector2(tread.position.x, tread.end.y), Vector2(tread.size.x, riser_h)), Vector2.ZERO, holder, Color("c9bba6"))
+			_rect_poly(null, Rect2(Vector2(tread.position.x, tread.position.y), Vector2(tread.size.x, 1.5)), Vector2.ZERO, holder, Color("b9ad9c"))
+		objects.add_child(holder)
+
+
+## Thin barriers around a level (layer LEVEL_EDGE: only figures up on the
+## level collide with them), open where a flight of stairs arrives.
+func _add_level_edges(body: StaticBody2D, rr: Rect2, stair_rects: Array) -> void:
+	var th := 6.0
+	for side in ["north", "south", "west", "east"]:
+		var horiz: bool = side == "north" or side == "south"
+		var line := rr.position.y if side == "north" else (rr.end.y if side == "south" else (rr.position.x if side == "west" else rr.end.x))
+		var a0 := rr.position.x if horiz else rr.position.y
+		var a1 := rr.end.x if horiz else rr.end.y
+		var cuts: Array = []
+		for sr in stair_rects:
+			var r: Rect2 = sr
+			var touches := false
+			if horiz:
+				touches = absf(r.end.y - line) < 0.05 or absf(r.position.y - line) < 0.05
+			else:
+				touches = absf(r.end.x - line) < 0.05 or absf(r.position.x - line) < 0.05
+			if touches:
+				var c0 := r.position.x if horiz else r.position.y
+				var c1 := r.end.x if horiz else r.end.y
+				if c1 > a0 and c0 < a1:
+					cuts.append([c0, c1])
+		cuts.sort_custom(func(p, q): return p[0] < q[0])
+		var segs: Array = []
+		var cur := a0
+		for c in cuts:
+			if c[0] > cur:
+				segs.append([cur, minf(float(c[0]), a1)])
+			cur = maxf(cur, float(c[1]))
+		if cur < a1:
+			segs.append([cur, a1])
+		for sg in segs:
+			var r2: Rect2
+			if horiz:
+				var y := line * T - (th if side == "north" else 0.0)
+				r2 = Rect2(Vector2(float(sg[0]) * T, y), Vector2((float(sg[1]) - float(sg[0])) * T, th))
+			else:
+				var x := line * T - (th if side == "west" else 0.0)
+				r2 = Rect2(Vector2(x, float(sg[0]) * T), Vector2(th, (float(sg[1]) - float(sg[0])) * T))
+			_add_rect(body, r2, "edge")
+
+
+## Level-aware figures: lifts the drawing to the walk height and switches the
+## collision layers – on the floor the base of a gallery blocks, up on the
+## gallery its edges do, on a flight neither (the balustrades always do).
+func carry(body: CharacterBody2D, visual: Node2D) -> float:
+	var h := nav_height(body.position)
+	var on_stairs := false
+	for st in stairs:
+		if (st["rect"] as Rect2).has_point(body.position / T):
+			on_stairs = true
+			h = _stair_height(st, body.position / T)
+	if h < 0.0:
+		h = float(body.get_meta("walk_h", 0.0))
+	body.set_meta("walk_h", h)
+	if on_stairs:
+		body.collision_mask = LAYER_SOLID
+	elif h > 0.25:
+		body.collision_mask = LAYER_SOLID | LAYER_LEVEL_EDGE
+	else:
+		body.collision_mask = LAYER_SOLID | LAYER_LEVEL_BASE
+	if visual:
+		visual.position.y = -h * T
+	return h
+
+
+func _stair_height(st: Dictionary, c: Vector2) -> float:
+	var r: Rect2 = st["rect"]
+	var f := 0.0
+	match str(st["dir"]):
+		"north":
+			f = (r.end.y - c.y) / r.size.y
+		"west":
+			f = (r.end.x - c.x) / r.size.x
+		_:
+			f = (c.x - r.position.x) / r.size.x
+	return float(st["z"]) * clampf(f, 0.0, 1.0)
+
+
+## A balustrade along an open edge of a level ("north", "west", "east").
+func _add_rail(rr: Rect2, z: float, edge: String) -> void:
+	var rail_h := 0.9 * T
+	var col := Color("efe8dc")
+	var holder := Node2D.new()
+	var top_y := -z * T
+	if edge == "north" or edge == "south":
+		holder.position = Vector2(0, (rr.position.y * T + 0.6) if edge == "north" else (rr.end.y * T + 0.6))
+		var y0 := top_y - rail_h + 0.5
+		_rect_poly(null, Rect2(Vector2(rr.position.x * T, y0), Vector2(rr.size.x * T, 5)), Vector2.ZERO, holder, col)
+		_rect_poly(null, Rect2(Vector2(rr.position.x * T, y0 + 5), Vector2(rr.size.x * T, 1)), Vector2.ZERO, holder, OUTLINE)
+		var x := rr.position.x * T + 4
+		while x < rr.end.x * T - 2:
+			_rect_poly(null, Rect2(Vector2(x, y0 + 6), Vector2(4, rail_h - 6)), Vector2.ZERO, holder, col.darkened(0.12))
+			x += 12
+	else:
+		var ex := (rr.position.x if edge == "west" else rr.end.x) * T
+		holder.position = Vector2(0, rr.end.y * T - 0.6)
+		_rect_poly(null, Rect2(Vector2(ex - 3, (rr.position.y - rr.end.y) * T + top_y - rail_h), Vector2(6, rr.size.y * T)), Vector2.ZERO, holder, col)
+		_rect_poly(null, Rect2(Vector2(ex - 3, (rr.position.y - rr.end.y) * T + top_y - rail_h), Vector2(1, rr.size.y * T)), Vector2.ZERO, holder, OUTLINE)
+	objects.add_child(holder)
+
+
+# --- walk grid -----------------------------------------------------------------------------
+
+## Height (tiles) of the walkable surface at a point; -1 = blocked/outside.
+## Built from rooms, walls, furniture, levels and stairs – the same data the
+## drawing and the collisions use (doors count as passable: they open).
+func build_nav() -> void:
+	nav_size = size_t * NAV_RES
+	nav_h.resize(nav_size.x * nav_size.y)
+	for j in nav_size.y:
+		for i in nav_size.x:
+			var c := (Vector2(i, j) + Vector2(0.5, 0.5)) / NAV_RES
+			nav_h[j * nav_size.x + i] = 0.0 if cells.has(Vector2i(int(c.x), int(c.y))) else -1.0
+	for lv in levels.values():
+		for rr in lv["rects"]:
+			var z := float(lv["z"])
+			_nav_fill(rr, func(_c: Vector2, k: int) -> void:
+				if nav_h[k] >= 0.0:
+					nav_h[k] = z)
+	for st in stairs:
+		_nav_fill(st["rect"], func(c: Vector2, k: int) -> void:
+			if nav_h[k] >= 0.0:
+				nav_h[k] = _stair_height(st, c))
+	# walls, furniture and balustrades, grown by a figure's radius (9 px);
+	# doors open and gallery bases / edges are a matter of height
+	var grow := 9.0 / T
+	for b in _blockers:
+		if b["kind"] in ["door", "level_base", "edge"]:
+			continue
+		var r: Rect2 = b["rect"]
+		_nav_fill(Rect2(r.position / T, r.size / T).grow(grow), func(_c: Vector2, k: int) -> void:
+			nav_h[k] = -1.0)
+	# every seat gets the free walk cell next to it where its delegate stands
+	# before sitting down (south first: the row lane behind the chair)
+	for id in seats:
+		var sr: Rect2 = seats[id]["rect"]
+		var best := Vector2(-1, -1)
+		var bd := INF
+		var c0 := sr.get_center()
+		for j in range(int(floor((sr.position.y - 0.8) * NAV_RES)), int(ceil((sr.end.y + 0.8) * NAV_RES))):
+			for i in range(int(floor((sr.position.x - 0.8) * NAV_RES)), int(ceil((sr.end.x + 0.8) * NAV_RES))):
+				if i < 0 or j < 0 or i >= nav_size.x or j >= nav_size.y or nav_h[j * nav_size.x + i] < 0.0:
+					continue
+				var c := (Vector2(i, j) + Vector2(0.5, 0.5)) / NAV_RES
+				var d := c.distance_to(c0) - (0.3 if c.y > sr.end.y else 0.0)
+				if d < bd:
+					bd = d
+					best = c
+		seats[id]["stand"] = best * T if best.x >= 0.0 else Vector2(-1, -1)
+
+
+## Calls f(cell centre in tiles, index) for every walk cell whose centre lies in r (tiles).
+func _nav_fill(r: Rect2, f: Callable) -> void:
+	var i0 := maxi(0, int(ceil(r.position.x * NAV_RES - 0.5)))
+	var i1 := mini(nav_size.x - 1, int(floor(r.end.x * NAV_RES - 0.5)))
+	var j0 := maxi(0, int(ceil(r.position.y * NAV_RES - 0.5)))
+	var j1 := mini(nav_size.y - 1, int(floor(r.end.y * NAV_RES - 0.5)))
+	for j in range(j0, j1 + 1):
+		for i in range(i0, i1 + 1):
+			var c := (Vector2(i, j) + Vector2(0.5, 0.5)) / NAV_RES
+			if r.has_point(c):
+				f.call(c, j * nav_size.x + i)
+
+
+func nav_index(p_px: Vector2) -> int:
+	var i := int(floor(p_px.x / T * NAV_RES))
+	var j := int(floor(p_px.y / T * NAV_RES))
+	if i < 0 or j < 0 or i >= nav_size.x or j >= nav_size.y:
+		return -1
+	return j * nav_size.x + i
+
+
+func nav_height(p_px: Vector2) -> float:
+	var k := nav_index(p_px)
+	return nav_h[k] if k >= 0 else -1.0
+
+
+## A figure can move from a to b (free cell, small enough step).
+func can_step(a_px: Vector2, b_px: Vector2) -> bool:
+	var hb := nav_height(b_px)
+	var ha := nav_height(a_px)
+	return hb >= 0.0 and (ha < 0.0 or absf(hb - ha) <= STEP_MAX)
+
+
+## All walk-grid cells reachable from a point (flood fill), as a Dictionary set.
+func reachable(from_px: Vector2) -> Dictionary:
+	var out := {}
+	var s0 := nav_index(from_px)
+	if s0 < 0 or nav_h[s0] < 0.0:
+		return out
+	var queue := [s0]
+	out[s0] = true
+	while not queue.is_empty():
+		var k: int = queue.pop_back()
+		var i := k % nav_size.x
+		var j := k / nav_size.x
+		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var ni := i + d.x
+			var nj := j + d.y
+			if ni < 0 or nj < 0 or ni >= nav_size.x or nj >= nav_size.y:
+				continue
+			var nk := nj * nav_size.x + ni
+			if out.has(nk) or nav_h[nk] < 0.0 or absf(nav_h[nk] - nav_h[k]) > STEP_MAX:
+				continue
+			out[nk] = true
+			queue.append(nk)
+	return out
 
 
 # --- furniture -------------------------------------------------------------------------
@@ -449,6 +830,8 @@ func item_texture(def: Dictionary, id: String) -> Texture2D:
 
 ## Footprint of a piece in tiles: width = art width, depth = solid height.
 func footprint(def: Dictionary) -> Vector2:
+	if def.has("footprint"):
+		return Vector2(float(def["footprint"][0]), float(def["footprint"][1]))
 	var r: Array = def["rect"]
 	var solid: Array = def.get("solid", [0, r[3] * 0.55, r[2], r[3] * 0.45])
 	return Vector2(maxf(0.5, float(r[2]) / SRC_TILE), maxf(0.35, float(solid[3]) / SRC_TILE))
@@ -522,8 +905,13 @@ func _build_items() -> void:
 		else:
 			g = Vector2(float(e["at"][0]), float(e["at"][1]))
 			var lift := float(e.get("lift", -1.0))
+			if e.has("level"):
+				lift = maxf(lift, 0.0) + float(levels.get(str(e["level"]), {}).get("z", 0.0)) * T / S
 			holder.position = Vector2((g.x + fp.x * 0.5) * T, (g.y + fp.y) * T)
 			spr.position = Vector2(-size.x * 0.5, -size.y - maxf(lift, 0.0) * S)
+			if def.has("anchor"):
+				# turned pieces: the art's pivot sits on the footprint centre
+				spr.position = Vector2(-float(def["anchor"][0]) * S, -float(def["anchor"][1]) * S - fp.y * 0.5 * T - maxf(lift, 0.0) * S)
 			if lift >= 0.0:
 				holder.position.y += 1.0            # small things on furniture: drawn just after it
 			else:
@@ -531,6 +919,8 @@ func _build_items() -> void:
 				placed.append({"id": id, "rect": Rect2(g, fp)})
 			objects.add_child(holder)
 		item_nodes.append(holder)
+		if e.has("seat"):
+			seats[str(e["seat"])] = {"pos": Vector2((g.x + fp.x * 0.5) * T, (g.y + fp.y * 0.6) * T), "rect": Rect2(g, fp), "row": int(e.get("row", 0)), "sector": int(e.get("sector", 0))}
 		var act := str(e.get("action", def.get("action", "")))
 		if act != "" and actions.has(act):
 			_add_item_interaction(e, def, id, i, act, actions[act], g, fp, e.has("wall") or bool(def.get("wall", false)))

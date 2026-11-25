@@ -14,6 +14,8 @@ extends Node
 
 signal closed
 signal found_requested(site: Dictionary, settlement_name: String)
+## "Ansehen" on a world landmark (World Council development preview).
+signal landmark_view_requested(landmark_id: String)
 
 var mode := "browse"
 var view: GlobeView
@@ -32,6 +34,8 @@ var _rating_box: VBoxContainer
 var _name_edit: LineEdit
 var _found_button: Button
 var _enter_button: Button
+var _visit_button: Button
+var _selected_landmark := ""
 var _suggest_button: Button
 var _back_button: Button
 var _loading: Label
@@ -215,6 +219,10 @@ func _build_ui() -> void:
 	_enter_button = _button("Siedlung betreten", "Zur lokalen Ansicht deiner Siedlung")
 	_enter_button.pressed.connect(func() -> void: closed.emit())
 	actions.add_child(_enter_button)
+	_visit_button = _button("Ansehen (Vorschau)", "Den Weltratssitz in der Entwicklungsvorschau besuchen")
+	_visit_button.pressed.connect(func() -> void: landmark_view_requested.emit(_selected_landmark))
+	_visit_button.visible = false
+	actions.add_child(_visit_button)
 
 
 func _button(text: String, tip: String, icon_key: String = "") -> Button:
@@ -332,6 +340,8 @@ func select_landmark(landmark_id: String) -> void:
 		_info.text = t + "\n\n" + _info.text
 	else:
 		_info.text = t
+		_selected_landmark = landmark_id
+		_visit_button.visible = true
 
 
 var _suggestions: Array = []
@@ -371,6 +381,8 @@ func _refresh_panel(lat: float = NAN, lon: float = NAN) -> void:
 	_found_button.visible = found
 	_suggest_button.visible = found
 	_enter_button.visible = false
+	_visit_button.visible = false
+	_selected_landmark = ""
 	var p := view.planet
 	var region := p.region(selected_region) if selected_region != "" else {}
 	var t := ""

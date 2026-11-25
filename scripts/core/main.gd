@@ -121,6 +121,34 @@ func open_globe(mode: String) -> void:
 	add_child(globe)
 	globe.closed.connect(close_globe)
 	globe.found_requested.connect(found_from_globe)
+	globe.landmark_view_requested.connect(open_landmark)
+
+
+var landmark_view: CouncilSiteView
+
+
+## World Council development preview (from the globe); closing returns to the globe.
+func open_landmark(landmark_id: String) -> void:
+	if landmark_view or globe == null:
+		return
+	globe.visible = false
+	globe.process_mode = Node.PROCESS_MODE_DISABLED
+	for c in globe.get_children():
+		if c is CanvasLayer:
+			c.visible = false
+	landmark_view = CouncilSiteView.new()
+	landmark_view.landmark_id = landmark_id
+	add_child(landmark_view)
+	landmark_view.closed.connect(func() -> void:
+		landmark_view.queue_free()
+		landmark_view = null
+		if globe:
+			globe.visible = true
+			globe.process_mode = Node.PROCESS_MODE_INHERIT
+			for c in globe.get_children():
+				if c is CanvasLayer:
+					c.visible = true
+			globe.view.make_current())
 
 
 func close_globe() -> void:

@@ -226,7 +226,10 @@ def build(stage: int = 1):
 
     # ---------------------------------------------------------- grand stairs (+Y)
     p = 'grand_stairs'
-    sy0 = py1
+    # two steps up onto the portico's stylobate (+0.9 m)
+    sc.add(box(px0 - 1, py1, PODIUM_Z, px1 + 1, py1 + 0.8, PODIUM_Z + 0.6, 'marble_warm', 'portico'))
+    sc.add(box(px0 - 1, py1 + 0.8, PODIUM_Z, px1 + 1, py1 + 1.6, PODIUM_Z + 0.3, 'marble_warm', 'portico'))
+    sy0 = py1 + 1.6
     steps = 15
     for i in range(steps):
         z = PODIUM_Z - i * PODIUM_Z / steps

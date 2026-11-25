@@ -2,6 +2,18 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.7.0] – Weltratssitz (World Council) auf Kalistia (25.11.2026)
+Produktversion bleibt **v0.1**, bis der Projektinhaber abnimmt.
+
+### Hinzugefügt
+- **Master-Erweiterung World Council** verankert: [WORLD_COUNCIL.md](docs/WORLD_COUNCIL.md), ART_DIRECTION, ROADMAP (Phasenzuordnung), ARCHITECTURE.
+- **Standort** 28,28° N / 137,36° E (Zaneris-Ebene, Kalistia) aus einer Analyse aller Landzellen (`tools/world/council_site.gd`). Fester Teil der Weltdefinition (`data/world/landmarks.json`), Schutzgebiet 18 km ohne Gründungen.
+- **Persistenter Zustand** der Landmarke (Stufe, Komponenten, Erweiterungen, Beschlüsse, Geschichte) im Weltstand. Nur die Weltautorität ändert ihn.
+- **Globus:** Markierung „WORLD COUNCIL – Internationaler Weltratssitz“, die auf der Oberfläche liegt. Antippen zeigt Infos und den nächsten Versammlungstermin (24. Juni, Weltzeit). Dazu der Knopf „Ansehen (Vorschau)“.
+- **Eigenes Monument-Asset** im Penzilla-Stil: eigener isometrischer Renderer (`tools/art/`). Rotunde mit Kuppel, Portikus, Freitreppe, Forum, Kanal, Brunnen, Stoen, Triumphtor, Wasserterrassen, Tholos, Aquädukt, Palastflügel, Theater, Gärten. Stufe 1 „Historische Anlage“ mit Verfall und Efeu, in 4 Iterationen.
+- **Begehbare Vorschau** (`CouncilSiteView`): pixelgenaue Verdeckung über eine Tiefenkarte (Shader), Laufraster 0,5 m mit Höhen (Treppen, Podium, Terrassen, Durchgänge unter Bögen), Zoom, Tag/Nacht nach Sonnenzeit am Ort.
+- 20 neue Tests (289 gesamt).
+
 ## [0.6.0] = Produktversion **v0.1** – Architekturkorrekturen, Living World vertieft, Phase 4, Gameplay-Polishing (25.11.2026)
 
 ### Hinzugefügt

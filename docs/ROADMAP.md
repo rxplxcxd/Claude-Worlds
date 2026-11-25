@@ -111,6 +111,9 @@ Offen / zu entscheiden:
 - **Phase 4 – Settlement Foundation umgesetzt** (SETTLEMENT_SYSTEM.md §10) – Abnahme durch den Projektinhaber offen.
 - Gameplay-Polishing: Richtungen, Clip-Bibliothek, Türen, Innenräume, Kollisionen, Umland, Globus, Farbpalette, Ladenbeschreibungen, Versionsanzeige – INTERIORS_AND_INTERACTION.md, VERSIONING.md.
 
+## Master-Erweiterung World Council (25.11.2026, technisch 0.7.0)
+Weltratssitz auf **Kalistia**: Standort, Weltdefinition, Globus, eigenes Außen-Asset und begehbare Vorschau umgesetzt. Alle weiteren Bestandteile sind den bestehenden Phasen zugeordnet, ohne die Reihenfolge zu ändern: Restaurierung/Innenräume Phase 7, Reisen und Verkehr Phase 8, Delegierte Phase 9, Weltversammlung am 24. Juni Phase 10, Serverautorität Phase 12. Siehe [WORLD_COUNCIL.md](WORLD_COUNCIL.md) und [WORLD_COUNCIL_ROADMAP.md](WORLD_COUNCIL_ROADMAP.md).
+
 ## Vorbereitete Anforderungen für spätere Phasen
 | Phase | Anforderung | Vorbereitung heute |
 |---|---|---|

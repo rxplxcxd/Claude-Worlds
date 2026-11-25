@@ -58,14 +58,15 @@ class Solid:
         self.data = data or {}
 
     # interval of the convex body along rays o + t*VIEW
-    def interval(self, o):
+    def interval(self, o, v=None):
+        v = VIEW if v is None else v
         n_rays = o.shape[0]
         t0 = np.full(n_rays, -np.inf)
         t1 = np.full(n_rays, np.inf)
         n0 = np.zeros((n_rays, 3))
         n1 = np.zeros((n_rays, 3))
         for n, d in self.planes:
-            dn = float(n @ VIEW)
+            dn = float(n @ v)
             on = o @ n
             if dn < -EPS:
                 t = (d - on) / dn
@@ -81,7 +82,7 @@ class Solid:
                 bad = on > d
                 t0[bad] = np.inf
         if self.quad is not None:
-            qa, qb, qn0, qn1 = self._quad(o)
+            qa, qb, qn0, qn1 = self._quad(o, v)
             m = qa > t0
             t0 = np.where(m, qa, t0)
             n0[m] = qn0[m]
@@ -90,7 +91,7 @@ class Solid:
             n1[m] = qn1[m]
         return t0, t1, n0, n1
 
-    def _quad(self, o):
+    def _quad(self, o, VIEW=VIEW):
         kind = self.quad[0]
         if kind == 'cyl':
             _, ax, c, r = self.quad
@@ -144,14 +145,16 @@ class Solid:
         nb /= np.maximum(np.linalg.norm(nb, axis=1, keepdims=True), EPS)
         return ta, tb, na, nb
 
-    def hit(self, o):
-        t0, t1, n0, _ = self.interval(o)
-        hit = t0 < t1
+    def hit(self, o, v=None, clip_start=False):
+        t0, t1, n0, _ = self.interval(o, v)
+        hit = (t0 < t1) & (t1 > 0)
+        if clip_start:      # rays starting inside: continue from the start point
+            t0 = np.maximum(t0, 0.0)
         t = np.where(hit, t0, np.inf)
         n = n0.copy()
         cut_flag = np.zeros(o.shape[0], np.int8)
         if self.cuts and hit.any():
-            ivs = [c.interval(o) for c in self.cuts]
+            ivs = [c.interval(o, v) for c in self.cuts]
             for _ in range(4):
                 moved = np.zeros(o.shape[0], bool)
                 for ci, (c0, c1, _, cn1) in enumerate(ivs):
@@ -451,3 +454,33 @@ def project(p, origin, px_per_m):
     """World metres -> image pixel (x, y) for an image rendered with origin."""
     p = np.asarray(p, float)
     return ((p @ RIGHT - origin[0]) * px_per_m, (origin[1] - p @ UP) * px_per_m)
+
+
+def height_field(scene: Scene, x0, y0, x1, y1, cell=1.0, z_top=200.0):
+    """Top surface per cell (vertical rays): returns z, normal-z, material
+    name and part name arrays of shape (ny, nx)."""
+    down = np.array([0.0, 0.0, -1.0])
+    xs = np.arange(x0 + cell / 2, x1, cell)
+    ys = np.arange(y0 + cell / 2, y1, cell)
+    gx, gy = np.meshgrid(xs, ys)
+    o = np.stack([gx.ravel(), gy.ravel(), np.full(gx.size, z_top)], 1)
+    best = np.full(gx.size, np.inf)
+    nz = np.zeros(gx.size)
+    mat = np.full(gx.size, '', dtype=object)
+    part = np.full(gx.size, '', dtype=object)
+    for so in scene.solids:
+        a, b = so.aabb
+        sel = (o[:, 0] >= a[0]) & (o[:, 0] <= b[0]) & (o[:, 1] >= a[1]) & (o[:, 1] <= b[1])
+        if not sel.any():
+            continue
+        t, n, _ = so.hit(o[sel], down, clip_start=True)
+        cur = best[sel]
+        m = t < cur
+        idx = np.nonzero(sel)[0][m]
+        best[idx] = t[m]
+        nz[idx] = n[m][:, 2]
+        mat[idx] = so.mat
+        part[idx] = so.part
+    z = np.where(np.isfinite(best), z_top - best, -10.0)
+    shp = gx.shape
+    return z.reshape(shp), nz.reshape(shp), mat.reshape(shp), part.reshape(shp)

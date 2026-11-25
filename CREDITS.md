@@ -24,6 +24,7 @@ Diese Datei spiegelt `data/credits.json` (im Spiel: Menü → *Mitwirkende & Liz
 - Hintergrund des Figuren-Editors: Stylized Grass & Dirt (Hersteller im Paket nicht angegeben; vom Projektinhaber bereitgestellt).
 - Innenausstattung (in Vorbereitung): Kenney „Furniture Kit“ und OpenGameArt-Sammlungen, CC0 (gemeinfrei).
 - Eigene Effekte (Feuer, Rauch, Wetter, Funken, Belohnung): WORLDS-Projekt.
+- Weltratssitz (World Council): eigene Grafik des WORLDS-Projekts, mit einem eigenen isometrischen Renderer im Stil der Penzilla-Außenwelt erzeugt (keine Fremd- oder Penzilla-Pixel).
 - Schrift und Engine: Godot Engine (MIT-Lizenz).
 
 ## Effekte (Bewertung, nicht im veröffentlichten Spiel)

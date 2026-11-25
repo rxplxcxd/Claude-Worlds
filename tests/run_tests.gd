@@ -649,6 +649,7 @@ func _run() -> void:
 	_test_animations()
 	_test_settlement_foundation()
 	await _test_gameplay_polish()
+	await _test_world_council()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
@@ -1491,3 +1492,70 @@ func _drag(index: int, pos: Vector2, rel: Vector2) -> void:
 	e.position = pos
 	e.relative = rel
 	get_tree().root.push_input(e)
+
+
+func _test_world_council() -> void:
+	print("[world council]")
+	var d := Landmarks.get_def(Landmarks.WORLD_COUNCIL)
+	check(not d.is_empty() and d["continent_name"] == "Kalistia", "World Council is a fixed landmark on Kalistia")
+	var p := Geography.planet()
+	var ll := Landmarks.position_of(Landmarks.WORLD_COUNCIL)
+	var smp := p.sample(ll.x, ll.y)
+	var cont := p.continent(smp["continent_id"])
+	check(smp["land"] and cont.get("name", "") == "Kalistia", "its position lies on land of Kalistia (%s)" % Geo.format(ll.x, ll.y))
+	check(float(smp["temperature_c"]) > 8.0 and float(smp["temperature_c"]) < 24.0 and smp["biome"] in ["plain", "hills", "forest"], "temperate, habitable site (%.0f °C, %s)" % [smp["temperature_c"], smp["biome"]])
+	# same position on every load (part of the world definition)
+	Landmarks._defs = []
+	check(Landmarks.position_of(Landmarks.WORLD_COUNCIL) == ll, "position is fixed, not re-rolled")
+	# founding is not possible inside the reserve, but just outside it is judged normally
+	var inside := Geography.rate_site(ll.x, ll.y, [], [])
+	check(not inside["valid"] and inside.get("landmark", "") == Landmarks.WORLD_COUNCIL, "no founding inside the reserved ground")
+	var out_ll := Geo.offset(ll.x, ll.y, 0.0, -40.0, p.radius_km)
+	var outside := Geography.rate_site(out_ll.x, out_ll.y, [], [])
+	check(not outside.has("landmark"), "40 km away the reserve does not apply")
+	# persistent state: read through WorldState, survives save/load
+	WorldState.use_storage("user://test_world_council.json", true)
+	var st := WorldState.landmark_state(Landmarks.WORLD_COUNCIL)
+	check(int(st["stage"]) == 1 and st["components"].has("great_fountain"), "initial state: stage 1, components from the definition")
+	st["components"]["great_fountain"]["restored"] = 0.5
+	WorldState.save_world()
+	WorldState.load_world()
+	check(float(WorldState.landmark_state(Landmarks.WORLD_COUNCIL)["components"]["great_fountain"]["restored"]) == 0.5, "landmark state persists across save/load")
+	WorldState.use_storage(WorldState.DEFAULT_SAVE_PATH, false)
+	# assembly on 24 June, world time (UTC)
+	var t := Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 11, "day": 25, "hour": 12, "minute": 0, "second": 0})
+	var nxt := Landmarks.next_assembly(Landmarks.WORLD_COUNCIL, t)
+	var dd := Time.get_datetime_dict_from_unix_time(int(nxt["start"]))
+	check(int(nxt["year"]) == 2027 and dd["month"] == 6 and dd["day"] == 24 and dd["hour"] == 0, "next World Assembly: 24 June 2027, 00:00 UTC")
+	var during := Landmarks.next_assembly(Landmarks.WORLD_COUNCIL, Time.get_unix_time_from_datetime_dict({"year": 2027, "month": 6, "day": 24, "hour": 15, "minute": 0, "second": 0}))
+	check(int(during["year"]) == 2027, "on 24 June the assembly is the current one")
+	# preview site: tiles, walk grid, heights, occlusion data
+	var v := CouncilSiteView.new()
+	check(v.load_site(1), "site data (tiles, walk grid) present")
+	check(v.cell_kind(Vector2(-16, 83.4)) == 0 and v.cell_kind(Vector2(-16, 78.5)) == 0, "the gate's central arch is a passage")
+	check(v.cell_kind(Vector2(-16, 55)) != 0, "water and the fountain block the way")
+	check(absf(v.surface_height(Vector2(-9.5, 12.0)) - 6.9) < 0.2 and v.surface_height(Vector2(-9.5, 26.5)) > 1.0, "podium (6.9 m) reached over the stairs")
+	var ok_steps := true
+	var h := v.surface_height(Vector2(-9.5, 45.0))
+	for y2 in range(90, 16, -1):
+		var h2 := v.surface_height(Vector2(-9.5, y2 * 0.5))
+		ok_steps = ok_steps and absf(h2 - h) <= CouncilSiteView.STEP_MAX
+		h = h2
+	check(ok_steps, "the grand stairs can be climbed step by step")
+	check(v.cell_kind(Vector2(-16, -16)) != 0, "closed rotunda (stage 1) is not walkable")
+	check(v.screen_dir_to_grid(Vector2(1, 0)).normalized().distance_to(Vector2(1, -1).normalized()) < 0.01, "screen right = grid (+x, -y)")
+	var k := v.depth_key(Vector2(3, 4))
+	check(is_equal_approx(k, 20700.0), "depth key = (x + y + 200) * 100")
+	var img: Image = (load("res://assets/landmarks/world_council/stage1/depth_%s.png" % v.site["tiles"][0]["name"]) as Texture2D).get_image()
+	check(img.get_width() > 0, "per-pixel depth tiles present")
+	v.free()
+	# globe marker on the drawn surface point
+	var gv := GlobeView.new()
+	add_child(gv)
+	gv.setup(p)
+	gv.focus(ll.x, ll.y, 1.8, true)
+	await get_tree().process_frame
+	var pr := gv.project(ll.x, ll.y)
+	var back := gv.pick(pr["pos"])
+	check(pr["visible"] and back.distance_to(ll) < 0.05, "globe marker sits on the exact position (pick error %.3f°)" % back.distance_to(ll))
+	gv.queue_free()

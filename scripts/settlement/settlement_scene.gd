@@ -72,6 +72,7 @@ func _ready() -> void:
 		push_warning("Settlement layout: " + p)
 
 	ground.setup(data)
+	_build_surroundings()
 	_build_bounds()
 	_build_buildings()
 	_build_props()
@@ -319,6 +320,23 @@ func _qa_spawn(default_pos: Vector2) -> Vector2:
 	if v.size() == 2 and v[0].is_valid_float() and v[1].is_valid_float():
 		return Vector2(float(v[0]), float(v[1]))
 	return default_pos
+
+
+var surroundings: Surroundings
+
+
+## The land around the settlement from the planet data (coast, mountains,
+## forest, desert, snow …) – no black void at the edge. The climate summary
+## is stored with the settlement for later weather and seasons.
+func _build_surroundings() -> void:
+	var terr := LocalTerrain.generate(record, data.size, 12)
+	record["climate"] = terr.get("climate", {})
+	record["surroundings_features"] = terr.get("features", [])
+	surroundings = Surroundings.new()
+	surroundings.name = "Surroundings"
+	add_child(surroundings)
+	move_child(surroundings, ground.get_index())
+	surroundings.setup(terr, data.size)
 
 
 ## Invisible walls along the settlement edge and around water.
@@ -827,6 +845,7 @@ func enter_building(bid: String) -> void:
 	camera.snap_to_target()
 	objects.visible = false
 	ground.visible = false
+	surroundings.visible = false
 	ground_lights.visible = false
 	var tw3 := create_tween().set_parallel(true)
 	tw3.tween_property(player, "modulate:a", 1.0, 0.35)
@@ -858,6 +877,7 @@ func leave_building() -> void:
 	var b: Building = building_nodes.get(bid)
 	objects.visible = true
 	ground.visible = true
+	surroundings.visible = true
 	ground_lights.visible = true
 	player.reparent(objects)
 	player.move_y_scale = Iso.MOVE_Y_SCALE

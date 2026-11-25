@@ -101,11 +101,13 @@ func _build_visual() -> void:
 	_head.region_enabled = true
 	_head.region_rect = Rect2(HEAD_SRC.position * f_lamp, HEAD_SRC.size * f_lamp)
 	_head.centered = false
-	_head.scale = Vector2.ONE * k / f_lamp
+	# the lantern itself stays human-sized (only the pole is tall)
+	var kh := Iso.WORLD_PER_SRC_PX * 1.7
+	_head.scale = Vector2.ONE * kh / f_lamp
 	# Hangs below the arm's end.
-	_head.position = free_end + Vector2(-29.0 * k, -4.0)
+	_head.position = free_end + Vector2(-29.0 * kh, -4.0)
 	add_child(_head)
-	_head_world = free_end + Vector2(0, HEAD_SRC.size.y * k * 0.55)
+	_head_world = free_end + Vector2(0, HEAD_SRC.size.y * kh * 0.55)
 
 	_halo = Sprite2D.new()
 	_halo.texture = _light_tex

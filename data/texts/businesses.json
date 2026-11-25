@@ -1,0 +1,57 @@
+{
+  "_comment": "Descriptions of businesses by kind (no AI – categorised templates). A building names its kind in the settlement template (\"business\"). One template is chosen per building (stable, from the building id); placeholders: {name}, {settlement}. Player-owned businesses will set their own text later (record.business_texts[building_id], Phase 6) – this file is the fallback and the pool for NPC businesses.",
+  "dev_note": "[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 6).[/i]",
+  "kinds": {
+    "bakery": {
+      "function": "Bäckerei · Brot, Brötchen und Gebäck",
+      "templates": [
+        "Hier riecht es schon frühmorgens nach frischem Brot. Die Bäckerei von {settlement} backt Brote, Brötchen und kleines Gebäck aus dem Mehl der umliegenden Felder.",
+        "Hinter der Theke liegen Laibe, Hefezöpfe und süße Teilchen. Wer in {settlement} früh aufsteht, holt sich hier die ersten warmen Brötchen.",
+        "Ein kleiner Ofen, große Bleche: Die Bäckerei versorgt {settlement} mit Brot für den Alltag und Kuchen für besondere Tage."
+      ]
+    },
+    "grocer": {
+      "function": "Gemischtwaren · Lebensmittel und Dinge des Alltags",
+      "templates": [
+        "Von Mehl und Eiern bis zu Kerzen und Seife: Im Gemischtwarenladen bekommt {settlement} alles, was man jeden Tag braucht.",
+        "Regale voller Vorräte, Kisten mit Gemüse vom Hof und ein Tresen mit Kleinkram – {name} ist der Laden für das Alltägliche.",
+        "Hier findet man Lebensmittel, Haushaltswaren und Neuigkeiten aus {settlement} – der Laden ist auch ein Treffpunkt."
+      ]
+    },
+    "smith": {
+      "function": "Schmiede & Eisenwaren · Werkzeug, Nägel, Reparaturen",
+      "templates": [
+        "An der Esse werden Werkzeuge geschmiedet und repariert: Hämmer, Schaufeln, Beschläge und Nägel für den Aufbau von {settlement}.",
+        "Funken, Amboss und Eisenwaren im Regal – die Schmiede hält die Werkzeuge der Siedlung in Schuss.",
+        "Wer in {settlement} etwas Kaputtes aus Metall hat, bringt es hierher. Daneben gibt es Nägel, Ketten und Beschläge."
+      ]
+    },
+    "butcher": {
+      "function": "Fleischerei · Fleisch- und Wurstwaren",
+      "templates": [
+        "Die Fleischerei verarbeitet Tiere aus der Umgebung zu Fleisch, Wurst und Schinken – sauber, frisch und auf Bestellung.",
+        "Hinter der gekühlten Theke liegen Braten, Würste und Aufschnitt; auf Wunsch wird auch zerlegt und geräuchert."
+      ]
+    },
+    "clothing": {
+      "function": "Bekleidung · Kleidung, Stoffe und Schneiderei",
+      "templates": [
+        "Hemden, Hosen, Mäntel und Stoffe von der Rolle – hier wird eingekleidet, geändert und geflickt.",
+        "Ein kleines Bekleidungsgeschäft mit Schneiderecke: Maßarbeit und Kleidung für jeden Tag in {settlement}."
+      ]
+    },
+    "cafe": {
+      "function": "Café · Kaffee, Tee und Kuchen",
+      "templates": [
+        "Ein paar Tische, warme Getränke und Kuchen – das Café ist der Ort für ein Gespräch in {settlement}."
+      ]
+    },
+    "farm_shop": {
+      "function": "Hofladen · Gemüse, Obst und Kartoffeln vom Feld",
+      "templates": [
+        "Was auf den Feldern nebenan wächst, kommt hier frisch in die Kisten: Kartoffeln, Möhren, Kohl und Obst der Saison.",
+        "Der Hof versorgt {settlement} mit Lebensmitteln – geerntet wird früh am Morgen, verkauft wird direkt am Hof."
+      ]
+    }
+  }
+}

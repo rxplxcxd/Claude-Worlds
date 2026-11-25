@@ -275,7 +275,8 @@ func _rebuild() -> void:
 			_add_part(cached, Color.WHITE, true)
 		else:
 			for l in group:
-				_add_part(l["texture"], l["modulate"], false)
+				var part := _add_part(l["texture"], l["modulate"], false)
+				CharacterCatalog.apply_layer_color(part, l)
 			if use_composite and CharacterComposer.can_compose():
 				pending.append(g)
 	_apply_frame()

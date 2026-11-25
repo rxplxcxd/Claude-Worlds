@@ -1201,6 +1201,58 @@ func _test_gameplay_polish() -> void:
 				if d["type"] != "none" and not ResourceLoader.exists("res://assets/penzilla/doors/" + str(d["file"])):
 					all_frames = false
 		check(all_frames and meta["doors"].size() >= 19, "door opening frames exist for all %d building sprites" % meta["doors"].size())
+	# unified clothing palette: black is black, violet is violet, all clothing shares it
+	var catn: Node = get_tree().root.get_node("CharacterCatalog")
+	var cloth: Dictionary = catn.palette("cloth")
+	var blk: Color = catn.tint_color("cloth", "black")
+	var vio: Color = catn.tint_color("cloth", "violett_kräftig")
+	var shared := true
+	for slot in ["top", "pants", "suit", "sleeves", "bag", "scarf", "bowtie"]:
+		for oid in catn.data["slots"][slot]["options"]:
+			var o: Dictionary = catn.data["slots"][slot]["options"][oid]
+			if o.has("palette") and o["palette"] != "cloth":
+				shared = false
+	check(cloth.size() >= 128 and cloth.size() <= 200, "clothing palette has %d colours" % cloth.size())
+	check(blk.v < 0.12 and blk.s < 0.2 and vio.h > 0.7 and vio.h < 0.8 and vio.s > 0.5, "black is neutral black, violet stays violet")
+	check(shared, "all clothing pieces use the same palette")
+	# globe: picking matches what is drawn; land/water as drawn; suggestions differ
+	var pl := Geography.planet()
+	var agree := 0
+	var n_pts := 0
+	var rng2 := RandomNumberGenerator.new()
+	rng2.seed = 11
+	for k in 400:
+		var la := rng2.randf_range(-60.0, 60.0)
+		var lo := rng2.randf_range(-180.0, 180.0)
+		n_pts += 1
+		if pl.sample(la, lo)["land"] == (pl.display_value_at(la, lo) >= PlanetData.SEA_LEVEL):
+			agree += 1
+	var centre_ok := true
+	for k in 200:
+		var i := rng2.randi_range(0, pl.width * pl.height - 1)
+		var ll := pl.cell_lat_lon(i)
+		if pl.is_land_at(ll.x, ll.y) != pl.is_land(i):
+			centre_ok = false
+	check(agree == n_pts and centre_ok, "land/water at a tapped point is decided like the globe draws the coast (cell centres unchanged)")
+	var sites := Geography.good_sites([], [], 12)
+	var distinct := {}
+	for st in sites:
+		distinct[str(st["sample"]["region_id"])] = true
+	check(sites.size() >= 8 and distinct.size() == sites.size() and sites.all(func(x): return x["valid"]), "the suggestion button cycles through %d different valid sites" % sites.size())
+	var gv := GlobeView.new()
+	add_child(gv)
+	gv.setup(pl)
+	gv.screen_shift = Vector2(40, -60)
+	gv.focus(40.0, 15.0, 1.8, true)
+	await get_tree().process_frame
+	var max_err := 0.0
+	for q in [[48.0, 10.0], [36.9, 13.3], [30.0, 25.0], [42.0, 18.0]]:
+		var pr := gv.project(q[0], q[1])
+		if pr["visible"]:
+			var back := gv.pick(pr["pos"])
+			max_err = maxf(max_err, Vector2(q[0], q[1]).distance_to(back))
+	gv.queue_free()
+	check(max_err < 0.001, "globe: a pin's screen position picks exactly its own coordinates (err %.5f°)" % max_err)
 	# interiors
 	if not InteriorScene.assets_available():
 		print("       (interior art not imported – interior checks skipped)")

@@ -50,7 +50,7 @@ func compose(key: String, layers: Array) -> Texture2D:
 		var s := Sprite2D.new()
 		s.centered = false
 		s.texture = l["texture"]
-		s.self_modulate = l["modulate"]
+		CharacterCatalog.apply_layer_color(s, l)
 		vp.add_child(s)
 	add_child(vp)
 	await RenderingServer.frame_post_draw

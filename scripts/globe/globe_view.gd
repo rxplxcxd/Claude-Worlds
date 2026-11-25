@@ -11,7 +11,7 @@ extends Node3D
 signal zoom_level_changed(level: String)
 
 const LEVELS := ["planetar", "kontinental", "regional"]
-const MIN_DIST := 1.03
+const MIN_DIST := 1.01   # close zoom for precise placement (coast, lake shore)
 const MAX_DIST := 4.2
 const LEVEL_LIMITS := [2.35, 1.6] # altitude thresholds (distance) planetar/kontinental
 const FOV := 38.0
@@ -194,11 +194,15 @@ func _apply_camera() -> void:
 	# globe fits the narrow screen.
 	var vp := get_viewport().get_visible_rect().size
 	var portrait := vp.y > vp.x
-	var ref := maxf(vp.x if portrait else vp.y, 1.0)
 	camera.projection = Camera3D.PROJECTION_FRUSTUM
-	camera.keep_aspect = Camera3D.KEEP_WIDTH if portrait else Camera3D.KEEP_HEIGHT
-	camera.size = 2.0 * camera.near * tan(deg_to_rad(camera.fov * 0.5))
-	camera.frustum_offset = Vector2(-screen_shift.x, screen_shift.y) * camera.size / ref
+	# Always KEEP_HEIGHT: Godot renders "frustum + KEEP_WIDTH" differently from
+	# what unproject_position / project_ray_* return (measured: pins and taps
+	# drifted in portrait). Portrait keeps the field fixed horizontally by
+	# enlarging the vertical size instead.
+	camera.keep_aspect = Camera3D.KEEP_HEIGHT
+	var base := 2.0 * camera.near * tan(deg_to_rad(camera.fov * 0.5))
+	camera.size = base * (vp.y / maxf(vp.x, 1.0) if portrait else 1.0)
+	camera.frustum_offset = Vector2(-screen_shift.x, screen_shift.y) * camera.size / maxf(vp.y, 1.0)
 	# Region borders fade in when zooming in.
 	_material.set_shader_parameter("border_strength", clampf((2.6 - distance) / 0.9, 0.0, 1.0))
 	var new_level: String = LEVELS[0]
@@ -214,7 +218,8 @@ func _apply_camera() -> void:
 ## Screen position → Vector2(lat, lon), or Vector2(NAN, NAN) when it misses.
 func pick(screen_pos: Vector2) -> Vector2:
 	# Ray from the camera's own projection matrix (includes the frustum
-	# offset), so picking always matches what is drawn.
+	# offset). Matches the rendering since the camera always keeps the height
+	# (see _apply_camera); works without a window (tests, server).
 	var vp := get_viewport().get_visible_rect().size
 	var ndc := Vector2(screen_pos.x / vp.x * 2.0 - 1.0, 1.0 - screen_pos.y / vp.y * 2.0)
 	var inv := camera.get_camera_projection().inverse()

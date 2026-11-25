@@ -90,6 +90,12 @@ func apply_record(record: Dictionary) -> void:
 	# Phase 2: the region comes from the chosen place on the planet.
 	if record.get("region_name", "") != "":
 		region_name = record["region_name"]
+	# businesses: description by kind (data/texts/businesses.json), stable per building
+	for entry in buildings:
+		if entry.has("business"):
+			var custom: Dictionary = record.get("business_texts", {}).get(entry.get("id", ""), {})
+			entry["function"] = custom.get("function", BusinessTexts.function_of(str(entry["business"]), str(entry.get("function", ""))))
+			entry["text"] = custom.get("text", BusinessTexts.describe(str(entry["business"]), str(entry.get("id", "")), str(entry.get("name", "")))) + "\n\n" + BusinessTexts.dev_note()
 	for list in [buildings, props]:
 		for entry in list:
 			for key in ["name", "text", "function"]:

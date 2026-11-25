@@ -1367,6 +1367,1511 @@
           1.0
         ]
       }
+    },
+    "cloth": {
+      "black": {
+        "label": "Schwarz",
+        "hex": "#141416",
+        "tint": [
+          0.0784,
+          0.0784,
+          0.0863
+        ]
+      },
+      "dark": {
+        "label": "Dunkelblau",
+        "hex": "#1f2a4a",
+        "tint": [
+          0.1216,
+          0.1647,
+          0.2902
+        ]
+      },
+      "grey": {
+        "label": "Grau",
+        "hex": "#7c7f86",
+        "tint": [
+          0.4863,
+          0.498,
+          0.5255
+        ]
+      },
+      "cream": {
+        "label": "Creme",
+        "hex": "#f1e6cc",
+        "tint": [
+          0.9451,
+          0.902,
+          0.8
+        ]
+      },
+      "beige": {
+        "label": "Beige",
+        "hex": "#cfb58c",
+        "tint": [
+          0.8118,
+          0.7098,
+          0.549
+        ]
+      },
+      "brown": {
+        "label": "Braun",
+        "hex": "#6b4226",
+        "tint": [
+          0.4196,
+          0.2588,
+          0.149
+        ]
+      },
+      "red": {
+        "label": "Rot",
+        "hex": "#c8262e",
+        "tint": [
+          0.7843,
+          0.149,
+          0.1804
+        ]
+      },
+      "orange": {
+        "label": "Orange",
+        "hex": "#e8731c",
+        "tint": [
+          0.9098,
+          0.451,
+          0.1098
+        ]
+      },
+      "yellow": {
+        "label": "Gelb",
+        "hex": "#f2c218",
+        "tint": [
+          0.949,
+          0.7608,
+          0.0941
+        ]
+      },
+      "olive": {
+        "label": "Oliv",
+        "hex": "#6f7a2c",
+        "tint": [
+          0.4353,
+          0.4784,
+          0.1725
+        ]
+      },
+      "green": {
+        "label": "Grün",
+        "hex": "#2e8b3a",
+        "tint": [
+          0.1804,
+          0.5451,
+          0.2275
+        ]
+      },
+      "sky": {
+        "label": "Himmelblau",
+        "hex": "#7fb8ee",
+        "tint": [
+          0.498,
+          0.7216,
+          0.9333
+        ]
+      },
+      "blue": {
+        "label": "Blau",
+        "hex": "#2459c8",
+        "tint": [
+          0.1412,
+          0.349,
+          0.7843
+        ]
+      },
+      "purple": {
+        "label": "Violett",
+        "hex": "#6a2c9c",
+        "tint": [
+          0.4157,
+          0.1725,
+          0.6118
+        ]
+      },
+      "magenta": {
+        "label": "Magenta",
+        "hex": "#c8309c",
+        "tint": [
+          0.7843,
+          0.1882,
+          0.6118
+        ]
+      },
+      "pink": {
+        "label": "Rosa",
+        "hex": "#f08cb4",
+        "tint": [
+          0.9412,
+          0.549,
+          0.7059
+        ]
+      },
+      "white": {
+        "label": "Weiß",
+        "hex": "#f7f7f4",
+        "tint": [
+          0.9686,
+          0.9686,
+          0.9569
+        ]
+      },
+      "n00": {
+        "label": "Tiefschwarz",
+        "hex": "#0d0d0d",
+        "tint": [
+          0.051,
+          0.051,
+          0.051
+        ]
+      },
+      "n01": {
+        "label": "Schwarz 2",
+        "hex": "#171717",
+        "tint": [
+          0.0902,
+          0.0902,
+          0.0902
+        ]
+      },
+      "n02": {
+        "label": "Anthrazit",
+        "hex": "#242424",
+        "tint": [
+          0.1412,
+          0.1412,
+          0.1412
+        ]
+      },
+      "n03": {
+        "label": "Schiefer",
+        "hex": "#333334",
+        "tint": [
+          0.2,
+          0.2,
+          0.2039
+        ]
+      },
+      "n04": {
+        "label": "Dunkelgrau",
+        "hex": "#454546",
+        "tint": [
+          0.2706,
+          0.2706,
+          0.2745
+        ]
+      },
+      "n05": {
+        "label": "Grau 6",
+        "hex": "#59595b",
+        "tint": [
+          0.349,
+          0.349,
+          0.3569
+        ]
+      },
+      "n06": {
+        "label": "Grau 5",
+        "hex": "#707072",
+        "tint": [
+          0.4392,
+          0.4392,
+          0.4471
+        ]
+      },
+      "n07": {
+        "label": "Grau 4",
+        "hex": "#878787",
+        "tint": [
+          0.5294,
+          0.5294,
+          0.5294
+        ]
+      },
+      "n08": {
+        "label": "Mittelgrau",
+        "hex": "#9e9e9e",
+        "tint": [
+          0.6196,
+          0.6196,
+          0.6196
+        ]
+      },
+      "n09": {
+        "label": "Hellgrau 3",
+        "hex": "#b2b2b2",
+        "tint": [
+          0.698,
+          0.698,
+          0.698
+        ]
+      },
+      "n10": {
+        "label": "Hellgrau 2",
+        "hex": "#c7c7c7",
+        "tint": [
+          0.7804,
+          0.7804,
+          0.7804
+        ]
+      },
+      "n11": {
+        "label": "Hellgrau 1",
+        "hex": "#d9d9d9",
+        "tint": [
+          0.851,
+          0.851,
+          0.851
+        ]
+      },
+      "n12": {
+        "label": "Silberweiß",
+        "hex": "#e6e6e6",
+        "tint": [
+          0.902,
+          0.902,
+          0.902
+        ]
+      },
+      "n13": {
+        "label": "Grauweiß",
+        "hex": "#f2f2f2",
+        "tint": [
+          0.949,
+          0.949,
+          0.949
+        ]
+      },
+      "rot_dunkel": {
+        "label": "Rot dunkel",
+        "hex": "#521417",
+        "tint": [
+          0.3216,
+          0.0784,
+          0.0902
+        ]
+      },
+      "rot_tief": {
+        "label": "Rot tief",
+        "hex": "#7a181d",
+        "tint": [
+          0.4784,
+          0.0941,
+          0.1137
+        ]
+      },
+      "rot_kräftig": {
+        "label": "Rot kräftig",
+        "hex": "#ad1f26",
+        "tint": [
+          0.6784,
+          0.1216,
+          0.149
+        ]
+      },
+      "rot_klar": {
+        "label": "Rot klar",
+        "hex": "#d13f46",
+        "tint": [
+          0.8196,
+          0.2471,
+          0.2745
+        ]
+      },
+      "rot_hell": {
+        "label": "Rot hell",
+        "hex": "#e67e83",
+        "tint": [
+          0.902,
+          0.4941,
+          0.5137
+        ]
+      },
+      "rot_pastell": {
+        "label": "Rot pastell",
+        "hex": "#f2b6b9",
+        "tint": [
+          0.949,
+          0.7137,
+          0.7255
+        ]
+      },
+      "koralle_dunkel": {
+        "label": "Koralle dunkel",
+        "hex": "#521d14",
+        "tint": [
+          0.3216,
+          0.1137,
+          0.0784
+        ]
+      },
+      "koralle_tief": {
+        "label": "Koralle tief",
+        "hex": "#7a2618",
+        "tint": [
+          0.4784,
+          0.149,
+          0.0941
+        ]
+      },
+      "koralle_kräftig": {
+        "label": "Koralle kräftig",
+        "hex": "#ad321f",
+        "tint": [
+          0.6784,
+          0.1961,
+          0.1216
+        ]
+      },
+      "koralle_klar": {
+        "label": "Koralle klar",
+        "hex": "#d1523f",
+        "tint": [
+          0.8196,
+          0.3216,
+          0.2471
+        ]
+      },
+      "koralle_hell": {
+        "label": "Koralle hell",
+        "hex": "#e68c7e",
+        "tint": [
+          0.902,
+          0.549,
+          0.4941
+        ]
+      },
+      "koralle_pastell": {
+        "label": "Koralle pastell",
+        "hex": "#f2beb6",
+        "tint": [
+          0.949,
+          0.7451,
+          0.7137
+        ]
+      },
+      "orange_dunkel": {
+        "label": "Orange dunkel",
+        "hex": "#522f14",
+        "tint": [
+          0.3216,
+          0.1843,
+          0.0784
+        ]
+      },
+      "orange_tief": {
+        "label": "Orange tief",
+        "hex": "#7a4318",
+        "tint": [
+          0.4784,
+          0.2627,
+          0.0941
+        ]
+      },
+      "orange_kräftig": {
+        "label": "Orange kräftig",
+        "hex": "#ad5d1f",
+        "tint": [
+          0.6784,
+          0.3647,
+          0.1216
+        ]
+      },
+      "orange_klar": {
+        "label": "Orange klar",
+        "hex": "#d17e3f",
+        "tint": [
+          0.8196,
+          0.4941,
+          0.2471
+        ]
+      },
+      "orange_hell": {
+        "label": "Orange hell",
+        "hex": "#e6ab7e",
+        "tint": [
+          0.902,
+          0.6706,
+          0.4941
+        ]
+      },
+      "orange_pastell": {
+        "label": "Orange pastell",
+        "hex": "#f2d0b6",
+        "tint": [
+          0.949,
+          0.8157,
+          0.7137
+        ]
+      },
+      "bernstein_dunkel": {
+        "label": "Bernstein dunkel",
+        "hex": "#523b14",
+        "tint": [
+          0.3216,
+          0.2314,
+          0.0784
+        ]
+      },
+      "bernstein_tief": {
+        "label": "Bernstein tief",
+        "hex": "#7a5618",
+        "tint": [
+          0.4784,
+          0.3373,
+          0.0941
+        ]
+      },
+      "bernstein_kräftig": {
+        "label": "Bernstein kräftig",
+        "hex": "#ad791f",
+        "tint": [
+          0.6784,
+          0.4745,
+          0.1216
+        ]
+      },
+      "bernstein_klar": {
+        "label": "Bernstein klar",
+        "hex": "#d19b3f",
+        "tint": [
+          0.8196,
+          0.6078,
+          0.2471
+        ]
+      },
+      "bernstein_hell": {
+        "label": "Bernstein hell",
+        "hex": "#e6c07e",
+        "tint": [
+          0.902,
+          0.7529,
+          0.4941
+        ]
+      },
+      "bernstein_pastell": {
+        "label": "Bernstein pastell",
+        "hex": "#f2dcb6",
+        "tint": [
+          0.949,
+          0.8627,
+          0.7137
+        ]
+      },
+      "gelb_dunkel": {
+        "label": "Gelb dunkel",
+        "hex": "#524714",
+        "tint": [
+          0.3216,
+          0.2784,
+          0.0784
+        ]
+      },
+      "gelb_tief": {
+        "label": "Gelb tief",
+        "hex": "#7a6a18",
+        "tint": [
+          0.4784,
+          0.4157,
+          0.0941
+        ]
+      },
+      "gelb_kräftig": {
+        "label": "Gelb kräftig",
+        "hex": "#ad961f",
+        "tint": [
+          0.6784,
+          0.5882,
+          0.1216
+        ]
+      },
+      "gelb_klar": {
+        "label": "Gelb klar",
+        "hex": "#d1b93f",
+        "tint": [
+          0.8196,
+          0.7255,
+          0.2471
+        ]
+      },
+      "gelb_hell": {
+        "label": "Gelb hell",
+        "hex": "#e6d47e",
+        "tint": [
+          0.902,
+          0.8314,
+          0.4941
+        ]
+      },
+      "gelb_pastell": {
+        "label": "Gelb pastell",
+        "hex": "#f2e8b6",
+        "tint": [
+          0.949,
+          0.9098,
+          0.7137
+        ]
+      },
+      "limette_dunkel": {
+        "label": "Limette dunkel",
+        "hex": "#425214",
+        "tint": [
+          0.2588,
+          0.3216,
+          0.0784
+        ]
+      },
+      "limette_tief": {
+        "label": "Limette tief",
+        "hex": "#627a18",
+        "tint": [
+          0.3843,
+          0.4784,
+          0.0941
+        ]
+      },
+      "limette_kräftig": {
+        "label": "Limette kräftig",
+        "hex": "#8aad1f",
+        "tint": [
+          0.5412,
+          0.6784,
+          0.1216
+        ]
+      },
+      "limette_klar": {
+        "label": "Limette klar",
+        "hex": "#add13f",
+        "tint": [
+          0.6784,
+          0.8196,
+          0.2471
+        ]
+      },
+      "limette_hell": {
+        "label": "Limette hell",
+        "hex": "#cce67e",
+        "tint": [
+          0.8,
+          0.902,
+          0.4941
+        ]
+      },
+      "limette_pastell": {
+        "label": "Limette pastell",
+        "hex": "#e3f2b6",
+        "tint": [
+          0.8902,
+          0.949,
+          0.7137
+        ]
+      },
+      "gruen_dunkel": {
+        "label": "Grün dunkel",
+        "hex": "#145219",
+        "tint": [
+          0.0784,
+          0.3216,
+          0.098
+        ]
+      },
+      "gruen_tief": {
+        "label": "Grün tief",
+        "hex": "#187a21",
+        "tint": [
+          0.0941,
+          0.4784,
+          0.1294
+        ]
+      },
+      "gruen_kräftig": {
+        "label": "Grün kräftig",
+        "hex": "#1fad2b",
+        "tint": [
+          0.1216,
+          0.6784,
+          0.1686
+        ]
+      },
+      "gruen_klar": {
+        "label": "Grün klar",
+        "hex": "#3fd14b",
+        "tint": [
+          0.2471,
+          0.8196,
+          0.2941
+        ]
+      },
+      "gruen_hell": {
+        "label": "Grün hell",
+        "hex": "#7ee687",
+        "tint": [
+          0.4941,
+          0.902,
+          0.5294
+        ]
+      },
+      "gruen_pastell": {
+        "label": "Grün pastell",
+        "hex": "#b6f2bb",
+        "tint": [
+          0.7137,
+          0.949,
+          0.7333
+        ]
+      },
+      "tanne_dunkel": {
+        "label": "Tannengrün dunkel",
+        "hex": "#145233",
+        "tint": [
+          0.0784,
+          0.3216,
+          0.2
+        ]
+      },
+      "tanne_tief": {
+        "label": "Tannengrün tief",
+        "hex": "#187a49",
+        "tint": [
+          0.0941,
+          0.4784,
+          0.2863
+        ]
+      },
+      "tanne_kräftig": {
+        "label": "Tannengrün kräftig",
+        "hex": "#1fad66",
+        "tint": [
+          0.1216,
+          0.6784,
+          0.4
+        ]
+      },
+      "tanne_klar": {
+        "label": "Tannengrün klar",
+        "hex": "#3fd188",
+        "tint": [
+          0.2471,
+          0.8196,
+          0.5333
+        ]
+      },
+      "tanne_hell": {
+        "label": "Tannengrün hell",
+        "hex": "#7ee6b2",
+        "tint": [
+          0.4941,
+          0.902,
+          0.698
+        ]
+      },
+      "tanne_pastell": {
+        "label": "Tannengrün pastell",
+        "hex": "#b6f2d4",
+        "tint": [
+          0.7137,
+          0.949,
+          0.8314
+        ]
+      },
+      "tuerkis_dunkel": {
+        "label": "Türkis dunkel",
+        "hex": "#14524c",
+        "tint": [
+          0.0784,
+          0.3216,
+          0.298
+        ]
+      },
+      "tuerkis_tief": {
+        "label": "Türkis tief",
+        "hex": "#187a72",
+        "tint": [
+          0.0941,
+          0.4784,
+          0.4471
+        ]
+      },
+      "tuerkis_kräftig": {
+        "label": "Türkis kräftig",
+        "hex": "#1fada2",
+        "tint": [
+          0.1216,
+          0.6784,
+          0.6353
+        ]
+      },
+      "tuerkis_klar": {
+        "label": "Türkis klar",
+        "hex": "#3fd1c5",
+        "tint": [
+          0.2471,
+          0.8196,
+          0.7725
+        ]
+      },
+      "tuerkis_hell": {
+        "label": "Türkis hell",
+        "hex": "#7ee6dd",
+        "tint": [
+          0.4941,
+          0.902,
+          0.8667
+        ]
+      },
+      "tuerkis_pastell": {
+        "label": "Türkis pastell",
+        "hex": "#b6f2ed",
+        "tint": [
+          0.7137,
+          0.949,
+          0.9294
+        ]
+      },
+      "petrol_dunkel": {
+        "label": "Petrol dunkel",
+        "hex": "#144752",
+        "tint": [
+          0.0784,
+          0.2784,
+          0.3216
+        ]
+      },
+      "petrol_tief": {
+        "label": "Petrol tief",
+        "hex": "#186a7a",
+        "tint": [
+          0.0941,
+          0.4157,
+          0.4784
+        ]
+      },
+      "petrol_kräftig": {
+        "label": "Petrol kräftig",
+        "hex": "#1f96ad",
+        "tint": [
+          0.1216,
+          0.5882,
+          0.6784
+        ]
+      },
+      "petrol_klar": {
+        "label": "Petrol klar",
+        "hex": "#3fb9d1",
+        "tint": [
+          0.2471,
+          0.7255,
+          0.8196
+        ]
+      },
+      "petrol_hell": {
+        "label": "Petrol hell",
+        "hex": "#7ed4e6",
+        "tint": [
+          0.4941,
+          0.8314,
+          0.902
+        ]
+      },
+      "petrol_pastell": {
+        "label": "Petrol pastell",
+        "hex": "#b6e8f2",
+        "tint": [
+          0.7137,
+          0.9098,
+          0.949
+        ]
+      },
+      "himmel_dunkel": {
+        "label": "Himmelblau dunkel",
+        "hex": "#143852",
+        "tint": [
+          0.0784,
+          0.2196,
+          0.3216
+        ]
+      },
+      "himmel_tief": {
+        "label": "Himmelblau tief",
+        "hex": "#18527a",
+        "tint": [
+          0.0941,
+          0.3216,
+          0.4784
+        ]
+      },
+      "himmel_kräftig": {
+        "label": "Himmelblau kräftig",
+        "hex": "#1f72ad",
+        "tint": [
+          0.1216,
+          0.4471,
+          0.6784
+        ]
+      },
+      "himmel_klar": {
+        "label": "Himmelblau klar",
+        "hex": "#3f94d1",
+        "tint": [
+          0.2471,
+          0.5804,
+          0.8196
+        ]
+      },
+      "himmel_hell": {
+        "label": "Himmelblau hell",
+        "hex": "#7ebae6",
+        "tint": [
+          0.4941,
+          0.7294,
+          0.902
+        ]
+      },
+      "himmel_pastell": {
+        "label": "Himmelblau pastell",
+        "hex": "#b6d9f2",
+        "tint": [
+          0.7137,
+          0.851,
+          0.949
+        ]
+      },
+      "blau_dunkel": {
+        "label": "Blau dunkel",
+        "hex": "#142952",
+        "tint": [
+          0.0784,
+          0.1608,
+          0.3216
+        ]
+      },
+      "blau_tief": {
+        "label": "Blau tief",
+        "hex": "#18397a",
+        "tint": [
+          0.0941,
+          0.2235,
+          0.4784
+        ]
+      },
+      "blau_kräftig": {
+        "label": "Blau kräftig",
+        "hex": "#1f4fad",
+        "tint": [
+          0.1216,
+          0.3098,
+          0.6784
+        ]
+      },
+      "blau_klar": {
+        "label": "Blau klar",
+        "hex": "#3f70d1",
+        "tint": [
+          0.2471,
+          0.4392,
+          0.8196
+        ]
+      },
+      "blau_hell": {
+        "label": "Blau hell",
+        "hex": "#7ea1e6",
+        "tint": [
+          0.4941,
+          0.6314,
+          0.902
+        ]
+      },
+      "blau_pastell": {
+        "label": "Blau pastell",
+        "hex": "#b6caf2",
+        "tint": [
+          0.7137,
+          0.7922,
+          0.949
+        ]
+      },
+      "marine_dunkel": {
+        "label": "Marineblau dunkel",
+        "hex": "#141d52",
+        "tint": [
+          0.0784,
+          0.1137,
+          0.3216
+        ]
+      },
+      "marine_tief": {
+        "label": "Marineblau tief",
+        "hex": "#18267a",
+        "tint": [
+          0.0941,
+          0.149,
+          0.4784
+        ]
+      },
+      "marine_kräftig": {
+        "label": "Marineblau kräftig",
+        "hex": "#1f32ad",
+        "tint": [
+          0.1216,
+          0.1961,
+          0.6784
+        ]
+      },
+      "marine_klar": {
+        "label": "Marineblau klar",
+        "hex": "#3f52d1",
+        "tint": [
+          0.2471,
+          0.3216,
+          0.8196
+        ]
+      },
+      "marine_hell": {
+        "label": "Marineblau hell",
+        "hex": "#7e8ce6",
+        "tint": [
+          0.4941,
+          0.549,
+          0.902
+        ]
+      },
+      "marine_pastell": {
+        "label": "Marineblau pastell",
+        "hex": "#b6bef2",
+        "tint": [
+          0.7137,
+          0.7451,
+          0.949
+        ]
+      },
+      "indigo_dunkel": {
+        "label": "Indigo dunkel",
+        "hex": "#1f1452",
+        "tint": [
+          0.1216,
+          0.0784,
+          0.3216
+        ]
+      },
+      "indigo_tief": {
+        "label": "Indigo tief",
+        "hex": "#29187a",
+        "tint": [
+          0.1608,
+          0.0941,
+          0.4784
+        ]
+      },
+      "indigo_kräftig": {
+        "label": "Indigo kräftig",
+        "hex": "#371fad",
+        "tint": [
+          0.2157,
+          0.1216,
+          0.6784
+        ]
+      },
+      "indigo_klar": {
+        "label": "Indigo klar",
+        "hex": "#573fd1",
+        "tint": [
+          0.3412,
+          0.2471,
+          0.8196
+        ]
+      },
+      "indigo_hell": {
+        "label": "Indigo hell",
+        "hex": "#8f7ee6",
+        "tint": [
+          0.5608,
+          0.4941,
+          0.902
+        ]
+      },
+      "indigo_pastell": {
+        "label": "Indigo pastell",
+        "hex": "#c0b6f2",
+        "tint": [
+          0.7529,
+          0.7137,
+          0.949
+        ]
+      },
+      "violett_dunkel": {
+        "label": "Violett dunkel",
+        "hex": "#351452",
+        "tint": [
+          0.2078,
+          0.0784,
+          0.3216
+        ]
+      },
+      "violett_tief": {
+        "label": "Violett tief",
+        "hex": "#4d187a",
+        "tint": [
+          0.302,
+          0.0941,
+          0.4784
+        ]
+      },
+      "violett_kräftig": {
+        "label": "Violett kräftig",
+        "hex": "#6b1fad",
+        "tint": [
+          0.4196,
+          0.1216,
+          0.6784
+        ]
+      },
+      "violett_klar": {
+        "label": "Violett klar",
+        "hex": "#8d3fd1",
+        "tint": [
+          0.5529,
+          0.2471,
+          0.8196
+        ]
+      },
+      "violett_hell": {
+        "label": "Violett hell",
+        "hex": "#b57ee6",
+        "tint": [
+          0.7098,
+          0.4941,
+          0.902
+        ]
+      },
+      "violett_pastell": {
+        "label": "Violett pastell",
+        "hex": "#d6b6f2",
+        "tint": [
+          0.8392,
+          0.7137,
+          0.949
+        ]
+      },
+      "lila_dunkel": {
+        "label": "Lila dunkel",
+        "hex": "#451452",
+        "tint": [
+          0.2706,
+          0.0784,
+          0.3216
+        ]
+      },
+      "lila_tief": {
+        "label": "Lila tief",
+        "hex": "#67187a",
+        "tint": [
+          0.4039,
+          0.0941,
+          0.4784
+        ]
+      },
+      "lila_kräftig": {
+        "label": "Lila kräftig",
+        "hex": "#911fad",
+        "tint": [
+          0.5686,
+          0.1216,
+          0.6784
+        ]
+      },
+      "lila_klar": {
+        "label": "Lila klar",
+        "hex": "#b43fd1",
+        "tint": [
+          0.7059,
+          0.2471,
+          0.8196
+        ]
+      },
+      "lila_hell": {
+        "label": "Lila hell",
+        "hex": "#d17ee6",
+        "tint": [
+          0.8196,
+          0.4941,
+          0.902
+        ]
+      },
+      "lila_pastell": {
+        "label": "Lila pastell",
+        "hex": "#e6b6f2",
+        "tint": [
+          0.902,
+          0.7137,
+          0.949
+        ]
+      },
+      "pflaume_dunkel": {
+        "label": "Pflaume dunkel",
+        "hex": "#52144d",
+        "tint": [
+          0.3216,
+          0.0784,
+          0.302
+        ]
+      },
+      "pflaume_tief": {
+        "label": "Pflaume tief",
+        "hex": "#7a1872",
+        "tint": [
+          0.4784,
+          0.0941,
+          0.4471
+        ]
+      },
+      "pflaume_kräftig": {
+        "label": "Pflaume kräftig",
+        "hex": "#ad1fa2",
+        "tint": [
+          0.6784,
+          0.1216,
+          0.6353
+        ]
+      },
+      "pflaume_klar": {
+        "label": "Pflaume klar",
+        "hex": "#d13fc5",
+        "tint": [
+          0.8196,
+          0.2471,
+          0.7725
+        ]
+      },
+      "pflaume_hell": {
+        "label": "Pflaume hell",
+        "hex": "#e67edd",
+        "tint": [
+          0.902,
+          0.4941,
+          0.8667
+        ]
+      },
+      "pflaume_pastell": {
+        "label": "Pflaume pastell",
+        "hex": "#f2b6ed",
+        "tint": [
+          0.949,
+          0.7137,
+          0.9294
+        ]
+      },
+      "magenta_dunkel": {
+        "label": "Magenta dunkel",
+        "hex": "#52143d",
+        "tint": [
+          0.3216,
+          0.0784,
+          0.2392
+        ]
+      },
+      "magenta_tief": {
+        "label": "Magenta tief",
+        "hex": "#7a185a",
+        "tint": [
+          0.4784,
+          0.0941,
+          0.3529
+        ]
+      },
+      "magenta_kräftig": {
+        "label": "Magenta kräftig",
+        "hex": "#ad1f7e",
+        "tint": [
+          0.6784,
+          0.1216,
+          0.4941
+        ]
+      },
+      "magenta_klar": {
+        "label": "Magenta klar",
+        "hex": "#d13fa0",
+        "tint": [
+          0.8196,
+          0.2471,
+          0.6275
+        ]
+      },
+      "magenta_hell": {
+        "label": "Magenta hell",
+        "hex": "#e67ec3",
+        "tint": [
+          0.902,
+          0.4941,
+          0.7647
+        ]
+      },
+      "magenta_pastell": {
+        "label": "Magenta pastell",
+        "hex": "#f2b6de",
+        "tint": [
+          0.949,
+          0.7137,
+          0.8706
+        ]
+      },
+      "rosa_dunkel": {
+        "label": "Rosa dunkel",
+        "hex": "#52142b",
+        "tint": [
+          0.3216,
+          0.0784,
+          0.1686
+        ]
+      },
+      "rosa_tief": {
+        "label": "Rosa tief",
+        "hex": "#7a183c",
+        "tint": [
+          0.4784,
+          0.0941,
+          0.2353
+        ]
+      },
+      "rosa_kräftig": {
+        "label": "Rosa kräftig",
+        "hex": "#ad1f53",
+        "tint": [
+          0.6784,
+          0.1216,
+          0.3255
+        ]
+      },
+      "rosa_klar": {
+        "label": "Rosa klar",
+        "hex": "#d13f74",
+        "tint": [
+          0.8196,
+          0.2471,
+          0.4549
+        ]
+      },
+      "rosa_hell": {
+        "label": "Rosa hell",
+        "hex": "#e67ea4",
+        "tint": [
+          0.902,
+          0.4941,
+          0.6431
+        ]
+      },
+      "rosa_pastell": {
+        "label": "Rosa pastell",
+        "hex": "#f2b6cc",
+        "tint": [
+          0.949,
+          0.7137,
+          0.8
+        ]
+      },
+      "braun_dunkel": {
+        "label": "Dunkelbraun",
+        "hex": "#3b2416",
+        "tint": [
+          0.2314,
+          0.1412,
+          0.0863
+        ]
+      },
+      "schoko": {
+        "label": "Schokolade",
+        "hex": "#4f2e1c",
+        "tint": [
+          0.3098,
+          0.1804,
+          0.1098
+        ]
+      },
+      "kastanie": {
+        "label": "Kastanie",
+        "hex": "#6e3420",
+        "tint": [
+          0.4314,
+          0.2039,
+          0.1255
+        ]
+      },
+      "rostbraun": {
+        "label": "Rostbraun",
+        "hex": "#8a4a24",
+        "tint": [
+          0.5412,
+          0.2902,
+          0.1412
+        ]
+      },
+      "cognac": {
+        "label": "Cognac",
+        "hex": "#a0602e",
+        "tint": [
+          0.6275,
+          0.3765,
+          0.1804
+        ]
+      },
+      "karamell": {
+        "label": "Karamell",
+        "hex": "#b97a3c",
+        "tint": [
+          0.7255,
+          0.4784,
+          0.2353
+        ]
+      },
+      "sand": {
+        "label": "Sand",
+        "hex": "#d8bf8e",
+        "tint": [
+          0.8471,
+          0.749,
+          0.5569
+        ]
+      },
+      "khaki": {
+        "label": "Khaki",
+        "hex": "#a99a63",
+        "tint": [
+          0.6627,
+          0.6039,
+          0.3882
+        ]
+      },
+      "taupe": {
+        "label": "Taupe",
+        "hex": "#8b7d6b",
+        "tint": [
+          0.5451,
+          0.4902,
+          0.4196
+        ]
+      },
+      "camel": {
+        "label": "Camel",
+        "hex": "#c19a6b",
+        "tint": [
+          0.7569,
+          0.6039,
+          0.4196
+        ]
+      },
+      "leinen": {
+        "label": "Leinen",
+        "hex": "#e9dfc8",
+        "tint": [
+          0.9137,
+          0.8745,
+          0.7843
+        ]
+      },
+      "elfenbein": {
+        "label": "Elfenbein",
+        "hex": "#f4efdc",
+        "tint": [
+          0.9569,
+          0.9373,
+          0.8627
+        ]
+      },
+      "oliv_dunkel": {
+        "label": "Dunkeloliv",
+        "hex": "#4b5320",
+        "tint": [
+          0.2941,
+          0.3255,
+          0.1255
+        ]
+      },
+      "moos": {
+        "label": "Moos",
+        "hex": "#6b7b3a",
+        "tint": [
+          0.4196,
+          0.4824,
+          0.2275
+        ]
+      },
+      "salbei": {
+        "label": "Salbei",
+        "hex": "#9cae88",
+        "tint": [
+          0.6118,
+          0.6824,
+          0.5333
+        ]
+      },
+      "jeans": {
+        "label": "Jeansblau",
+        "hex": "#46628c",
+        "tint": [
+          0.2745,
+          0.3843,
+          0.549
+        ]
+      },
+      "jeans_hell": {
+        "label": "Helles Jeans",
+        "hex": "#7895b8",
+        "tint": [
+          0.4706,
+          0.5843,
+          0.7216
+        ]
+      },
+      "weinrot": {
+        "label": "Weinrot",
+        "hex": "#6d1f2c",
+        "tint": [
+          0.4275,
+          0.1216,
+          0.1725
+        ]
+      },
+      "bordeaux": {
+        "label": "Bordeaux",
+        "hex": "#5a1630",
+        "tint": [
+          0.3529,
+          0.0863,
+          0.1882
+        ]
+      },
+      "senf": {
+        "label": "Senf",
+        "hex": "#c79a22",
+        "tint": [
+          0.7804,
+          0.6039,
+          0.1333
+        ]
+      },
+      "terrakotta": {
+        "label": "Terrakotta",
+        "hex": "#c0603c",
+        "tint": [
+          0.7529,
+          0.3765,
+          0.2353
+        ]
+      },
+      "ziegel": {
+        "label": "Ziegelrot",
+        "hex": "#a2432e",
+        "tint": [
+          0.6353,
+          0.2627,
+          0.1804
+        ]
+      }
     }
   },
   "slots": {
@@ -1455,7 +2960,7 @@
         "beanie": {
           "label": "Mütze",
           "layer": "hat_beanie",
-          "palette": "beanie"
+          "palette": "cloth"
         },
         "straw_hat": {
           "label": "Strohhut",
@@ -1474,7 +2979,7 @@
         "bow": {
           "label": "Schleife",
           "layer": "bow",
-          "palette": "bow"
+          "palette": "cloth"
         }
       }
     },
@@ -1488,12 +2993,12 @@
         "shirt": {
           "label": "Shirt",
           "layer": "shirt",
-          "palette": "shirt"
+          "palette": "cloth"
         },
         "dress": {
           "label": "Kleid",
           "layer": "dress",
-          "palette": "dress"
+          "palette": "cloth"
         }
       }
     },
@@ -1507,7 +3012,7 @@
         "long": {
           "label": "Lange Ärmel",
           "layer": "sleeves",
-          "palette": "sleeves"
+          "palette": "cloth"
         }
       }
     },
@@ -1521,7 +3026,7 @@
         "suit": {
           "label": "Overall",
           "layer": "suit",
-          "palette": "suit"
+          "palette": "cloth"
         }
       }
     },
@@ -1535,7 +3040,7 @@
         "pants": {
           "label": "Hose",
           "layer": "pants",
-          "palette": "pants"
+          "palette": "cloth"
         }
       }
     },
@@ -1622,7 +3127,7 @@
         "bag": {
           "label": "Umhängetasche",
           "layer": "bag",
-          "palette": "bag"
+          "palette": "cloth"
         }
       }
     },
@@ -1636,7 +3141,7 @@
         "scarf": {
           "label": "Schal",
           "layer": "scarf",
-          "palette": "scarf"
+          "palette": "cloth"
         }
       }
     },
@@ -1650,7 +3155,7 @@
         "bowtie": {
           "label": "Fliege",
           "layer": "bowtie",
-          "palette": "bowtie"
+          "palette": "cloth"
         }
       }
     },
@@ -3275,5 +4780,9 @@
         1
       ]
     ]
+  },
+  "palette_modes": {
+    "_comment": "ramp = colour from the palette, shading from the brightness of the Blank layer (shaders/cloth_recolor.gdshader); default = Penzilla multiply tint (skin, hair).",
+    "cloth": "ramp"
   }
 }

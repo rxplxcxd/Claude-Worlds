@@ -767,7 +767,7 @@
     "pool_default_type": "farm_shop"
   },
   "demography": {
-    "_comment": "Aging: 1 year of age per 28 real days (daily routines stay real time). Gompertz mortality per year of age; Phase 4 arrivals of new settlers; partnerships/births = Phase 5, migration between settlements = Phase 8.",
+    "_comment": "Aging: 1 year of age per 60 real days (docs/LIVING_WORLD.md L-2) (daily routines stay real time). Gompertz mortality per year of age; Phase 4 arrivals of new settlers; partnerships/births = Phase 5, migration between settlements = Phase 8.",
     "days_per_year": 60,
     "gompertz_a": 5e-05,
     "gompertz_b": 0.09,

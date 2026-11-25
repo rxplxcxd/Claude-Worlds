@@ -71,7 +71,7 @@ func region(region_id: String) -> Dictionary:
 
 
 func region_at(lat: float, lon: float) -> Dictionary:
-	var r := region_of[cell_of(lat, lon)]
+	var r := region_of[cell_at(lat, lon)]
 	return regions[r - 1] if r > 0 else {}
 
 
@@ -82,21 +82,86 @@ func continent(continent_id: String) -> Dictionary:
 	return {}
 
 
-## Everything known about one point (for the info panel and site rating).
-func sample(lat: float, lon: float) -> Dictionary:
+# --- what the globe SHOWS (consistent picking) -----------------------------------
+## The globe draws the coast from the bilinearly interpolated height texture
+## (PlanetTextures.height_image + shaders/globe.gdshader, sea at 128/255).
+## Land/water at a precise point is decided the same way, so a tap on drawn
+## land is land and a tap on drawn water is water – also between the 49-km
+## cell centres. Cell centres give exactly the cell value (no change there).
+const SEA_LEVEL := 128.0 / 255.0
+var _disp := PackedFloat32Array()
+
+
+func display_level(i: int) -> float:
+	var e := elevation_m[i]
+	var v := 128.0 + (e / 4800.0 * 127.0 if e >= 0.0 else e / 5200.0 * 128.0)
+	if biome[i] == Biome.LAKE:
+		v = minf(v, 120.0)
+	elif biome[i] != Biome.OCEAN:
+		v = maxf(v, 131.0)
+	return clampf(v, 0.0, 255.0) / 255.0
+
+
+func _texels(lat: float, lon: float) -> Array:
+	if _disp.size() != elevation_m.size():
+		_disp.resize(elevation_m.size())
+		for k in elevation_m.size():
+			_disp[k] = display_level(k)
+	var fx: float = (Geo.wrap_lon(lon) + 180.0) / 360.0 * width - 0.5
+	var fy: float = (90.0 - lat) / 180.0 * height - 0.5
+	var x0 := int(floor(fx))
+	var y0 := clampi(int(floor(fy)), 0, height - 1)
+	var y1 := clampi(y0 + 1, 0, height - 1)
+	var tx: float = fx - floor(fx)
+	var ty: float = clampf(fy - floor(fy), 0.0, 1.0) if fy >= 0.0 else 0.0
+	return [[index(x0, y0), (1.0 - tx) * (1.0 - ty)], [index(x0 + 1, y0), tx * (1.0 - ty)], [index(x0, y1), (1.0 - tx) * ty], [index(x0 + 1, y1), tx * ty]]
+
+
+## Interpolated display height 0..1 (sea level 128/255) at a precise point.
+func display_value_at(lat: float, lon: float) -> float:
+	var v := 0.0
+	for t in _texels(lat, lon):
+		v += _disp[int(t[0])] * float(t[1])
+	return v
+
+
+func is_land_at(lat: float, lon: float) -> bool:
+	return display_value_at(lat, lon) >= SEA_LEVEL
+
+
+## The data cell for a precise point: the nearest cell, unless the drawn
+## coast puts the point on the other side – then the heaviest neighbouring
+## cell of the drawn kind (land or water).
+func cell_at(lat: float, lon: float) -> int:
 	var i := cell_of(lat, lon)
+	var land := is_land_at(lat, lon)
+	if is_land(i) == land:
+		return i
+	var best := -1
+	var best_w := -1.0
+	for t in _texels(lat, lon):
+		if is_land(int(t[0])) == land and float(t[1]) > best_w:
+			best_w = float(t[1])
+			best = int(t[0])
+	return best if best >= 0 else i
+
+
+## Everything known about one point (for the info panel and site rating).
+## Consistent with what the globe shows at that exact point.
+func sample(lat: float, lon: float) -> Dictionary:
+	var i := cell_at(lat, lon)
 	var r := region_of[i]
 	var c := continent_of[i]
 	return {
 		"lat": lat, "lon": lon,
 		"biome": BIOME_IDS[biome[i]],
 		"biome_label": BIOME_LABELS[biome[i]],
-		"land": is_land(i),
+		"land": is_land_at(lat, lon),
 		"elevation_m": elevation_m[i],
 		"temperature_c": temperature_c[i],
 		"rainfall": rainfall[i],
 		"river": river[i] == 1,
-		"coastal": coastal[i] == 1,
+		"coastal": coastal[i] == 1 or (is_land_at(lat, lon) and _texels(lat, lon).any(func(t): return not is_land(int(t[0])))),
 		"region_id": regions[r - 1]["region_id"] if r > 0 else "",
 		"continent_id": continents[c - 1]["continent_id"] if c > 0 else "",
 	}

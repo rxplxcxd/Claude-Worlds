@@ -199,7 +199,7 @@ func _build_ui() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
 	actions.add_child(row)
-	_suggest_button = _button("Vorschlag", "Springt zum am besten bewerteten freien Ort")
+	_suggest_button = _button("Vorschlag", "Zeigt nacheinander gut bewertete, verschiedene freie Orte")
 	_suggest_button.pressed.connect(suggest_site)
 	row.add_child(_suggest_button)
 	_found_button = _button("Hier gründen", "Siedlung an diesem Ort gründen")
@@ -301,13 +301,23 @@ func select_point(lat: float, lon: float) -> void:
 	_refresh_panel(lat, lon)
 
 
+var _suggestions: Array = []
+var _suggest_index := -1
+
+
+## Each press shows the next good site (different places, best first; after
+## the last one it starts again). Any other point can still be tapped.
 func suggest_site() -> void:
-	var site := Geography.best_site(WorldState.get_settlements(), WorldState.get_territories())
-	if site.is_empty():
+	if _suggestions.is_empty():
+		_suggestions = Geography.good_sites(WorldState.get_settlements(), WorldState.get_territories())
+	if _suggestions.is_empty():
 		return
-	var s: Dictionary = site["sample"]
+	_suggest_index = (_suggest_index + 1) % _suggestions.size()
+	var s: Dictionary = _suggestions[_suggest_index]["sample"]
 	view.focus(s["lat"], s["lon"], 1.75)
 	select_point(s["lat"], s["lon"])
+	if _suggest_button:
+		_suggest_button.text = "Vorschlag %d/%d" % [_suggest_index + 1, _suggestions.size()]
 
 
 func _on_found_pressed() -> void:

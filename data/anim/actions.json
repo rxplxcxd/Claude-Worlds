@@ -230,14 +230,14 @@
   "stairs_up": {
    "label": "Hinaufgehen",
    "verb": "Treppe hinauf",
-   "clip": "walk",
+   "clip": "use",
    "toast": "Du gehst die Treppe hinauf.",
    "floor": 1
   },
   "stairs_down": {
    "label": "Hinuntergehen",
    "verb": "Treppe hinunter",
-   "clip": "walk",
+   "clip": "use",
    "toast": "Du gehst die Treppe hinunter.",
    "floor": -1
   }

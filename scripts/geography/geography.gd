@@ -57,6 +57,12 @@ func rate_site(lat: float, lon: float, settlements: Array, territories: Array, i
 		land_ok = land_ok and p.is_land_at(float(c[0]), float(c[1]))
 	if not land_ok:
 		reasons.append("Hier ist Wasser – eine Siedlung braucht Land.")
+	# Reserved ground of a world landmark (World Council: room for the complex,
+	# its extensions and future airport, stations, roads – WORLD_COUNCIL.md §3).
+	var lm := Landmarks.reserved_at(lat, lon, p.radius_km, TerritoryGeometry.START_SIZE_KM)
+	if not lm.is_empty():
+		reasons.append("Schutzgebiet: %s (%s) – hier wird nicht gesiedelt." % [lm.get("subtitle", ""), lm.get("site_name", "")])
+		out["landmark"] = lm["landmark_id"]
 	# 2) 20 km between territory borders (geodesic), no overlap.
 	var nb := TerritoryGeometry.nearest_border(ring, territories, p.radius_km, ignore_settlement_id)
 	var gap: float = nb["distance_km"]

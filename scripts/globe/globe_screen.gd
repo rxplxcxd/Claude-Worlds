@@ -276,6 +276,10 @@ func _refresh_overlays() -> void:
 		if s.has("position"):
 			markers.append({"lat": s["position"]["lat"], "lon": s["position"]["lon"], "name": s.get("name", ""), "own": (s.get("resident_player_ids", []) as Array).has(LocalProfile.player_id)})
 	labels.settlements = markers
+	var lms: Array = []
+	for d in Landmarks.all():
+		lms.append({"landmark_id": d["landmark_id"], "lat": d["position"]["lat"], "lon": d["position"]["lon"], "name": d["name"], "subtitle": d["subtitle"], "reserve_km": d.get("reserve_radius_km", 18.0)})
+	labels.landmarks = lms
 	labels.candidate = {"lat": candidate["sample"]["lat"], "lon": candidate["sample"]["lon"]} if not candidate.is_empty() else {}
 	labels.candidate_valid = candidate.get("valid", true)
 
@@ -283,6 +287,10 @@ func _refresh_overlays() -> void:
 # --- interaction -------------------------------------------------------------
 
 func _on_tap(pos: Vector2) -> void:
+	var lm_id := labels.landmark_at(pos)
+	if lm_id != "":
+		select_landmark(lm_id)
+		return
 	var ll := view.pick(pos)
 	if is_nan(ll.x):
 		return
@@ -299,6 +307,31 @@ func select_point(lat: float, lon: float) -> void:
 		candidate = Geography.rate_site(lat, lon, WorldState.get_settlements(), WorldState.get_territories())
 	_refresh_overlays()
 	_refresh_panel(lat, lon)
+
+
+## Shows a world landmark (World Council): its point is selected like any
+## other (rating in found mode says "Schutzgebiet"), the panel describes it.
+func select_landmark(landmark_id: String) -> void:
+	var d := Landmarks.get_def(landmark_id)
+	if d.is_empty():
+		return
+	var ll := Landmarks.position_of(landmark_id)
+	select_point(ll.x, ll.y)
+	var st := WorldState.landmark_state(landmark_id)
+	var stage_label := ""
+	for sg in d.get("stages", []):
+		if int(sg["stage"]) == int(st.get("stage", 1)):
+			stage_label = sg["label"]
+	var t := "[b][color=#e0b64a]%s[/color][/b]\n[color=#b9b4a8]%s[/color]\n\n" % [d["name"], d["subtitle"]]
+	t += Landmarks.describe(landmark_id, int(Time.get_unix_time_from_system())).split("\n", false, 1)[1] + "\n"
+	t += "Zustand: Stufe %d – %s\n" % [int(st.get("stage", 1)), stage_label]
+	t += "Position: %s\n" % Geo.format(ll.x, ll.y)
+	t += "Klima: warm-gemäßigt, Ø %d °C · Meer ca. %d km im Südwesten\n" % [int(d["site_choice"]["temperature_c"]), int(d["site_choice"]["coast_km"])]
+	t += "\n[color=#9a958a]Entwicklungsstand: Reisen dorthin (Phase 8), Restaurierung (Phase 7) und die Weltversammlung (Phase 10) folgen in späteren Phasen.[/color]"
+	if mode == "found":
+		_info.text = t + "\n\n" + _info.text
+	else:
+		_info.text = t
 
 
 var _suggestions: Array = []

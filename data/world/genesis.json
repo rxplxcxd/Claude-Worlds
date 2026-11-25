@@ -7,7 +7,8 @@
   "rules": {
     "initial_settlements": 0,
     "settlement_requires_human_founder": true,
-    "npc_only_settlements_allowed": false
+    "npc_only_settlements_allowed": false,
+    "landmarks_are_not_settlements": true
   },
   "settlements": [],
   "planet": {
@@ -16,5 +17,6 @@
     "generator_version": 2,
     "baked_data": "res://data/world/planet/",
     "_comment": "Nature only. The planet is generated ONCE from this seed (scripts/geography/planet_generator.gd) and baked into data/world/planet/. Changing seed or generator requires re-baking and migrating stored settlement positions."
-  }
+  },
+  "landmarks": "res://data/world/landmarks.json"
 }

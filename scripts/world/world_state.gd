@@ -44,6 +44,9 @@ var _settlements: Array[Dictionary] = []
 ## Territories: {territory_id, owner_settlement_id, owner_player_id,
 ## region_ids[], kind, claimed_at_unix}. Created by founding only.
 var _territories: Array[Dictionary] = []
+## Changeable state of the fixed world landmarks (Landmarks), by landmark_id.
+## Persistent: a restored fountain stays restored, damage stays (WORLD_COUNCIL.md §7).
+var _landmark_state: Dictionary = {}
 ## Set when load_world() moved an old settlement onto the planet.
 var migrated_settlement_ids: Array[String] = []
 ## Set when load_world() converted a Phase-2 region claim into a 1 km² territory.
@@ -81,6 +84,7 @@ func _process(delta: float) -> void:
 func load_world() -> void:
 	_settlements.clear()
 	_territories.clear()
+	_landmark_state.clear()
 	migrated_settlement_ids.clear()
 	migrated_territory_ids.clear()
 	var genesis := _read_json(GENESIS_PATH)
@@ -100,6 +104,10 @@ func load_world() -> void:
 			push_warning("WorldState: dropped invalid settlement record: " + _check_record(s))
 	for t in saved.get("territories", []):
 		_territories.append(t)
+	var ls: Dictionary = saved.get("landmarks", {})
+	for id in ls.keys():
+		if not Landmarks.get_def(id).is_empty():
+			_landmark_state[id] = ls[id]
 	_migrate_territories()
 	_migrate_positions()
 
@@ -311,7 +319,18 @@ func save_world() -> void:
 	if f == null:
 		push_warning("WorldState: could not save (%s)" % error_string(FileAccess.get_open_error()))
 		return
-	f.store_string(JSON.stringify({"schema_version": SCHEMA_VERSION, "world_id": world_id, "settlements": _settlements, "territories": _territories}, "  ", true, true))
+	f.store_string(JSON.stringify({"schema_version": SCHEMA_VERSION, "world_id": world_id, "settlements": _settlements, "territories": _territories, "landmarks": _landmark_state}, "  ", true, true))
+
+
+## State of a fixed landmark (stage, components, extensions, decisions,
+## history). Created from the definition on first use; read-only for the
+## client – changes come from the world authority (later phases).
+func landmark_state(landmark_id: String) -> Dictionary:
+	if not _landmark_state.has(landmark_id):
+		if Landmarks.get_def(landmark_id).is_empty():
+			return {}
+		_landmark_state[landmark_id] = Landmarks.initial_state(landmark_id)
+	return _landmark_state[landmark_id]
 
 
 ## Switches storage (used by tests so the real local world is untouched).

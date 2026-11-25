@@ -1,0 +1,53 @@
+{
+  "_comment": "Fixed world landmarks: part of the persistent WORLD DEFINITION (same for every client and the future server, never re-rolled). Landmarks are uninhabited historic sites, NOT settlements - the empty-planet rule (genesis.json) is unaffected. Their CHANGEABLE state (restoration, damage, extensions, decisions) lives in the world state (WorldState.landmark_state / later Firestore landmarks/{id}), changed only by the world authority. See docs/WORLD_COUNCIL.md.",
+  "schema_version": 1,
+  "landmarks": [
+    {
+      "landmark_id": "lmk_world_council",
+      "kind": "world_council",
+      "name": "WORLD COUNCIL",
+      "subtitle": "Internationaler Weltratssitz",
+      "site_name": "Concordium von Kalistia",
+      "continent_id": "cnt_05",
+      "continent_name": "Kalistia",
+      "region_id": "reg_139",
+      "position": {"lat": 28.28, "lon": 137.36},
+      "site_choice": {
+        "tool": "tools/world/council_site.gd",
+        "elevation_m": 162,
+        "temperature_c": 16,
+        "rainfall": 0.56,
+        "biome": "plain",
+        "coast_km": 30,
+        "rise_towards": "Nordosten, sanfte Hügel bis +218 m (Aquädukt-Quelle, Aussicht)",
+        "sea_towards": "Südwesten, Bucht in ca. 30 km (Hafen)"
+      },
+      "reserve_radius_km": 18.0,
+      "_reserve_comment": "No settlement territory may be founded inside this radius: room for the complex, its extensions, airport, stations, roads, hotels (docs/WORLD_COUNCIL.md §3). Infrastructure is NOT built automatically.",
+      "site_tiles": [48, 48],
+      "assembly": {"month": 6, "day": 24, "time_basis": "world_time_utc", "duration_days": 1},
+      "initial_stage": 1,
+      "stages": [
+        {"stage": 1, "id": "historic", "label": "Historische Anlage"},
+        {"stage": 2, "id": "first_restoration", "label": "Erste Restaurierung"},
+        {"stage": 3, "id": "international_centre", "label": "Internationales Zentrum"},
+        {"stage": 4, "id": "monumental_seat", "label": "Monumentaler Weltratssitz"}
+      ],
+      "components": [
+        {"id": "assembly_hall", "label": "Große Versammlungsrotunde", "condition": 0.62, "access": "closed"},
+        {"id": "portico", "label": "Säulenportikus mit Giebel", "condition": 0.7, "access": "open"},
+        {"id": "grand_stairs", "label": "Große Freitreppe", "condition": 0.66, "access": "open"},
+        {"id": "forum", "label": "Forum (Hauptplatz)", "condition": 0.55, "access": "open"},
+        {"id": "canal", "label": "Wasserkanal und Kaskade", "condition": 0.35, "access": "open"},
+        {"id": "great_fountain", "label": "Großer Brunnen", "condition": 0.3, "access": "open"},
+        {"id": "stoa_west", "label": "Westliche Säulenhalle", "condition": 0.5, "access": "open"},
+        {"id": "stoa_east", "label": "Östliche Säulenhalle", "condition": 0.4, "access": "open"},
+        {"id": "palace_west", "label": "Westflügel (Delegationen)", "condition": 0.55, "access": "closed"},
+        {"id": "palace_east", "label": "Ostflügel (Diplomatie)", "condition": 0.45, "access": "closed"},
+        {"id": "gardens", "label": "Gärten und Terrassen", "condition": 0.3, "access": "open"},
+        {"id": "statues", "label": "Statuen und Reliefs", "condition": 0.4, "access": "open"},
+        {"id": "aqueduct", "label": "Aquädukt (Wasserzufuhr)", "condition": 0.25, "access": "closed"}
+      ]
+    }
+  ]
+}

@@ -197,19 +197,46 @@ func _centre_of(cells: Array[Vector2i]) -> Vector2i:
 	return best
 
 
+static var _door_spec: Dictionary = {}
+
+
+## The cell in front of the door that is drawn on the building sprite
+## (data/doors/doors.json → nav_by_type), so people walk to the real door.
+static func door_spec(building_type: String) -> Dictionary:
+	if _door_spec.is_empty():
+		var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/doors/doors.json"))
+		_door_spec = d.get("nav_by_type", {}) if d is Dictionary else {}
+	return _door_spec.get(building_type, {})
+
+
+static func door_front_cell(b: Dictionary) -> Vector2i:
+	var spec := door_spec(str(b.get("type", "")))
+	var g: Vector2 = b["grid_v"]
+	var f: Vector2 = b["footprint_v"]
+	if spec.is_empty():
+		return Vector2i(-1, -1)
+	var t := clampf(float(spec.get("t", 0.5)), 0.0, 0.999)
+	if spec.get("face", "left") == "left":
+		return Vector2i(int(g.x) + int(t * f.x), int(g.y + f.y))
+	return Vector2i(int(g.x + f.x), int(g.y + f.y) - 1 - int(t * f.y))
+
+
 func _door_cell(b: Dictionary) -> Vector2i:
+	var front := door_front_cell(b)
+	if front.x >= 0 and is_walkable(front):
+		return front
 	for c in StreetPlanner.entrance_cells(b):
 		if is_walkable(c):
 			return c
 	# fallback: nearest walkable cell to the front of the building
 	var g: Vector2 = b["grid_v"]
 	var f: Vector2 = b["footprint_v"]
-	var front := Vector2(g.x + f.x * 0.5, g.y + f.y + 0.5)
+	var front_v := Vector2(g.x + f.x * 0.5, g.y + f.y + 0.5)
 	var best := Vector2i(-1, -1)
 	for y in range(int(g.y) - 2, int(g.y + f.y) + 3):
 		for x in range(int(g.x) - 2, int(g.x + f.x) + 3):
 			var c := Vector2i(x, y)
-			if is_walkable(c) and (best.x < 0 or Vector2(c).distance_to(front) < Vector2(best).distance_to(front)):
+			if is_walkable(c) and (best.x < 0 or Vector2(c).distance_to(front_v) < Vector2(best).distance_to(front_v)):
 				best = c
 	return best
 

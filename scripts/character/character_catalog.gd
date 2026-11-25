@@ -61,6 +61,11 @@ func anim_info(anim: String) -> Dictionary:
 	return data.get("anims", {}).get(anim, {})
 
 
+## Animation clip from the library (data/character_catalog.json "clips"), {} if none.
+func clip(id: String) -> Dictionary:
+	return data.get("clips", {}).get(id, {})
+
+
 # --- appearance ---------------------------------------------------------
 
 func default_appearance() -> Dictionary:
@@ -106,6 +111,31 @@ func tint_color(palette_name: String, color_id: String) -> Color:
 	return Color(float(t[0]), float(t[1]), float(t[2]))
 
 
+const RECOLOR_SHADER := preload("res://shaders/cloth_recolor.gdshader")
+var _recolor_materials: Dictionary = {}
+
+
+## Shared material per palette colour (keeps batching: one per colour).
+func recolor_material(c: Color) -> ShaderMaterial:
+	var key := c.to_html(false)
+	if not _recolor_materials.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = RECOLOR_SHADER
+		m.set_shader_parameter("target", Vector3(c.r, c.g, c.b))
+		_recolor_materials[key] = m
+	return _recolor_materials[key]
+
+
+## Applies a layer's colour to a sprite: palette ramp (clothing) or the
+## Penzilla multiply tint (skin, hair).
+func apply_layer_color(s: CanvasItem, layer: Dictionary) -> void:
+	if layer.get("recolor", false):
+		s.self_modulate = Color.WHITE
+		s.material = recolor_material(layer["modulate"])
+	else:
+		s.self_modulate = layer["modulate"]
+
+
 ## Display colour for a swatch (the tint applied to white).
 func swatch_color(slot: String, option_id: String, color_id: String) -> Color:
 	var opt := option(slot, option_id)
@@ -144,12 +174,14 @@ func layers_for(app: Dictionary, anim: String, face_override: String = "") -> Ar
 			continue
 		var layer_slot: String = data["slots"][slot].get("layer_slot", slot)
 		var mod := Color.WHITE
+		var ramp := false
 		if opt.has("palette"):
 			mod = tint_color(opt["palette"], str(sel.get("color", "")))
+			ramp = str(data.get("palette_modes", {}).get(opt["palette"], "")) == "ramp"
 		var item: String = opt["layer"]
 		if slot == "face" and face_override != "":
 			item = face_override
-		by_slot[layer_slot] = {"item": item, "modulate": mod}
+		by_slot[layer_slot] = {"item": item, "modulate": mod, "recolor": ramp}
 		if opt.has("back_layer"):
 			by_slot["tool_back"] = {"item": opt["back_layer"], "modulate": Color.WHITE}
 	var out: Array = []
@@ -158,7 +190,7 @@ func layers_for(app: Dictionary, anim: String, face_override: String = "") -> Ar
 			continue
 		var tex := layer_texture(anim, by_slot[layer_slot]["item"])
 		if tex:
-			out.append({"slot": layer_slot, "item": by_slot[layer_slot]["item"], "texture": tex, "modulate": by_slot[layer_slot]["modulate"]})
+			out.append({"slot": layer_slot, "item": by_slot[layer_slot]["item"], "texture": tex, "modulate": by_slot[layer_slot]["modulate"], "recolor": by_slot[layer_slot].get("recolor", false)})
 	return out
 
 

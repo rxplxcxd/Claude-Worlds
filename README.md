@@ -1,10 +1,12 @@
-# WORLDS
+# WORLDS · v0.1
+
+> Aktueller Stand: **v0.1** (technisch 0.6.0) – siehe [CHANGELOG.md](CHANGELOG.md) und [docs/VERSIONING.md](docs/VERSIONING.md).
 
 **Lebendige, persistente Gesellschafts-, Wirtschafts- und Zivilisationssimulation**
 2.5D-isometrische Lebens-, Aufbau- und Gesellschaftssimulation · Godot 4.7.2 · GDScript · Web / iOS Safari / PWA
 
-> **Projektstatus: Phase 2 + Paket 2.1, Version 0.4.0** (zur Abnahme durch den Projektinhaber). Phase 3 ist **nicht** freigegeben.
-> Spätere Phasen sind dokumentiert, aber **nicht implementiert**.
+> **Projektstatus v0.1:** Phasen 1–3 umgesetzt, Architekturkorrekturen (Weltautorität), **Phase 4 (Settlement Foundation) umgesetzt – Abnahme durch den Projektinhaber offen**. Phasen 5 ff. sind dokumentiert, aber **nicht implementiert**.
+> Neu in v0.1: Innenräume, Türen, Animationsbibliothek, Umland, Globus-Präzision, Farbpalette – [docs/INTERIORS_AND_INTERACTION.md](docs/INTERIORS_AND_INTERACTION.md).
 
 ## Was Phase 1 enthält (implementiert)
 

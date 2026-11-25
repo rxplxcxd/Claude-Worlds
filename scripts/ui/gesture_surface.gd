@@ -26,6 +26,10 @@ var _dragging := false
 var _pinch_dist := 0.0
 var _pinch_center := Vector2.ZERO
 
+var _multi_seq := false        # this touch sequence had 2+ fingers at some point
+var _block_tap_until := 0.0    # no taps shortly after a pinch / multi-touch
+const TAP_COOLDOWN := 0.35
+
 var _mouse_down := false
 var _mouse_pan_button := false
 
@@ -63,17 +67,23 @@ func _on_touch(e: InputEventScreenTouch) -> void:
 		if _touches.size() == 1:
 			_start_pos = e.position
 			_start_time = _now()
-			_tap_candidate = true
+			_tap_candidate = not _multi_seq
 			_dragging = false
-		elif _touches.size() == 2:
-			_tap_candidate = false
+		elif _touches.size() >= 2:
+			_mark_multi()
 			_begin_pinch()
 	else:
 		var was_single := _touches.size() == 1
 		_touches.erase(e.index)
-		if was_single and _tap_candidate and _now() - _start_time <= TAP_MAX_TIME:
+		# a tap = one finger, short, hardly moved, never part of a pinch
+		if was_single and _tap_candidate and not _multi_seq and _now() - _start_time <= TAP_MAX_TIME \
+				and e.position.distance_to(_start_pos) <= TAP_SLOP and _now() >= _block_tap_until:
 			tapped.emit(e.position)
 		_tap_candidate = false
+		if _touches.is_empty():
+			if _multi_seq:
+				_block_tap_until = _now() + TAP_COOLDOWN
+			_multi_seq = false
 		if _touches.size() == 1:
 			# Continue as a one-finger drag without jumping.
 			_start_pos = _touches.values()[0]
@@ -82,9 +92,15 @@ func _on_touch(e: InputEventScreenTouch) -> void:
 			_begin_pinch()
 
 
+func _mark_multi() -> void:
+	_multi_seq = true
+	_tap_candidate = false
+
+
 func _on_drag(e: InputEventScreenDrag) -> void:
-	if not _touches.has(e.index):
-		_touches[e.index] = e.position
+	if not _touches.has(e.index) and not _touches.is_empty():
+		# a second finger whose "down" event did not arrive (seen on Safari)
+		_mark_multi()
 	_touches[e.index] = e.position
 	if _touches.size() == 1:
 		if not _dragging and e.position.distance_to(_start_pos) > TAP_SLOP:

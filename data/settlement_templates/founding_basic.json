@@ -348,7 +348,8 @@
       "roof_color": "#9fd0c0",
       "accent": "#5b8c5a",
       "function": "Lebensmittelproduktion",
-      "text": "Hier wird geerntet, was auf den Feldern nebenan wächst, und an die Bewohner von {settlement} verteilt.\n\n[i]Produktion folgt ab Phase 4/6.[/i]"
+      "text": "Hier wird geerntet, was auf den Feldern nebenan wächst, und an die Bewohner von {settlement} verteilt.\n\n[i]Produktion folgt ab Phase 4/6.[/i]",
+      "business": "farm_shop"
     },
     {
       "id": "bld_player_home",
@@ -562,8 +563,9 @@
       "roof_color": "#7a5a3a",
       "accent": "#6b4e3a",
       "function": "Laden der Gründungsgemeinschaft · Brot und Gebäck",
-      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 5).[/i]",
-      "variant": 0
+      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 6).[/i]",
+      "variant": 0,
+      "business": "bakery"
     },
     {
       "id": "bld_shop_grocer",
@@ -583,8 +585,9 @@
       "roof_color": "#7a5a3a",
       "accent": "#6b4e3a",
       "function": "Laden der Gründungsgemeinschaft · Lebensmittel und Dinge des Alltags",
-      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 5).[/i]",
-      "variant": 1
+      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 6).[/i]",
+      "variant": 1,
+      "business": "grocer"
     },
     {
       "id": "bld_shop_smith",
@@ -604,8 +607,9 @@
       "roof_color": "#7a5a3a",
       "accent": "#6b4e3a",
       "function": "Laden der Gründungsgemeinschaft · Werkzeug, Nägel, Reparaturen",
-      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 5).[/i]",
-      "variant": 2
+      "text": "Ein kleiner Laden in der Marktzeile von {settlement}. Hier arbeitet die Gründungsgemeinschaft.\n\n[i]Einkaufen, Preise und eigene Läden von Spielerinnen und Spielern folgen mit der Wirtschaft (Phase 6).[/i]",
+      "variant": 2,
+      "business": "smith"
     }
   ],
   "props": [

@@ -647,6 +647,9 @@ func _run() -> void:
 	_test_living_world()
 	_test_world_authority()
 	_test_animations()
+	_test_settlement_foundation()
+	await _test_gameplay_polish()
+	await _test_world_council()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
@@ -996,6 +999,32 @@ func _test_animations() -> void:
 	if not root_has_character_assets():
 		print("       (Penzilla character layers not imported – texture checks skipped)")
 		return
+	# facing: measure on the real sheet which way row 2 looks, then check that
+	# joystick right/left end up facing right/left on screen
+	var face_img: Image = (cat.layer_texture("idle", "face_regular") as Texture2D).get_image()
+	var body_img: Image = (cat.layer_texture("idle", "body") as Texture2D).get_image()
+	var fsz: Vector2 = cat.frame_size("idle")
+	var cx := func(img: Image, row: int) -> float:
+		var sum := 0.0
+		var n := 0
+		for y in range(int(row * fsz.y), int((row + 1) * fsz.y)):
+			for x in int(fsz.x):
+				if img.get_pixel(x, y).a > 0.5:
+					sum += x
+					n += 1
+		return sum / maxf(1.0, n)
+	var row2_looks_left: bool = cx.call(face_img, 2) < cx.call(body_img, 2) - 2.0
+	var screen_dir := func(stick: Vector2) -> int:
+		# +1 = figure looks right on screen, -1 = left
+		var rule: Array = CharacterRig.FACING_ROWS[Iso.facing_index(Iso.screen_input_to_world(stick))]
+		var looks_left_in_sheet: bool = int(rule[0]) in [1, 2, 3] and row2_looks_left
+		return (1 if rule[1] else -1) if looks_left_in_sheet else 0
+	print("       sheet row 2 looks %s; stick right → %d, stick left → %d" % ["left" if row2_looks_left else "right", screen_dir.call(Vector2(1, 0)), screen_dir.call(Vector2(-1, 0))])
+	check(screen_dir.call(Vector2(1, 0)) == 1 and screen_dir.call(Vector2(-1, 0)) == -1 and screen_dir.call(Vector2(0.7, 0.7)) == 1 and screen_dir.call(Vector2(-0.7, -0.7)) == -1, "joystick right/left (and diagonals) show the figure facing right/left")
+	check(CharacterRig.FACING_ROWS[2] == [4, false] and CharacterRig.FACING_ROWS[6] == [0, false], "up shows the back, down the front")
+	var f := 0
+	f = Iso.facing_with_hysteresis(Vector2(1, -0.45), 0)   # ~24° – just past the sector edge
+	check(f == 0 and Iso.facing_with_hysteresis(Vector2(1, -1), 0) == 1, "facing has hysteresis near diagonal boundaries (no flicker)")
 	var ok := true
 	for a in cat.data["anims"]:
 		var tex: Texture2D = cat.layer_texture(a, "body")
@@ -1017,17 +1046,257 @@ func _test_animations() -> void:
 	n.setup({"npc_id": "npc_anim", "name": "A B", "role": "farmer", "appearance": cat.role_appearance("farmer", 5)})
 	add_child(n)
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "leisure", "walking": false, "seat": true, "place": "park"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
-	var sat: bool = n.seated and n.rig.anim == "sit"
+	var sat: bool = n.seated and n.rig.anim == "sit_down"
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "leisure", "walking": false, "place": "park"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
-	var got_up: bool = n.rig.anim == "get_up" and not n.seated
+	var got_up: bool = n.rig.anim == "stand_up" and not n.seated
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "hurry": true, "place": "a", "target": "b"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
 	var ran: bool = n.rig.anim == "run"
+	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "door": "enter", "door_f": 0.4, "place": "a", "target": "bld:x"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
+	var opens: bool = n.rig.anim == "open_door" and n.modulate.a > 0.9
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "walk", "walking": true, "door": "enter", "door_f": 0.9, "place": "a", "target": "bld:x"}, Vector2.ZERO, Vector2(1, 0), Vector2.INF, false)
-	var door: bool = n.modulate.a < 0.5 and n.rig.anim == "interact"
+	var door: bool = opens and n.modulate.a < 0.5
 	n.apply_render({"visible": true, "grid": Vector2(5, 5), "act": "work", "walking": false, "place": "bld:farm"}, Vector2.ZERO, Vector2.ZERO, Vector2.INF, false)
 	var dig: bool = n.rig.anim == "dig"
 	n.queue_free()
-	check(sat and got_up and ran and door and dig, "NPC animation states: sit down, get up, run when late, open the door and step in, dig at work")
+	check(sat and got_up and ran and door and dig, "NPC animation states: sit down, get up, run when late, open the door then step in, dig at work")
+	# the door opens with the hand on it and closes once the person is inside
+	check(SettlementScene.door_open_amount("enter", 0.2) == 0.0 and SettlementScene.door_open_amount("enter", 0.6) == 1.0 and SettlementScene.door_open_amount("enter", 1.0) == 0.0 and SettlementScene.door_open_amount("exit", 0.3) == 1.0, "doors open while people pass and close behind them")
+	# every clip refers to existing animations and frames
+	var clips_ok := true
+	for cid in cat.data["clips"]:
+		if cid.begins_with("_"):
+			continue
+		for sg in cat.data["clips"][cid]["segments"]:
+			var info: Dictionary = cat.anim_info(sg["base"])
+			if info.is_empty() or (sg["seq"] as Array).any(func(f): return int(f) >= int(info["frames"])):
+				clips_ok = false
+				print("       bad clip ", cid, " ", sg["base"])
+	check(clips_ok and cat.data["clips"].size() >= 25, "clip library: %d clips, all frames exist" % (cat.data["clips"].size() - 1))
+	var tables_ok := true
+	for act in cat.data["activity_clips"]:
+		if act.begins_with("_"):
+			continue
+		for o in cat.data["activity_clips"][act]:
+			if not cat.data["clips"].has(o[0]):
+				tables_ok = false
+	for aid in ActionLibrary.actions():
+		var c: String = ActionLibrary.actions()[aid].get("clip", "")
+		if c != "" and not cat.data["clips"].has(c):
+			tables_ok = false
+			print("       action without clip ", aid, " ", c)
+	check(tables_ok, "NPC activity tables and player actions use the same clip library")
+
+
+## Phase 4 – Settlement Foundation.
+func _test_settlement_foundation() -> void:
+	print("[phase 4: settlement foundation]")
+	var cfg := SettlementSim.load_config()
+	var data := SettlementData.load_from_file("res://data/settlement_templates/founding_basic.json")
+	var comp: Array = cfg["founding_population"]["composition"]
+	var day0 := 20800
+	# resources: the site decides the basic supply
+	var food := {}
+	for site in ["rich", "poor"]:
+		var site_in := {"factors": {"soil": 1.0 if site == "rich" else 0.05, "climate": 0.9 if site == "rich" else 0.2, "water": 1.0 if site == "rich" else 0.2, "resources": 0.8 if site == "rich" else 0.1, "terrain": 1.0}, "difficulty": {"drivers": {"cold_heat": 0.0 if site == "rich" else 0.6}}}
+		var rf := WorldState.region_factors(site_in)
+		var rec := {"settlement_id": "stl_res", "npcs": NpcRoster.generate("stl_res", data.buildings, comp), "resident_player_ids": ["plr_a"], "region_factors": rf}
+		SettlementCore.ensure(rec, cfg, day0)
+		var prod := 0.0
+		for d in 28:
+			SettlementCore.day_step(rec, data, cfg, day0 + d, 60)
+			prod += float(rec["core"]["stats"]["food_prod"])
+		food[site] = [prod / 28.0, rf]
+	print("       food production per day: rich site %.1f %s, poor site %.1f %s" % [food["rich"][0], str(food["rich"][1]), food["poor"][0], str(food["poor"][1])])
+	check(float(food["rich"][0]) > float(food["poor"][0]) * 1.3 and float(food["poor"][1]["energy"]) < float(food["rich"][1]["energy"]), "the site's soil, water and climate shape the basic supply (Ressourcen)")
+	# basic supply reaches the inhabitants: a food shortage makes meals less filling
+	var needs := {"food": 300000, "energy": 500000, "social": 500000, "leisure": 500000, "hygiene": 500000}
+	var fed: int = NpcBrain._integrate(needs, "eat_home", 1800, {}, cfg)["food"]
+	var short: int = NpcBrain._integrate(needs, "eat_home", 1800, {}, cfg, {"food_short": true})["food"]
+	var dirty: int = NpcBrain._integrate(needs, "wash", 1200, {}, cfg, {"water_short": true})["hygiene"]
+	var clean: int = NpcBrain._integrate(needs, "wash", 1200, {}, cfg)["hygiene"]
+	check(short < fed and dirty < clean, "shortages are felt in daily life (less filling meals, poor hygiene without water)")
+	# administration (town hall)
+	var rec2 := {"settlement_id": "stl_adm", "founder_player_id": "plr_boss", "resident_player_ids": ["plr_boss", "plr_guest"], "npcs": NpcRoster.generate("stl_adm", data.buildings, comp), "region_factors": {"food": 1.0, "water": 1.0, "energy": 1.0, "materials": 1.0}}
+	SettlementCore.ensure(rec2, cfg, day0)
+	for d in 15:
+		SettlementCore.day_step(rec2, data, cfg, day0 + d, 60)
+	var t := SettlementCore.day_start_utc(day0 + 14, 60) + 10 * 3600
+	var txt := SettlementReport.town_hall_text(rec2, data, cfg, t, 60)
+	check(txt.contains("Bevölkerung") and txt.contains("Grundversorgung") and txt.contains("Dienste heute") and txt.contains("Chronik") and txt.contains("Entwicklung"), "the town hall shows population, supply, services, development and the chronicle")
+	check(not SettlementReport.admin_actions(rec2, "plr_boss").is_empty() and SettlementReport.admin_actions(rec2, "plr_guest").is_empty(), "only the administration gets the administration buttons")
+	var recs: Array = [rec2]
+	var auth := WorldAuthority.create(func(): return recs, func(): return t, cfg)
+	var boss := LocalWorldClient.connect_to(auth, "plr_boss")
+	var cmd := SettlementReport.admin_command(rec2, "admin_toggle_newcomers")
+	check(boss.submit(cmd).get("ok", false) and rec2["core"]["policy"]["open_for_newcomers"] == false, "closing the settlement for newcomers is an authority command")
+	check(boss.submit(SettlementReport.admin_command(rec2, "admin_prio_bau")).get("ok", false) and rec2["core"]["policy"]["priorities"][0] == "bau", "the administration sets which jobs are filled first")
+	# jobs: a death opens a position, the administration fills it from the pool
+	var victim: Dictionary = SettlementCore.staff_of(rec2, "bld_clinic")[0]
+	victim["alive"] = false
+	check(SettlementReport.vacancies(rec2, data, cfg).any(func(v): return v["building_id"] == "bld_clinic"), "a vacancy appears when a medic dies")
+	var p := ["medizin"]
+	for f in SettlementCore.FUNCTIONS:
+		if f != "medizin":
+			p.append(f)
+	rec2["core"]["policy"]["priorities"] = p
+	var hired := false
+	for d in range(15, 25):
+		for e in SettlementCore.day_step(rec2, data, cfg, day0 + d, 60):
+			if e["kind"] == "hired" and e.get("building", "") == "bld_clinic":
+				hired = true
+	check(hired, "the administration hires a general worker for the vacant clinic post")
+	# building cards
+	var card := SettlementReport.building_text(rec2, data, cfg, "bld_water_works", "", SettlementCore.day_start_utc(day0 + 20, 60) + 10 * 3600, 60)
+	var night := SettlementReport.building_text(rec2, data, cfg, "bld_town_hall", "", SettlementCore.day_start_utc(day0 + 20, 60) + 2 * 3600, 60)
+	check(card.contains("jetzt geöffnet") and card.contains("Personal") and night.contains("jetzt geschlossen") and card.contains("Zustand"), "building cards show operating hours, open/closed, staff and condition")
+	var house := SettlementReport.building_text(rec2, data, cfg, "bld_house_1", "", t, 60)
+	check(house.contains("Bewohner"), "houses list their inhabitants and capacity")
+	# migration of a 0.5.0 save (12 NPCs, old personality keys)
+	var old_rec := {"settlement_id": "stl_old", "npcs": NpcRoster.generate("stl_old", data.buildings), "founded_at_unix": 1764547200, "time_zone": {"name": "X", "offset_min": 60}, "resident_player_ids": ["plr_a"]}
+	for r in old_rec["npcs"]:
+		r["personality"] = {"openness": 0.8, "diligence": 0.2, "sociability": 0.5, "ambition": 0.5, "risk": 0.5}
+		r["birth_day"] = 1000
+	var sim := SettlementSim.create(old_rec, data, 1764547200 + 3 * 86400, cfg, 60)
+	var r0: Dictionary = old_rec["npcs"][0]
+	check(sim.roster.size() == 12 and r0["personality"]["curiosity"] == 0.8 and r0["personality"]["conscientiousness"] == 0.2 and r0.has("employment") and old_rec.has("core"), "0.5.0 saves migrate (personality keys, health, employment, settlement core)")
+
+
+## Gameplay polish: interiors, doors, footprints, lamps, version.
+func _test_gameplay_polish() -> void:
+	print("[gameplay polish]")
+	var v := WorldsVersion.data()
+	check(WorldsVersion.product() == "v0.1" and WorldsVersion.technical() == str(ProjectSettings.get_setting("application/config/version")), "one version source: product %s, build %s = project.godot" % [WorldsVersion.product(), WorldsVersion.technical()])
+	check(WorldsVersion.full_label().begins_with("WORLDS v0.1"), "version label shown in the menu and on the loading screen")
+	# footprints: the clinic's parking is walkable, the building is not
+	var data := SettlementData.load_from_file("res://data/settlement_templates/founding_basic.json")
+	var entry: Dictionary = {}
+	for b in data.buildings:
+		if b["id"] == "bld_clinic":
+			entry = b.duplicate(true)
+	var bld := Building.new()
+	bld.setup(entry)
+	add_child(bld)
+	var polys: Array = bld.get_children().filter(func(c): return c is CollisionPolygon2D)
+	var inside := func(g: Vector2) -> bool:
+		var w := Iso.grid_to_world(entry["grid_v"] + g) - bld.position
+		return polys.any(func(cp): return Geometry2D.is_point_in_polygon(w, cp.polygon))
+	check(not inside.call(Vector2(1.6, 1.0)) and inside.call(Vector2(0.5, 1.0)) and bld.surfaces.any(func(s): return s["kind"] == "parking"), "clinic: the parking inside the footprint is walkable, the building blocks")
+	bld.queue_free()
+	# street lamps are street-lamp sized (≈ 2.6 × a person)
+	check(StreetLamp.HEIGHT_SCALE >= 2.2, "street lamps are drawn ~4.5 m high (person 1.75 m)")
+	# doors: every building with a door has opening frames and a nav door on the painted side
+	var doors_ok := true
+	var spec: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/doors/doors.json"))
+	for ty in spec["nav_by_type"]:
+		if ty.begins_with("_"):
+			continue
+		for b in data.buildings:
+			if b["type"] == ty and NavGrid.door_front_cell(b).x < 0:
+				doors_ok = false
+	check(doors_ok, "people walk to the door that is painted on the sprite (door side per building type)")
+	if FileAccess.file_exists("res://assets/penzilla/doors/doors.json"):
+		var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://assets/penzilla/doors/doors.json"))
+		var all_frames := true
+		for key in meta["doors"]:
+			for d in meta["doors"][key]:
+				if d["type"] != "none" and not ResourceLoader.exists("res://assets/penzilla/doors/" + str(d["file"])):
+					all_frames = false
+		check(all_frames and meta["doors"].size() >= 19, "door opening frames exist for all %d building sprites" % meta["doors"].size())
+	# unified clothing palette: black is black, violet is violet, all clothing shares it
+	var catn: Node = get_tree().root.get_node("CharacterCatalog")
+	var cloth: Dictionary = catn.palette("cloth")
+	var blk: Color = catn.tint_color("cloth", "black")
+	var vio: Color = catn.tint_color("cloth", "violett_kräftig")
+	var shared := true
+	for slot in ["top", "pants", "suit", "sleeves", "bag", "scarf", "bowtie"]:
+		for oid in catn.data["slots"][slot]["options"]:
+			var o: Dictionary = catn.data["slots"][slot]["options"][oid]
+			if o.has("palette") and o["palette"] != "cloth":
+				shared = false
+	check(cloth.size() >= 128 and cloth.size() <= 200, "clothing palette has %d colours" % cloth.size())
+	check(blk.v < 0.12 and blk.s < 0.2 and vio.h > 0.7 and vio.h < 0.8 and vio.s > 0.5, "black is neutral black, violet stays violet")
+	check(shared, "all clothing pieces use the same palette")
+	# globe: picking matches what is drawn; land/water as drawn; suggestions differ
+	var pl := Geography.planet()
+	var agree := 0
+	var n_pts := 0
+	var rng2 := RandomNumberGenerator.new()
+	rng2.seed = 11
+	for k in 400:
+		var la := rng2.randf_range(-60.0, 60.0)
+		var lo := rng2.randf_range(-180.0, 180.0)
+		n_pts += 1
+		if pl.sample(la, lo)["land"] == (pl.display_value_at(la, lo) >= PlanetData.SEA_LEVEL):
+			agree += 1
+	var centre_ok := true
+	for k in 200:
+		var i := rng2.randi_range(0, pl.width * pl.height - 1)
+		var ll := pl.cell_lat_lon(i)
+		if pl.is_land_at(ll.x, ll.y) != pl.is_land(i):
+			centre_ok = false
+	check(agree == n_pts and centre_ok, "land/water at a tapped point is decided like the globe draws the coast (cell centres unchanged)")
+	var sites := Geography.good_sites([], [], 12)
+	var distinct := {}
+	for st in sites:
+		distinct[str(st["sample"]["region_id"])] = true
+	check(sites.size() >= 8 and distinct.size() == sites.size() and sites.all(func(x): return x["valid"]), "the suggestion button cycles through %d different valid sites" % sites.size())
+	var gv := GlobeView.new()
+	add_child(gv)
+	gv.setup(pl)
+	gv.screen_shift = Vector2(40, -60)
+	gv.focus(40.0, 15.0, 1.8, true)
+	await get_tree().process_frame
+	var max_err := 0.0
+	for q in [[48.0, 10.0], [36.9, 13.3], [30.0, 25.0], [42.0, 18.0]]:
+		var pr := gv.project(q[0], q[1])
+		if pr["visible"]:
+			var back := gv.pick(pr["pos"])
+			max_err = maxf(max_err, Vector2(q[0], q[1]).distance_to(back))
+	gv.queue_free()
+	check(max_err < 0.001, "globe: a pin's screen position picks exactly its own coordinates (err %.5f°)" % max_err)
+	# interiors
+	if not InteriorScene.assets_available():
+		print("       (interior art not imported – interior checks skipped)")
+		return
+	for key in ["player_home", "shop_baker", "shop_grocer", "shop_smith", "town_hall", "clinic", "farm_shop", "workshop"]:
+		check(InteriorScene.has_layout(key), "interior exists: %s" % key)
+	var home := InteriorScene.create("player_home")
+	home.position = Vector2(0, 50000)
+	add_child(home)
+	await get_tree().process_frame
+	var acts := {}
+	for n in home.find_children("*", "Interactable", true, false):
+		acts[n.get_meta("action", n.kind)] = true
+	check(acts.has("sleep") and acts.has("shower") and acts.has("toilet") and acts.has("cook") and acts.has("interior_exit"), "starter home: mattress, shower, toilet, simple kitchen and a way out (%s)" % str(acts.keys()))
+	# the shape follows the building: L-shaped clinic, long workshop
+	var clinic := InteriorScene.create("clinic")
+	add_child(clinic)
+	await get_tree().process_frame
+	check(not clinic.is_inside(Vector2i(14, 1)) and clinic.is_inside(Vector2i(2, 1)) and clinic.is_inside(Vector2i(14, 8)), "the clinic interior is L-shaped like the building")
+	var ws: Array = InteriorScene.layouts()["workshop"]["size"]
+	check(int(ws[0]) >= int(ws[1]) * 1.6, "the long workshop has a long room")
+	check(clinic._is_entrance_cell(Vector2i(8, 9)) and home._is_entrance_cell(Vector2i(3, 9)) and not home._is_entrance_cell(Vector2i(8, 9)), "entrances are 2-tile gaps in the front wall")
+	# walking inside: the entrance is free, furniture blocks
+	var space := home.get_world_2d().direct_space_state
+	var q := PhysicsPointQueryParameters2D.new()
+	q.position = home.to_global(home.spawn_point)
+	check(space.intersect_point(q).is_empty(), "the player stands free at the entrance inside")
+	var fridge_blocked := false
+	for n in home.item_nodes:
+		if str(n.name).begins_with("fridge"):
+			q.position = n.global_position + Vector2(0, -6)
+			fridge_blocked = not space.intersect_point(q).is_empty()
+	check(fridge_blocked, "furniture blocks walking (fridge)")
+	# interaction buttons only at the object: the exit area is small
+	var exit_it: Interactable = home.find_children("*", "Interactable", true, false).filter(func(i): return i.kind == "interior_exit")[0]
+	var cp: CollisionPolygon2D = exit_it.get_child(0)
+	var r := Rect2(cp.polygon[0], Vector2.ZERO)
+	for pt in cp.polygon:
+		r = r.expand(pt)
+	check(r.size.x < 120 and r.size.y < 80, "the exit button area is only at the doorway (%s)" % str(r.size))
+	home.queue_free()
+	clinic.queue_free()
+	await _test_interior_standard()
 
 
 ## Personality has measurable effects (population-level A/B with fixed seeds).
@@ -1224,3 +1493,262 @@ func _drag(index: int, pos: Vector2, rel: Vector2) -> void:
 	e.position = pos
 	e.relative = rel
 	get_tree().root.push_input(e)
+
+
+func _test_world_council() -> void:
+	print("[world council]")
+	var d := Landmarks.get_def(Landmarks.WORLD_COUNCIL)
+	check(not d.is_empty() and d["continent_name"] == "Kalistia", "World Council is a fixed landmark on Kalistia")
+	var p := Geography.planet()
+	var ll := Landmarks.position_of(Landmarks.WORLD_COUNCIL)
+	var smp := p.sample(ll.x, ll.y)
+	var cont := p.continent(smp["continent_id"])
+	check(smp["land"] and cont.get("name", "") == "Kalistia", "its position lies on land of Kalistia (%s)" % Geo.format(ll.x, ll.y))
+	check(float(smp["temperature_c"]) > 8.0 and float(smp["temperature_c"]) < 24.0 and smp["biome"] in ["plain", "hills", "forest"], "temperate, habitable site (%.0f °C, %s)" % [smp["temperature_c"], smp["biome"]])
+	# same position on every load (part of the world definition)
+	Landmarks._defs = []
+	check(Landmarks.position_of(Landmarks.WORLD_COUNCIL) == ll, "position is fixed, not re-rolled")
+	# names: place, official assembly name and interface names are separate
+	check(Landmarks.site_name() == "Concordium" and d["name"] == "CONCORDIUM", "the place is called Concordium (with C)")
+	check(Landmarks.assembly_official_name() == "Concilium Mundi", "official ceremonial name of the annual assembly: Concilium Mundi")
+	check(Landmarks.assembly_ui_name("de") == "Weltversammlung" and Landmarks.institution_ui_name("de") == "Weltrat" and Landmarks.assembly_ui_name("en") == "World Assembly", "interface names stay localised (Weltrat / Weltversammlung / World Assembly)")
+	check(Landmarks.ceremonial_heading() == "CONCORDIUM\nConcilium Mundi\nDer Ort, an dem die Welt zusammenkommt.", "ceremonial heading for boards and invitations")
+	check(Landmarks.describe(Landmarks.WORLD_COUNCIL, 0).contains("Concilium Mundi") and Landmarks.describe(Landmarks.WORLD_COUNCIL, 0).contains("Weltversammlung"), "info text names both: Concilium Mundi (Weltversammlung)")
+	# height ~ 33 figure heights
+	check(absf(float(d["height_m"]) - 56.0) < 1.0, "highest point ~56 m (33 figure heights)")
+	# neutral zone = exactly the property polygon, no radius around it
+	check(not d.has("reserve_radius_km"), "no 18 km reserve any more")
+	check(absf(Landmarks.property_area_m2(Landmarks.WORLD_COUNCIL) - 172.0 * 172.0) < 1.0, "property: 172 x 172 m polygon")
+	var inside_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(80, -80), p.radius_km)
+	var outside_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(186, 0), p.radius_km)
+	check(not Landmarks.zone_at(inside_ll.x, inside_ll.y, p.radius_km).is_empty(), "a point inside the boundary is neutral ground")
+	check(Landmarks.zone_at(outside_ll.x, outside_ll.y, p.radius_km).is_empty(), "100 m outside the boundary the normal rules apply")
+	var rt := Landmarks.to_site(Landmarks.WORLD_COUNCIL, inside_ll.x, inside_ll.y, p.radius_km)
+	check(rt.distance_to(Vector2(80, -80)) < 0.5, "site metres <-> lat/lon round trip (%.2f m)" % rt.distance_to(Vector2(80, -80)))
+	# founding: the start square may not include the property, but right next to it is allowed
+	var inside := Geography.rate_site(ll.x, ll.y, [], [])
+	check(not inside["valid"] and inside.get("landmark", "") == Landmarks.WORLD_COUNCIL, "no settlement territory over the neutral property")
+	var near_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(0, 700), p.radius_km)
+	var near := Geography.rate_site(near_ll.x, near_ll.y, [], [])
+	check(not near.has("landmark"), "700 m away (start square outside the boundary): normal founding rules")
+	# neutrality tiers
+	var ctx_in := {"inside": true}
+	check(Landmarks.classify_act("attack_player", {"inside": false}) == "normal", "outside the property: ordinary rules")
+	check(Landmarks.classify_act("attack_player", ctx_in) == "prevented", "ordinary attack inside: technically prevented")
+	check(Landmarks.classify_act("attack_player", {"inside": true, "repeat": true}) == "violation", "repeated attempts: security violation")
+	check(Landmarks.classify_act("carry_weapon", ctx_in) == "violation" and Landmarks.classify_act("block_entrance", ctx_in) == "violation", "weapons and blockades: violation with intervention")
+	check(Landmarks.classify_act("declared_state_attack", {"inside": true, "declared_by_state_government": true, "server_validated": true}) == "violation", "no crisis attack while the conflict system is not enabled")
+	check(Landmarks.classify_act("declared_state_attack", {"inside": true, "declared_by_state_government": false, "server_validated": true, "crisis_enabled": true}) == "violation", "an individual player can never trigger the crisis event")
+	check(Landmarks.classify_act("declared_state_attack", {"inside": true, "declared_by_state_government": true, "server_validated": true, "crisis_enabled": true}) == "crisis", "a declared, server-validated state attack is a crisis event (later phases)")
+	check(d["neutrality"]["owner"] == null and d["neutrality"]["humanitarian"]["access"] == "unconditional", "owned by no nation; humanitarian access unconditional")
+	# interior programme: every building has its own interior shaped like the exterior
+	var prog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/landmarks/concordium_interiors.json"))
+	var ids := []
+	for b in prog["buildings"]:
+		ids.append(b["id"])
+	var needed := ["assembly_hall", "portico", "palace_west", "palace_east", "pavilion_corner", "pavilion_west", "pavilion_north", "stoa_west", "stoa_east", "tholos"]
+	check(needed.all(func(x): return ids.has(x)), "interior programme covers every building")
+	var hall: Dictionary = prog["buildings"][ids.find("assembly_hall")]
+	check(hall["shape"]["kind"] == "circle" and Vector2(hall["shape"]["centre"][0], hall["shape"]["centre"][1]) == Vector2(-16, -16), "council chamber is round and lies inside the rotunda")
+	check(prog["buildings"].all(func(b): return b["status"] in ["walkable", "preview", "concept"]), "every interior has an explicit status")
+	# boundary changes only by the world authority after a resolution
+	WorldState.use_storage("user://test_world_council_b.json", true)
+	var bigger := PackedVector2Array([Vector2(-86, -86), Vector2(120, -86), Vector2(120, 86), Vector2(-86, 86)])
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, bigger, "plr_someone", "res_1") != "", "a player cannot move the boundary")
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, bigger, Landmarks.AUTHORITY_ISSUER, "") != "", "no boundary change without a resolution")
+	var smaller := PackedVector2Array([Vector2(-50, -50), Vector2(50, -50), Vector2(50, 50), Vector2(-50, 50)])
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, smaller, Landmarks.AUTHORITY_ISSUER, "res_2") != "", "the neutral property can never shrink")
+	check(WorldState.update_landmark_property(Landmarks.WORLD_COUNCIL, bigger, Landmarks.AUTHORITY_ISSUER, "res_3") == "", "extension by resolution + server update")
+	WorldState.load_world()
+	var stb := WorldState.landmark_state(Landmarks.WORLD_COUNCIL)
+	var east_ll := Landmarks.from_site(Landmarks.WORLD_COUNCIL, Vector2(110, 0), p.radius_km)
+	check(int(stb["property"]["version"]) == 2 and not Landmarks.zone_at(east_ll.x, east_ll.y, p.radius_km, {Landmarks.WORLD_COUNCIL: stb}).is_empty(), "extended boundary persists and is neutral")
+	WorldState.use_storage(WorldState.DEFAULT_SAVE_PATH, false)
+	# persistent state: read through WorldState, survives save/load
+	WorldState.use_storage("user://test_world_council.json", true)
+	var st := WorldState.landmark_state(Landmarks.WORLD_COUNCIL)
+	check(int(st["stage"]) == 1 and st["components"].has("great_fountain"), "initial state: stage 1, components from the definition")
+	st["components"]["great_fountain"]["restored"] = 0.5
+	WorldState.save_world()
+	WorldState.load_world()
+	check(float(WorldState.landmark_state(Landmarks.WORLD_COUNCIL)["components"]["great_fountain"]["restored"]) == 0.5, "landmark state persists across save/load")
+	WorldState.use_storage(WorldState.DEFAULT_SAVE_PATH, false)
+	# assembly on 24 June, world time (UTC)
+	var t := Time.get_unix_time_from_datetime_dict({"year": 2026, "month": 11, "day": 25, "hour": 12, "minute": 0, "second": 0})
+	var nxt := Landmarks.next_assembly(Landmarks.WORLD_COUNCIL, t)
+	var dd := Time.get_datetime_dict_from_unix_time(int(nxt["start"]))
+	check(int(nxt["year"]) == 2027 and dd["month"] == 6 and dd["day"] == 24 and dd["hour"] == 0, "next World Assembly: 24 June 2027, 00:00 UTC")
+	var during := Landmarks.next_assembly(Landmarks.WORLD_COUNCIL, Time.get_unix_time_from_datetime_dict({"year": 2027, "month": 6, "day": 24, "hour": 15, "minute": 0, "second": 0}))
+	check(int(during["year"]) == 2027, "on 24 June the assembly is the current one")
+	# preview site: tiles, walk grid, heights, occlusion data
+	var v := CouncilSiteView.new()
+	check(v.load_site(1), "site data (tiles, walk grid) present")
+	check(v.cell_kind(Vector2(-16, 83.4)) == 0 and v.cell_kind(Vector2(-16, 78.5)) == 0, "the gate's central arch is a passage")
+	check(v.cell_kind(Vector2(-16, 55)) != 0, "water and the fountain block the way")
+	check(absf(v.surface_height(Vector2(-9.5, 12.0)) - 6.9) < 0.2 and v.surface_height(Vector2(-9.5, 26.5)) > 1.0, "podium (6.9 m) reached over the stairs")
+	var ok_steps := true
+	var h := v.surface_height(Vector2(-9.5, 45.0))
+	for y2 in range(90, 16, -1):
+		var h2 := v.surface_height(Vector2(-9.5, y2 * 0.5))
+		ok_steps = ok_steps and absf(h2 - h) <= CouncilSiteView.STEP_MAX
+		h = h2
+	check(ok_steps, "the grand stairs can be climbed step by step")
+	check(v.cell_kind(Vector2(-16, -16)) != 0, "closed rotunda (stage 1) is not walkable")
+	check(absf(float(v.site.get("height_m", 0.0)) - float(d["height_m"])) < 0.05, "exported art has the defined height (%.2f m)" % float(v.site.get("height_m", 0.0)))
+	# reachable from the entrance (flood fill on the walk grid)
+	var reach := {}
+	var start := Vector2i(int((-16.0 - v._x0) / v._cell_m), int((83.4 - v._y0) / v._cell_m))
+	var queue: Array[Vector2i] = [start]
+	reach[start] = true
+	while not queue.is_empty():
+		var c: Vector2i = queue.pop_back()
+		var hc := float(v._heights[c.y * v._nx + c.x]) / 10.0
+		for dlt in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n2: Vector2i = c + dlt
+			if n2.x < 0 or n2.y < 0 or n2.x >= v._nx or n2.y >= v._ny or reach.has(n2):
+				continue
+			var i2 := n2.y * v._nx + n2.x
+			if v._kinds[i2] == 0 and absf(float(v._heights[i2]) / 10.0 - hc) <= CouncilSiteView.STEP_MAX:
+				reach[n2] = true
+				queue.append(n2)
+	var at := func(m: Vector2) -> bool: return reach.has(Vector2i(int((m.x - v._x0) / v._cell_m), int((m.y - v._y0) / v._cell_m)))
+	check(at.call(Vector2(-40, 45)) and at.call(Vector2(-9.5, 12.0)) and at.call(Vector2(-56, 40)), "reachable from the gate: forum, portico/podium (stairs), west stoa")
+	check(at.call(Vector2(4.0, 4.0)), "peristyle walkway around the rotunda reachable")
+	check(at.call(Vector2(25.0, -6.0)) and at.call(Vector2(42.0, -6.0)) and at.call(Vector2(60.0, -40.0)), "all three water terraces reachable over the stair flights")
+	check(at.call(Vector2(76.0, 71.0)) and at.call(Vector2(38.5, 41.5)) and at.call(Vector2(31.0, 41.5)), "theatre garden reachable (stoa passage, path to the theatre)")
+	check(v.screen_dir_to_grid(Vector2(1, 0)).normalized().distance_to(Vector2(1, -1).normalized()) < 0.01, "screen right = grid (+x, -y)")
+	var k := v.depth_key(Vector2(3, 4))
+	check(is_equal_approx(k, 20700.0), "depth key = (x + y + 200) * 100")
+	var img: Image = (load("res://assets/landmarks/world_council/stage1/depth_%s.png" % v.site["tiles"][0]["name"]) as Texture2D).get_image()
+	check(img.get_width() > 0, "per-pixel depth tiles present")
+	# living water: effects list + water codes in the depth tiles
+	var kinds := {}
+	for fx in v.site.get("fx", []):
+		kinds[fx["type"]] = int(kinds.get(fx["type"], 0)) + 1
+	check(kinds.get("jet", 0) >= 1 and kinds.get("veil", 0) >= 2 and kinds.get("splash", 0) >= 8, "fountain jet, falling veils and cascade spray defined (%s)" % str(kinds))
+	var fpt := Vector2(-16.0, 58.8 + 5.0)                      # basin water south of the fountain column
+	var wpos := v.ground_to_world(fpt, 0.1)
+	var org := Vector2(float(v.site["origin_m"][0]), -float(v.site["origin_m"][1])) * CouncilSiteView.M_PX
+	var kk := CouncilSiteView.M_PX / float(v.site["px_per_m"])
+	var ipx := (wpos - org) / kk
+	var code := -1
+	for tl in v.site["tiles"]:
+		if ipx.x >= tl["x"] and ipx.y >= tl["y"] and ipx.x < tl["x"] + tl["w"] and ipx.y < tl["y"] + tl["h"]:
+			var di: Image = (load("res://assets/landmarks/world_council/stage1/depth_%s.png" % tl["name"]) as Texture2D).get_image()
+			code = int(round(di.get_pixel(int(ipx.x - tl["x"]), int(ipx.y - tl["y"])).b * 255.0)) % 128
+	check(code == 1, "fountain basin is marked as water surface in the depth tile (code %d)" % code)
+	v.free()
+	var live := CouncilSiteView.new()
+	add_child(live)
+	await get_tree().process_frame
+	var st2: Dictionary = live.perf_stats()
+	var wat := 0
+	for tl in live._tiles:
+		var m: ShaderMaterial = (tl["sprite"] as Sprite2D).material
+		if m and m.shader.resource_path.ends_with("landmark_water.gdshader"):
+			wat += 1
+	check(int(st2["effects"]) >= 11 and int(st2["particles"]) < 1200, "water effects running (%d emitters, %d particles)" % [st2["effects"], st2["particles"]])
+	check(wat == live._tiles.size(), "every tile draws living water (shader)")
+	check(live.figure.get_parent() == live.actors and live.actors.y_sort_enabled, "figure and fountains share one y-sorted layer")
+	live.queue_free()
+	# globe marker on the drawn surface point
+	var gv := GlobeView.new()
+	add_child(gv)
+	gv.setup(p)
+	gv.focus(ll.x, ll.y, 1.8, true)
+	await get_tree().process_frame
+	var pr := gv.project(ll.x, ll.y)
+	var back := gv.pick(pr["pos"])
+	check(pr["visible"] and back.distance_to(ll) < 0.05, "globe marker sits on the exact position (pick error %.3f°)" % back.distance_to(ll))
+	gv.queue_free()
+
+
+## Interior standard (docs/INTERIOR_STANDARD.md): straight 3/4 projection,
+## furnished rooms without overlaps, art in the same perspective.
+func _test_interior_standard() -> void:
+	print("[interior standard]")
+	check(InteriorScene.to_px(Vector2(1, 0)) == Vector2(InteriorScene.T, 0) and InteriorScene.to_px(Vector2(0, 1)) == Vector2(0, InteriorScene.T), "straight projection: room axes horizontal/vertical, square tiles (no diamonds)")
+	check(InteriorScene.MOVE_Y_SCALE == 1.0, "no vertical squash inside (square floor tiles)")
+	var atlas := InteriorScene.atlas_data()
+	var items: Dictionary = atlas["items"]
+	var missing := []
+	var too_tall := []
+	var keys: Array = InteriorScene.layouts().keys().filter(func(k): return not str(k).begins_with("_") and not InteriorScene.layouts()[k].has("alias"))
+	for k in keys:
+		var l: Dictionary = InteriorScene.layouts()[k]
+		var wall := float(l.get("wall_tiles", InteriorScene.WALL_TILES))
+		for e in l.get("items", []):
+			var ids: Array = e["item"] if e["item"] is Array else [e["item"]]
+			for id in ids:
+				if not items.has(id):
+					missing.append("%s:%s" % [k, id])
+					continue
+				var d: Dictionary = items[id]
+				if e.has("at") and not e.has("lift") and not d.get("wall", false):
+					var sol: Array = d.get("solid", [0, 0, 0, 0])
+					var h := (float(d["rect"][3]) - float(sol[3])) / 16.0
+					if float(sol[3]) > 0 and h > wall + 0.3:
+						too_tall.append("%s:%s %.1f>%.1f" % [k, id, h, wall])
+	check(missing.is_empty(), "every piece in the layouts exists in the atlas %s" % str(missing.slice(0, 5)))
+	check(too_tall.is_empty(), "no standing piece is taller than the room's walls %s" % str(too_tall.slice(0, 5)))
+	var own_missing := []
+	for id in items.keys():
+		var sh := str(items[id].get("sheet", ""))
+		if sh.begins_with("worlds/") and not ResourceLoader.exists("res://assets/interior/" + sh):
+			own_missing.append(id)
+	check(own_missing.is_empty(), "own interior art present (%d pieces)" % items.values().filter(func(d): return str(d.get("sheet", "")).begins_with("worlds/")).size())
+	for sk in ["player_home", "house_1", "house_2", "house_3", "house_4", "house_5", "house_6", "shop_baker", "shop_grocer", "shop_smith", "town_hall", "clinic", "farm_shop", "workshop", "depot", "emergency_post", "energy_station", "water_works"]:
+		if not InteriorScene.has_layout(sk):
+			missing.append(sk)
+	check(missing.is_empty(), "every enterable building of a settlement has its own interior")
+	var problems := 0
+	var counts := {}
+	var art := InteriorScene.assets_available()
+	for k in keys:
+		if not art and not bool(InteriorScene.layouts()[k].get("own_art_only", false)):
+			continue
+		var sc := InteriorScene.create(k, [], 3, 0.6)
+		sc.position = Vector2(0, 90000)
+		add_child(sc)
+		await get_tree().process_frame
+		var pr := sc.layout_problems()
+		if not pr.is_empty():
+			print("       ", k, ": ", pr)
+		problems += pr.size()
+		counts[k] = sc.item_nodes.size()
+		sc.queue_free()
+	check(problems == 0, "all interiors furnished without overlaps, pieces outside the room or blocked entrances (%d rooms)" % counts.size())
+	check(counts.values().all(func(n): return n >= 4), "no empty rooms (fewest pieces: %d)" % (counts.values().min() if not counts.is_empty() else 0))
+	# variants: two houses of the same type differ
+	if art:
+		var a := InteriorScene.create("house_2", [], 11, 0.2)
+		var b := InteriorScene.create("house_2", [], 12, 0.9)
+		add_child(a)
+		add_child(b)
+		await get_tree().process_frame
+		var na: String = a.item_nodes.map(func(n): return str(n.name).get_slice("_", 0) + str(n.name).get_slice("_", 1)).reduce(func(x, y): return x + y, "")
+		var nb: String = b.item_nodes.map(func(n): return str(n.name).get_slice("_", 0) + str(n.name).get_slice("_", 1)).reduce(func(x, y): return x + y, "")
+		check(na != nb or a._sheet_swap != b._sheet_swap, "furnishing varies with the building and the settlement's prosperity")
+		a.queue_free()
+		b.queue_free()
+	# Concordium: doors reachable on the site, interiors enterable
+	var v := CouncilSiteView.new()
+	v.load_site(1)
+	var bad := []
+	for d in CouncilSiteView.DOORS:
+		if v.cell_kind(d["at"]) != 0:
+			bad.append(d["key"])
+	check(bad.is_empty(), "every Concordium door stands on walkable ground %s" % str(bad))
+	v.free()
+	var live := CouncilSiteView.new()
+	add_child(live)
+	await get_tree().process_frame
+	live.enter_interior("concordium_chamber")
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	check(live.interior != null and live.walker != null and live.interior.layout.get("label", "") == "Großer Ratssaal", "the council chamber can be entered from the site")
+	live._process_inside(0.016)
+	check(str(live._context.get("kind", "")) == "exit", "inside, the way out is offered right at the entrance")
+	live.leave_interior()
+	check(live.interior == null, "leaving returns to the site")
+	live.queue_free()

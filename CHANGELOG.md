@@ -2,6 +2,100 @@
 
 Format angelehnt an „Keep a Changelog“. Versionen folgen `application/config/version` in `project.godot`.
 
+## [0.9.0] – Globaler Innenraum-Rework (25.11.2026)
+Produktversion bleibt **v0.1**.
+
+### Behoben (Ursache)
+- Innenräume waren isometrisch (45°-Rauten) aufgebaut, die Innenraum-Grafiken sind aber gerade 3/4 gezeichnet. Böden, Wände und Möbel waren dadurch verzerrt oder standen schräg.
+- Neuer **Innenraum-Standard** ([INTERIOR_STANDARD.md](docs/INTERIOR_STANDARD.md)) mit neuem `InteriorScene`:
+  - rechteckige Räume, quadratische Kacheln,
+  - frontale Rückwände, Seiten- und Vorderkappen,
+  - Möbel mit Standfläche, y-Sortierung, Kollisionen,
+  - Innentüren, runde Räume mit gerader Rückwand oben.
+
+### Hinzugefügt
+- **80 eigene Pixel-Art-Stücke und 9 Boden- und Wandtexturen** in exakt dieser Perspektive, auf die Penzilla-Innenraumpalette quantisiert (`tools/art/interior_assets.py`).
+  - Betten, Matratze, Feldbett, Schränke, Dusche, Badmöbel, Küchen-Oberschränke.
+  - Laden, Bäckerei, Schmiede, Werkstatt, Büro, Praxis, Versorgung.
+  - Das komplette antike Concordium-Set: Säulen, Statuen, Vitrinen, Rednerpult, Delegiertenplätze, Präsidium, Banner, Wandgemälde, Archiv, Brunnen.
+- **23 eingerichtete Innenräume** mit Varianten nach Gebäude und Wohlstand (`tools/interiors/build_layouts.py`). Neu betretbar: alle Wohnhäuser, Depot, Rettungswache, Energiestation, Wasserwerk und 8 Concordium-Räume.
+- Concordium-Vorschau: Türen zu Ratssaal, Ausstellungshalle, Diplomatieflügel, Archiv, Zufluchtsort und Gästehaus, mit Laufen, Interaktionen und Raumlicht.
+- Kamera zeigt kleine Räume mittig.
+- 16 neue Aktionen (Bett, Schrank, Essen, Lesen, Rednerpult …).
+- Tests:
+  - gerade Projektion, keine Überschneidungen, keine verstellten Eingänge,
+  - Assets vorhanden, kein Möbel höher als die Wand,
+  - alle Gebäude mit Raumprogramm, Varianten,
+  - Concordium-Türen begehbar, Ratssaal betretbar.
+
+## [0.8.1] – Concordium: Korrekturen und lebendiges Wasser (25.11.2026)
+Produktversion bleibt **v0.1**.
+
+### Behoben
+- Kaskade zum Spiegelbecken: durchgehender Wasserlauf über einen Zulaufkanal. Die obere Kaskade fällt direkt in den nächsten Kanal.
+- Forumskanal endet am Brunnenrand und fließt ins Becken, statt quer hindurch zu laufen.
+- Entfernt: Schutthügel am Aquädukt, Efeuballen, Mosaikmedaillon vor der Freitreppe.
+- Keine halb verdeckten Bäume mehr: Pflanzen, die in erhöhte oder abgesenkte Flächen ragen, werden automatisch entfernt. Laubbäume stehen auf freien Rasenflächen.
+- Theater kleiner (r 19 m) und mit Abstand zu Hecken, Blumenbeeten und Säulenhalle. Der Weg endet an einer Öffnung der Randmauer.
+- Laufraster erkennt niedrige Durchgänge (zweiter Messstrahl).
+
+### Hinzugefügt
+- **Lebendiges Wasser:** Shader für Wellen und Lichtreflexe auf allen Wasserflächen sowie fließende Schlieren an Kaskaden und Wasserfällen.
+- **Funktionsfähiger großer Brunnen** mit Fontäne und Wasserschleiern, Gischt an allen Kaskaden (Partikel).
+- Tests: Wassermarkierung in der Tiefenkachel, Effekte vorhanden, Shader auf allen Kacheln, gemeinsame y-Sortierung, Erreichbarkeit des Theatergartens.
+
+## [0.8.0] – Concordium: verbindliche Entscheidungen des Projektinhabers (25.11.2026)
+Produktversion bleibt **v0.1** (erst nach Freigabe erhöht).
+
+### Geändert
+- **Name:** Der Ort heißt **Concordium**, die jährliche Weltversammlung offiziell **Concilium Mundi**. Im Interface bleibt sie lokalisiert „Weltrat“ bzw. „Weltversammlung“. Globus, Vorschau und Infotexte sind angepasst. Echte vergoldete Inschriften im Asset: „CONCILIUM MUNDI“ am Portikus, „CONCORDIUM – UBI MUNDUS CONVENIT“ am Tor.
+- **Höhe:** höchster Punkt 56,25 m (~33 Figurenhöhen), vorher 60,6 m. Kuppel und Laterne niedriger, sonst unverändert.
+- **Schutzgebiet:** Der 18-km-Radius ist verworfen. Neutral ist nur das **Grundstückspolygon** (172 × 172 m). Siedlungsgebiete dürfen es nicht überdecken, direkt daneben gelten normale Regeln.
+- **Treppenläufe** zwischen Podium und Wasserterrassen, die oberen Terrassen sind jetzt erreichbar.
+
+### Hinzugefügt
+- **Grenzänderung** nur durch die Weltautorität mit Beschluss. Das neue Gelände muss das alte enthalten. Mit Version und Protokoll, persistent.
+- **Neutralitäts-Regelwerk** in drei Stufen (verhindert, Verstoß, Krise) mit Schutz vor Ausnutzung: `Landmarks.classify_act`, Daten `neutrality`, [WORLD_COUNCIL_NEUTRALITY.md](docs/WORLD_COUNCIL_NEUTRALITY.md). Humanitärer Zugang bedingungslos.
+- **Verbindliches Innenraumprogramm** aller Gebäude mit Status (begehbar, Vorschau, Konzept): `data/landmarks/concordium_interiors.json`, [WORLD_COUNCIL_INTERIORS.md](docs/WORLD_COUNCIL_INTERIORS.md).
+- Anzeige der Zone in der Vorschau: neutrales Gelände bzw. normale Regeln außerhalb.
+- Entwurf 1 gesichert: Commit `d21e116`, `docs/world_council/concordium_entwurf_1.png`.
+- Neue Tests: Namen, Höhe, Grenze innen/außen, Gründung daneben, Neutralitätsstufen, Grenzänderung, Innenraumprogramm, Erreichbarkeit ab dem Tor.
+
+## [0.7.0] – Weltratssitz (World Council) auf Kalistia (25.11.2026)
+Produktversion bleibt **v0.1**, bis der Projektinhaber abnimmt.
+
+### Hinzugefügt
+- **Master-Erweiterung World Council** verankert: [WORLD_COUNCIL.md](docs/WORLD_COUNCIL.md), ART_DIRECTION, ROADMAP (Phasenzuordnung), ARCHITECTURE.
+- **Standort** 28,28° N / 137,36° E (Zaneris-Ebene, Kalistia) aus einer Analyse aller Landzellen (`tools/world/council_site.gd`). Fester Teil der Weltdefinition (`data/world/landmarks.json`), Schutzgebiet 18 km ohne Gründungen.
+- **Persistenter Zustand** der Landmarke (Stufe, Komponenten, Erweiterungen, Beschlüsse, Geschichte) im Weltstand. Nur die Weltautorität ändert ihn.
+- **Globus:** Markierung „WORLD COUNCIL – Internationaler Weltratssitz“, die auf der Oberfläche liegt. Antippen zeigt Infos und den nächsten Versammlungstermin (24. Juni, Weltzeit). Dazu der Knopf „Ansehen (Vorschau)“.
+- **Eigenes Monument-Asset** im Penzilla-Stil: eigener isometrischer Renderer (`tools/art/`). Rotunde mit Kuppel, Portikus, Freitreppe, Forum, Kanal, Brunnen, Stoen, Triumphtor, Wasserterrassen, Tholos, Aquädukt, Palastflügel, Theater, Gärten. Stufe 1 „Historische Anlage“ mit Verfall und Efeu, in 4 Iterationen.
+- **Begehbare Vorschau** (`CouncilSiteView`): pixelgenaue Verdeckung über eine Tiefenkarte (Shader), Laufraster 0,5 m mit Höhen (Treppen, Podium, Terrassen, Durchgänge unter Bögen), Zoom, Tag/Nacht nach Sonnenzeit am Ort.
+- 20 neue Tests (289 gesamt).
+
+## [0.6.0] = Produktversion **v0.1** – Architekturkorrekturen, Living World vertieft, Phase 4, Gameplay-Polishing (25.11.2026)
+
+### Hinzugefügt
+- **Sichtbare Versionsnummer v0.1** (Ladebildschirm, Menü) aus einer Quelle (`data/version.json`, VERSIONING.md); Build-Commit im Web-Build.
+- **Weltautorität** (`WorldAuthority`, `WorldClient`, `LocalWorldClient`, `RemoteWorldClient`-Platzhalter): Befehle, Protokoll, Idempotenz, Detailstufen S1/S2/S3, Snapshots, Zustands-Hash; Kontolöschung mit Pseudonymisierung.
+- **Siedlungs-Tagesschritt** (`SettlementCore`): Gesundheit, Fehlzeiten, Betriebsmodelle mit rotierenden Dienstplänen und Vertretung, Unfälle, Versorgung, Gebäudezustand, Brände, Beschäftigung, Altern, Sterblichkeit, Zuzug, Lebenszyklus.
+- **Phase 4**: Startbevölkerung 30 (per Simulation), Grundversorgung mit Wirkung im Alltag, Standort-Ressourcen, Verwaltung im Rathaus (Befehle), Stellen und Einstellungen, Gebäudekarten, Bevölkerungsverlauf, Verfall verlassener Siedlungen.
+- **Persönlichkeit** (9 Merkmale + Chronotyp + Vorlieben) mit messbaren Wirkungen; gewichtete Zufallsauswahl mit Seed.
+- **Navigation**: Sperren/Öffnen mit Versionen, gezielte Cache-Invalidierung, Umplanung unterwegs, eindeutige Stehplätze, Ausweichen.
+- **Animation & Interaktion**: alle Penzilla-Animationen geprüft, 10 weitere importiert, 28 eigene Clips, ein System für Spieler und NPCs, Objektaktionen (Brunnen, Briefkasten, Bank, Mülleimer, Kisten, Haltestelle, Möbel).
+- **Türen**: Öffnungsbilder für alle Gebäude (Einzel-, Doppel-, Schiebetür, Rolltor), synchron zum Durchgehen; Navigation zur gezeichneten Tür; Interaktionsfläche nur an der Tür.
+- **Innenräume** (isometrisch): Spielerhaus, Bäckerei, Gemischtwaren, Schmiede, Rathaus, Praxis (L-förmig), Hofladen, Werkstatt; Personal im Dienst.
+- **Umland** aus den Planetendaten (Küste, See, Fluss, Gebirge, Wald, Wüste, Schnee) und Klimadaten je Siedlung.
+- **Farbpalette** mit 167 Kleidungsfarben (Rampen-Shader), Ladenbeschreibungen nach Geschäftsart.
+
+### Behoben
+- Links/Rechts-Laufanimation vertauscht (Spieler und NPCs; Penzilla-Zeilen blicken nach links).
+- Globus: Beschriftungen/Pins/Antippen im Hochformat versetzt („größere unsichtbare Kugel“); Land/Wasser-Erkennung an Küsten; versehentliche Auswahl beim Zoomen; Vorschlag nur einmal.
+- Straßenlaternen zu klein; Parkplatz der Praxis nicht begehbar; Schwarz wurde violett; Hinweis „Wirtschaft (Phase 5)“ → Phase 6.
+
+### Geändert
+- Speicherschema: Siedlungsdatensatz um `core`, `lifecycle`, `authority`, `nav_changes`, `region_factors`, `climate` erweitert (automatische Migration). Siedlungszeit = feste Zeitverschiebung der Gründung (gleich für alle Geräte).
+
 ## [0.5.0] – Phase 3: Living World
 
 ### Hinzugefügt

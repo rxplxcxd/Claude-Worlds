@@ -1,0 +1,1120 @@
+{
+ "_comment": "Interior pieces. sheet: file in assets/penzilla/interior/ (Penzilla Top-Down Retro Interior, private) or \"own\" (drawn by WORLDS at runtime, scripts/interior/interior_art.gd). rect: x, y, w, h in sheet pixels. solid: part that blocks walking, relative to the rect (default: lower 45 %). floors/walls: repeatable patches.",
+ "scale": 2,
+ "tile": 16,
+ "floors": {
+  "carpet_olive": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    16,
+    17,
+    64,
+    58
+   ]
+  },
+  "planks_dark": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    17,
+    80,
+    62,
+    46
+   ]
+  },
+  "parquet_cream": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    81,
+    81,
+    62,
+    45
+   ]
+  },
+  "planks_light": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    145,
+    80,
+    62,
+    46
+   ]
+  },
+  "tiles_orange": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    209,
+    42,
+    62,
+    36
+   ]
+  },
+  "boards_cream": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    145,
+    17,
+    62,
+    60
+   ]
+  }
+ },
+ "walls": {
+  "wall_orange": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    81,
+    17,
+    62,
+    62
+   ]
+  },
+  "wall_beige": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    209,
+    17,
+    62,
+    23
+   ]
+  },
+  "wall_cream": {
+   "sheet": "TopDownHouse_FloorsAndWalls.png",
+   "rect": [
+    145,
+    17,
+    62,
+    60
+   ]
+  }
+ },
+ "items": {
+  "mattress": {
+   "sheet": "own",
+   "rect": [
+    0,
+    0,
+    44,
+    24
+   ],
+   "solid": [
+    0,
+    0,
+    44,
+    24
+   ],
+   "label": "Matratze",
+   "flat_solid": true
+  },
+  "shower": {
+   "sheet": "own",
+   "rect": [
+    0,
+    0,
+    26,
+    30
+   ],
+   "solid": [
+    0,
+    0,
+    26,
+    30
+   ],
+   "label": "Dusche",
+   "flat_solid": true
+  },
+  "doormat": {
+   "sheet": "own",
+   "rect": [
+    0,
+    0,
+    26,
+    10
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "label": "Fußmatte"
+  },
+  "nightstand": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    5,
+    4,
+    21,
+    24
+   ]
+  },
+  "cabinet_tall": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    32,
+    3,
+    13,
+    26
+   ]
+  },
+  "cupboard": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    47,
+    5,
+    30,
+    26
+   ]
+  },
+  "chair_white": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    81,
+    4,
+    14,
+    28
+   ],
+   "solid": [
+    1,
+    18,
+    12,
+    10
+   ]
+  },
+  "chair_wood": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    129,
+    4,
+    15,
+    28
+   ],
+   "solid": [
+    1,
+    18,
+    13,
+    10
+   ]
+  },
+  "table_round": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    176,
+    2,
+    15,
+    23
+   ],
+   "solid": [
+    2,
+    12,
+    11,
+    10
+   ]
+  },
+  "stool": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    194,
+    16,
+    13,
+    15
+   ],
+   "solid": [
+    1,
+    7,
+    11,
+    8
+   ]
+  },
+  "table_big": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    1,
+    32,
+    46,
+    30
+   ],
+   "solid": [
+    2,
+    8,
+    42,
+    22
+   ]
+  },
+  "shelf_low": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    49,
+    34,
+    31,
+    28
+   ]
+  },
+  "ottoman": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    84,
+    44,
+    24,
+    19
+   ]
+  },
+  "rug_round": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    134,
+    49,
+    21,
+    13
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "rug_big": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    161,
+    32,
+    46,
+    32
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "rug_long": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    168,
+    64,
+    32,
+    47
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "table_long": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    1,
+    64,
+    30,
+    46
+   ],
+   "solid": [
+    2,
+    10,
+    26,
+    36
+   ]
+  },
+  "bookcase": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    33,
+    64,
+    46,
+    46
+   ],
+   "solid": [
+    0,
+    26,
+    46,
+    20
+   ]
+  },
+  "bookcase_dark": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    97,
+    65,
+    46,
+    46
+   ],
+   "solid": [
+    0,
+    26,
+    46,
+    20
+   ]
+  },
+  "dresser": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    3,
+    116,
+    27,
+    37
+   ]
+  },
+  "wardrobe": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    31,
+    114,
+    17,
+    39
+   ]
+  },
+  "coat_rack": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    49,
+    116,
+    15,
+    44
+   ],
+   "solid": [
+    4,
+    36,
+    8,
+    8
+   ]
+  },
+  "clock_tall": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    70,
+    112,
+    22,
+    47
+   ],
+   "solid": [
+    2,
+    36,
+    18,
+    11
+   ]
+  },
+  "lamp_floor": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    97,
+    112,
+    13,
+    46
+   ],
+   "solid": [
+    2,
+    38,
+    9,
+    8
+   ]
+  },
+  "mirror": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    115,
+    113,
+    26,
+    45
+   ],
+   "solid": [
+    2,
+    38,
+    22,
+    7
+   ]
+  },
+  "stove_wood": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    148,
+    112,
+    25,
+    41
+   ],
+   "solid": [
+    0,
+    24,
+    25,
+    17
+   ]
+  },
+  "plant": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    2,
+    167,
+    12,
+    24
+   ],
+   "solid": [
+    1,
+    16,
+    10,
+    8
+   ]
+  },
+  "sofa": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    24,
+    166,
+    49,
+    24
+   ]
+  },
+  "sofa_cushions": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    89,
+    160,
+    48,
+    31
+   ]
+  },
+  "armchair": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    144,
+    160,
+    31,
+    30
+   ]
+  },
+  "fridge": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    34,
+    195,
+    28,
+    56
+   ],
+   "solid": [
+    0,
+    30,
+    28,
+    26
+   ]
+  },
+  "cooker": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    65,
+    192,
+    30,
+    43
+   ],
+   "solid": [
+    0,
+    16,
+    30,
+    27
+   ]
+  },
+  "counter_sink": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    96,
+    192,
+    79,
+    44
+   ],
+   "solid": [
+    0,
+    16,
+    79,
+    28
+   ]
+  },
+  "counter_corner": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    175,
+    192,
+    33,
+    59
+   ],
+   "solid": [
+    0,
+    16,
+    33,
+    43
+   ]
+  },
+  "utensils": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    67,
+    240,
+    26,
+    17
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "pet_bed": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    99,
+    240,
+    27,
+    15
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "board": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    128,
+    243,
+    48,
+    13
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "lamp_table": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    1,
+    260,
+    15,
+    25
+   ],
+   "solid": [
+    2,
+    18,
+    11,
+    7
+   ]
+  },
+  "basin": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    22,
+    257,
+    20,
+    30
+   ],
+   "solid": [
+    2,
+    18,
+    16,
+    12
+   ]
+  },
+  "bathtub": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    81,
+    263,
+    44,
+    24
+   ],
+   "solid": [
+    0,
+    4,
+    44,
+    20
+   ]
+  },
+  "toilet": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    128,
+    257,
+    16,
+    30
+   ],
+   "solid": [
+    1,
+    16,
+    14,
+    14
+   ]
+  },
+  "desk": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    190,
+    261,
+    18,
+    25
+   ],
+   "solid": [
+    0,
+    12,
+    18,
+    13
+   ]
+  },
+  "shelf_small": {
+   "sheet": "TopDownHouse_FurnitureState1.png",
+   "rect": [
+    177,
+    268,
+    13,
+    18
+   ],
+   "solid": [
+    0,
+    8,
+    13,
+    10
+   ]
+  },
+  "fireplace_lit": {
+   "sheet": "TopDownHouse_FurnitureState2.png",
+   "rect": [
+    148,
+    112,
+    25,
+    41
+   ],
+   "solid": [
+    0,
+    24,
+    25,
+    17
+   ]
+  },
+  "sofa_green": {
+   "sheet": "TopDownHouse_FurnitureState2.png",
+   "rect": [
+    24,
+    166,
+    49,
+    24
+   ]
+  },
+  "table_green": {
+   "sheet": "TopDownHouse_FurnitureState2.png",
+   "rect": [
+    1,
+    32,
+    46,
+    30
+   ],
+   "solid": [
+    2,
+    8,
+    42,
+    22
+   ]
+  },
+  "window_4": {
+   "sheet": "TopDownHouse_DoorsAndWindows.png",
+   "rect": [
+    98,
+    51,
+    27,
+    28
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "window_2": {
+   "sheet": "TopDownHouse_DoorsAndWindows.png",
+   "rect": [
+    130,
+    51,
+    27,
+    29
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "window_small": {
+   "sheet": "TopDownHouse_DoorsAndWindows.png",
+   "rect": [
+    162,
+    63,
+    27,
+    16
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "door_closed": {
+   "sheet": "TopDownHouse_DoorsAndWindows.png",
+   "rect": [
+    130,
+    1,
+    28,
+    48
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "door_half": {
+   "sheet": "TopDownHouse_DoorsAndWindows.png",
+   "rect": [
+    162,
+    1,
+    24,
+    51
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "door_open": {
+   "sheet": "TopDownHouse_DoorsAndWindows.png",
+   "rect": [
+    96,
+    0,
+    32,
+    49
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "bread": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    81,
+    117,
+    15,
+    8
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "bun": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    83,
+    39,
+    12,
+    8
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "sandwich": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    50,
+    39,
+    12,
+    9
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "pie": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    66,
+    39,
+    12,
+    9
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "plate_food": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    17,
+    70,
+    15,
+    9
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "pot": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    65,
+    65,
+    15,
+    14
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "jar": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    4,
+    117,
+    8,
+    11
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "crate": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    98,
+    34,
+    12,
+    14
+   ],
+   "solid": [
+    0,
+    6,
+    12,
+    8
+   ]
+  },
+  "crate_big": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    112,
+    32,
+    16,
+    16
+   ],
+   "solid": [
+    0,
+    6,
+    16,
+    10
+   ]
+  },
+  "cutting_board": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    97,
+    116,
+    14,
+    10
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "teapot": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    113,
+    116,
+    14,
+    10
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "vase": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    83,
+    48,
+    11,
+    15
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "flower_pot": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    113,
+    17,
+    13,
+    14
+   ],
+   "solid": [
+    0,
+    6,
+    13,
+    8
+   ]
+  },
+  "picture": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    2,
+    17,
+    12,
+    14
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "painting": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    16,
+    19,
+    16,
+    10
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "clock_wall": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    80,
+    15,
+    16,
+    17
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "wall": true
+  },
+  "telephone": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    97,
+    53,
+    15,
+    11
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "book": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    2,
+    54,
+    13,
+    10
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "candle": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    39,
+    53,
+    6,
+    11
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "cup": {
+   "sheet": "TopDownHouse_SmallItems.png",
+   "rect": [
+    67,
+    101,
+    11,
+    10
+   ],
+   "solid": [
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ }
+}

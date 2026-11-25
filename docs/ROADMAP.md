@@ -103,3 +103,24 @@ Offen / zu entscheiden:
 - Grundversorgung: sollen Essen/Wasser/Energie Vorräte verbrauchen (Kopplung Bedürfnisse ↔ Ressourcen) schon in Phase 4 oder erst Phase 6?
 - Siedlungsfläche 1 km² in Chunks (ADR-17) und Navigation über Chunks (Wegnetz je Chunk, Fernwege).
 - Bevölkerungsentwicklung (Zuzug, Geburten) und verlassene Siedlungen (WORLD_DESIGN.md §5).
+
+
+## Stand v0.1 (technisch 0.6.0, 25.11.2026)
+- Architekturkorrekturen (Weltautorität, Detailstufen, geräteunabhängige Bevölkerung) – ARCHITECTURE_AUDIT.md, SIMULATION_ARCHITECTURE.md §9.
+- Living World vertieft (Persönlichkeit, Betriebsmodelle, Gesundheit, Beschäftigung) – LIVING_WORLD.md.
+- **Phase 4 – Settlement Foundation umgesetzt** (SETTLEMENT_SYSTEM.md §10) – Abnahme durch den Projektinhaber offen.
+- Gameplay-Polishing: Richtungen, Clip-Bibliothek, Türen, Innenräume, Kollisionen, Umland, Globus, Farbpalette, Ladenbeschreibungen, Versionsanzeige – INTERIORS_AND_INTERACTION.md, VERSIONING.md.
+
+## Master-Erweiterung World Council (25.11.2026, technisch 0.7.0)
+Weltratssitz auf **Kalistia**: Standort, Weltdefinition, Globus, eigenes Außen-Asset und begehbare Vorschau umgesetzt. Alle weiteren Bestandteile sind den bestehenden Phasen zugeordnet, ohne die Reihenfolge zu ändern: Restaurierung/Innenräume Phase 7, Reisen und Verkehr Phase 8, Delegierte Phase 9, Weltversammlung am 24. Juni Phase 10, Serverautorität Phase 12. Siehe [WORLD_COUNCIL.md](WORLD_COUNCIL.md) und [WORLD_COUNCIL_ROADMAP.md](WORLD_COUNCIL_ROADMAP.md).
+
+## Vorbereitete Anforderungen für spätere Phasen
+| Phase | Anforderung | Vorbereitung heute |
+|---|---|---|
+| 5 Social Life | Partnerschaften, Geburten, Kinder mit Entwicklungsstufen (Säugling, Kleinkind, Schulkind, Jugend – bei 60 Tagen/Jahr ≈ 3 reale Jahre bis erwachsen); Kinder dürfen nie durch Abwesenheit Schaden nehmen (Master §13.7) | Altersmodell, Tagesschritt, Haushalte (`home_id`), Persönlichkeit; Familienfelder ergänzbar |
+| 6 Economy | Löhne, Lohnausfall bei Krankheit/Fehlen, Kündigungsfristen, Ersparnisse, Preise, Einkaufen, Spieler-Arbeitsstellen, eigene Läden und Ladenbeschreibungen | Beschäftigungsstatus, Abmahnungen, Stellen, Versorgung, `business_texts`, Interieur-`upgrade` |
+| 7 Construction | Bauen/Abreißen, Möbel kaufen und tauschen, Bett statt Matratze, Innenausbau, begehbares Umland, Territoriumserweiterung | Navigation mit Sperren/Versionen, Grundriss-Daten, Innenraum-Layouts als Daten, LocalTerrain |
+| 8 Inter-Settlement | NPC-/Spieler-Wanderung, Wiederbesiedlung verlassener Siedlungen, Busverkehr | Befehl `join_settlement` (gesperrt), Lebenszyklus |
+| 11 Conflict | Kriminalität, Verletzungen durch Konflikte | Clips flinch/hurt, Animation „Die“ importiert |
+| 12/13 Multiplayer | Simulationsdienst, Firestore, Echtzeit | WorldAuthority/WorldClient, Befehle, Snapshots, Hash-Tests |
+| Wetter/Jahreszeiten | regionales Wetter und Jahreszeiten (Master-Prompt: Klima/Geografie), Schnee auf Boden und Dächern | `record.climate`, Living-Assets-Schnee- und Wetterzustände |

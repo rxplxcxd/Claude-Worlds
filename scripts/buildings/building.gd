@@ -19,6 +19,13 @@ var accent_color := Color("6b4e3a")
 
 var _corners: PackedVector2Array
 var _sprite: Sprite2D
+var _world_per_src := 1.0
+var _living: Node2D
+var _living_key := ""
+var _doors: Dictionary = {}       # door id -> {sprite, rect, frames}
+var _interactable: Interactable
+static var _door_meta: Dictionary = {}
+const DOOR_META := "res://assets/penzilla/doors/doors.json"
 
 
 ## Builds the node from a settlement data entry.
@@ -44,18 +51,35 @@ func setup(entry: Dictionary) -> void:
 
 	collision_layer = 1 # "world"
 	collision_mask = 0
-	var body := CollisionPolygon2D.new()
-	body.polygon = _scaled(_corners, 0.94)
-	add_child(body)
+	# Collision follows the real building, not the whole footprint: complex
+	# footprints (parking, aprons, open markets) list their solid parts.
+	var fp_spec := footprint_spec(building_type, entry)
+	if fp_spec.is_empty():
+		var body := CollisionPolygon2D.new()
+		body.polygon = _scaled(_corners, 0.94)
+		add_child(body)
+	else:
+		for poly in fp_spec.get("solid", []):
+			var pts := PackedVector2Array()
+			for q in poly:
+				pts.append(Iso.grid_to_world(origin + Vector2(float(q[0]), float(q[1]))) - position)
+			var cp := CollisionPolygon2D.new()
+			cp.polygon = pts
+			add_child(cp)
+		surfaces = fp_spec.get("surfaces", [])
 
 	var it := Interactable.create(building_id, display_name, _scaled(_corners, 1.0 + 1.2 / maxf(footprint.x, footprint.y)))
 	it.subtitle = entry.get("function", "")
 	it.text = entry.get("text", "")
 	it.actions = entry.get("actions", [])
-	it.verb = "Betreten" if building_type == "player_home" else "Ansehen"
+	it.verb = "Ansehen"
+	# The body is only reachable by tapping; the button by proximity belongs
+	# to the door (see _add_door_interactable).
+	it.proximity = false
 	# Stand in front of the door (middle of the front-left face).
 	it.approach_offset = (_corners[3] + _corners[2]) * 0.5 + Iso.grid_to_world(Vector2(0, 0.6))
 	add_child(it)
+	_interactable = it
 
 	# Penzilla sprite: its anchor (footprint bottom vertex) sits on the
 	# bottom corner of the footprint diamond.
@@ -69,7 +93,130 @@ func setup(entry: Dictionary) -> void:
 		_sprite.scale = Vector2.ONE * float(info["scale"])
 		_sprite.position = _corners[2] + info["offset"]
 		add_child(_sprite)
+		_world_per_src = float(info.get("world_per_src", 1.0))
+		_setup_doors()
+		if _doors.has("main"):
+			# stand in front of the door that is painted on the sprite
+			_interactable.approach_offset = door_local_point("main") + Vector2(0, 16)
+	_add_door_interactable()
 	queue_redraw()
+
+
+## Door overlays (tools/assets/make_doors.py): frames of the opening door,
+## drawn over the sprite exactly where the door is painted.
+func _setup_doors() -> void:
+	if _door_meta.is_empty() and FileAccess.file_exists(DOOR_META):
+		var d = JSON.parse_string(FileAccess.get_file_as_string(DOOR_META))
+		_door_meta = d if d is Dictionary else {"doors": {}}
+	var key := _sprite.texture.resource_path.get_file().get_basename()
+	for d in _door_meta.get("doors", {}).get(key, []):
+		if d.get("type", "none") == "none" or not ResourceLoader.exists("res://assets/penzilla/doors/" + str(d["file"])):
+			continue
+		var tex: Texture2D = load("res://assets/penzilla/doors/" + str(d["file"]))
+		var rect: Array = d["rect"]
+		var spr := Sprite2D.new()
+		spr.name = "Door_" + str(d["id"])
+		spr.texture = tex
+		spr.centered = false
+		spr.region_enabled = true
+		spr.region_rect = Rect2(0, 0, rect[2], rect[3])
+		# the door files are cut from the sprite file: same scale and origin
+		var k := float(tex.get_height()) / float(rect[3])
+		spr.scale = _sprite.scale / k
+		spr.position = _sprite.position + Vector2(rect[0], rect[1]) * _sprite.scale
+		spr.visible = false
+		add_child(spr)
+		_doors[str(d["id"])] = {"sprite": spr, "rect": rect, "frames": int(_door_meta.get("frames", 6)), "type": d["type"]}
+
+
+var door_interactable: Interactable
+## Walkable surfaces inside the footprint (parking, apron, market) – data for
+## later systems (vehicles park on "parking" surfaces).
+var surfaces: Array = []
+static var _footprints: Dictionary = {}
+
+
+static func footprint_spec(p_type: String, entry: Dictionary) -> Dictionary:
+	if _footprints.is_empty():
+		var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/buildings/footprints.json"))
+		_footprints = d if d is Dictionary else {"_": {}}
+	return _footprints.get(str(entry.get("sprite_key", p_type)), {})
+var sprite_key := ""
+
+
+## A small interaction area right at the door: only there the button
+## "Betreten" (or "Ansehen" for buildings without an interior yet) appears.
+func _add_door_interactable() -> void:
+	sprite_key = _sprite.texture.resource_path.get_file().get_basename() if _sprite else building_type
+	var p := door_local_point("main")
+	var poly := PackedVector2Array([Vector2(-30, -14), Vector2(30, -14), Vector2(30, 20), Vector2(-30, 20)])
+	var it := Interactable.create(building_id + ":door", display_name, poly)
+	var enterable := InteriorScene.has_layout(sprite_key) and InteriorScene.assets_available()
+	it.kind = "door_enter" if enterable else "door_info"
+	it.verb = "Betreten" if enterable else "Ansehen"
+	it.subtitle = _interactable.subtitle
+	it.text = _interactable.text
+	it.actions = _interactable.actions
+	it.position = p
+	it.approach_offset = Vector2(0, 16)
+	it.set_meta("building_id", building_id)
+	add_child(it)
+	door_interactable = it
+
+
+func has_door(id: String = "main") -> bool:
+	return _doors.has(id)
+
+
+## 0 = closed (the painted door), 1 = fully open.
+func set_door_open(id: String, amount: float) -> void:
+	if not _doors.has(id):
+		return
+	var d: Dictionary = _doors[id]
+	var n: int = d["frames"]
+	var fr := clampi(int(round(clampf(amount, 0.0, 1.0) * (n - 1))), 0, n - 1)
+	var spr: Sprite2D = d["sprite"]
+	spr.visible = fr > 0
+	var rect: Array = d["rect"]
+	spr.region_rect = Rect2(fr * int(rect[2]), 0, rect[2], rect[3])
+
+
+## World position at the bottom centre of a door (where people pass).
+func door_world_point(id: String = "main") -> Vector2:
+	return global_position + door_local_point(id)
+
+
+func door_local_point(id: String = "main") -> Vector2:
+	if not _doors.has(id):
+		return (_corners[3] + _corners[2]) * 0.5
+	var rect: Array = _doors[id]["rect"]
+	return _sprite.position + Vector2(float(rect[0]) + float(rect[2]) * 0.5, float(rect[1]) + float(rect[3])) * _sprite.scale
+
+
+## Living Assets (Phase 4): shows the building's persistent visual state
+## (wear, fire traces, overgrowth, damage) from the simulation. Pristine
+## buildings keep the original sprite; missing state files fall back to it.
+func apply_visual_state(vs: VisualState, profile: String) -> void:
+	if _sprite == null:
+		return
+	var key := JSON.stringify([vs.structure, vs.wear, vs.damage, vs.fire, vs.overgrowth, vs.repair, profile])
+	if key == _living_key:
+		return
+	_living_key = key
+	if _living:
+		_living.queue_free()
+		_living = null
+	_sprite.visible = true
+	if vs.structure == "intact" and vs.wear == 0 and vs.damage == 0 and vs.fire == 0 and vs.overgrowth == 0 and vs.repair == 0:
+		return
+	var asset := _sprite.texture.resource_path.trim_prefix("res://assets/penzilla/").get_basename()
+	if not LivingComposer.has_asset(asset):
+		return
+	_living = LivingComposer.build(asset, vs, _sprite.texture, profile)
+	_living.scale = Vector2.ONE * _world_per_src
+	_living.position = _sprite.position
+	add_child(_living)
+	_sprite.visible = false
 
 
 func is_placeholder() -> bool:

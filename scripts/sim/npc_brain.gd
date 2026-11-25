@@ -72,9 +72,9 @@ static func initial_state(rec: Dictionary, t: int, home_place: String) -> Dictio
 	return {"act": "relax_home", "place": home_place, "t0": t, "t1": t, "travel": {}, "needs": needs, "needs_at": t, "n": 0, "last_act": "", "work_min": 0, "pause_for": 0}
 
 
-static func needs_at(state: Dictionary, rec: Dictionary, config: Dictionary, t: int) -> Dictionary:
+static func needs_at(state: Dictionary, rec: Dictionary, config: Dictionary, t: int, supply: Dictionary = {}) -> Dictionary:
 	var act: String = "walk" if not state.get("travel", {}).is_empty() else state["act"]
-	return to_float(_integrate(state["needs"], act, t - int(state["needs_at"]), rec, config))
+	return to_float(_integrate(state["needs"], act, t - int(state["needs_at"]), rec, config, supply))
 
 
 static func to_float(fixed: Dictionary) -> Dictionary:
@@ -84,10 +84,20 @@ static func to_float(fixed: Dictionary) -> Dictionary:
 	return out
 
 
-static func _integrate(needs: Dictionary, act: String, seconds: int, rec: Dictionary, config: Dictionary) -> Dictionary:
+static func _integrate(needs: Dictionary, act: String, seconds: int, rec: Dictionary, config: Dictionary, supply: Dictionary = {}) -> Dictionary:
 	var out := {}
 	var defs: Dictionary = config.get("needs", {})
 	var gains: Dictionary = config.get("activities", {}).get(act, {}).get("gain", {})
+	# basic supply (Grundversorgung): shortages make meals, washing and
+	# evenings at home less effective – people feel what the settlement lacks
+	if not supply.is_empty() and (supply.get("food_short", false) or supply.get("water_short", false) or supply.get("energy_short", false)):
+		gains = gains.duplicate()
+		if gains.has("food"):
+			gains["food"] = float(gains["food"]) * (0.5 if supply.get("food_short", false) else 1.0) * (0.8 if supply.get("water_short", false) else 1.0)
+		if gains.has("hygiene") and supply.get("water_short", false):
+			gains["hygiene"] = float(gains["hygiene"]) * 0.3
+		if act == "relax_home" and supply.get("energy_short", false):
+			gains["leisure"] = float(gains.get("leisure", 0.0)) * 0.6
 	for k in NEED_KEYS:
 		var d: Dictionary = defs.get(k, {})
 		var decay := float(d.get("decay", 0.04))
@@ -373,7 +383,7 @@ static func advance(rec: Dictionary, state: Dictionary, to: int, ctx: Dictionary
 			break
 		var act_now: String = "walk" if not travel.is_empty() else str(state["act"])
 		var secs := boundary - int(state["needs_at"])
-		state["needs"] = _integrate(state["needs"], act_now, secs, rec, config)
+		state["needs"] = _integrate(state["needs"], act_now, secs, rec, config, _supply(ctx))
 		state["needs_at"] = boundary
 		if act_now == "work":
 			state["work_min"] = int(state.get("work_min", 0)) + int(secs / 60)
@@ -411,6 +421,10 @@ static func advance(rec: Dictionary, state: Dictionary, to: int, ctx: Dictionary
 	return events
 
 
+static func _supply(ctx: Dictionary) -> Dictionary:
+	return ctx.get("record", {}).get("core", {}).get("stats", {})
+
+
 static func _started(state: Dictionary, act: String, t: int, ctx: Dictionary) -> void:
 	var r: Dictionary = state.get("recent", {})
 	r[act] = t
@@ -420,7 +434,7 @@ static func _started(state: Dictionary, act: String, t: int, ctx: Dictionary) ->
 ## External interaction (e.g. the player greets the NPC) at time t.
 static func apply_interaction(rec: Dictionary, state: Dictionary, t: int, ctx: Dictionary, delta: Dictionary) -> void:
 	var act: String = "walk" if not state.get("travel", {}).is_empty() else state["act"]
-	var cur := _integrate(state["needs"], act, t - int(state["needs_at"]), rec, ctx["config"])
+	var cur := _integrate(state["needs"], act, t - int(state["needs_at"]), rec, ctx["config"], _supply(ctx))
 	for k in delta:
 		if cur.has(k):
 			cur[k] = clampi(int(cur[k]) + int(round(float(delta[k]) * SCALE)), 0, SCALE)

@@ -44,6 +44,9 @@ var _settlements: Array[Dictionary] = []
 ## Territories: {territory_id, owner_settlement_id, owner_player_id,
 ## region_ids[], kind, claimed_at_unix}. Created by founding only.
 var _territories: Array[Dictionary] = []
+## Changeable state of the fixed world landmarks (Landmarks), by landmark_id.
+## Persistent: a restored fountain stays restored, damage stays (WORLD_COUNCIL.md §7).
+var _landmark_state: Dictionary = {}
 ## Set when load_world() moved an old settlement onto the planet.
 var migrated_settlement_ids: Array[String] = []
 ## Set when load_world() converted a Phase-2 region claim into a 1 km² territory.
@@ -81,6 +84,7 @@ func _process(delta: float) -> void:
 func load_world() -> void:
 	_settlements.clear()
 	_territories.clear()
+	_landmark_state.clear()
 	migrated_settlement_ids.clear()
 	migrated_territory_ids.clear()
 	var genesis := _read_json(GENESIS_PATH)
@@ -100,6 +104,15 @@ func load_world() -> void:
 			push_warning("WorldState: dropped invalid settlement record: " + _check_record(s))
 	for t in saved.get("territories", []):
 		_territories.append(t)
+	var ls: Dictionary = saved.get("landmarks", {})
+	for id in ls.keys():
+		if not Landmarks.get_def(id).is_empty():
+			var st: Dictionary = ls[id]
+			var init := Landmarks.initial_state(id)
+			for k in init.keys():   # schema 2: property, neutral, incidents
+				if not st.has(k):
+					st[k] = init[k]
+			_landmark_state[id] = st
 	_migrate_territories()
 	_migrate_positions()
 
@@ -213,7 +226,23 @@ func _apply_site(record: Dictionary, site: Dictionary) -> void:
 	var diff: Dictionary = site.get("difficulty", {})
 	record["difficulty"] = diff.get("class", "")
 	record["difficulty_requirements"] = diff.get("requirements", [])
+	record["region_factors"] = region_factors(site)
 	_ensure_area(record)
+
+
+## Phase 4 "Ressourcen": what the site gives the settlement's basic supply
+## (multipliers on food, water and energy production and on building
+## materials for maintenance), derived from the site rating (Phase 2).
+static func region_factors(site: Dictionary) -> Dictionary:
+	var f: Dictionary = site.get("factors", {})
+	var drv: Dictionary = site.get("difficulty", {}).get("drivers", {})
+	var cold := float(drv.get("cold_heat", 0.0))
+	return {
+		"food": snappedf(clampf(0.55 + 0.45 * float(f.get("soil", 0.5)) + 0.25 * float(f.get("climate", 0.5)), 0.55, 1.2), 0.01),
+		"water": snappedf(clampf(0.55 + 0.5 * float(f.get("water", 0.5)), 0.6, 1.05), 0.01),
+		"energy": snappedf(clampf(0.7 + 0.3 * float(f.get("resources", 0.5)) + 0.2 * float(f.get("terrain", 0.5)) - 0.3 * cold, 0.6, 1.1), 0.01),
+		"materials": snappedf(clampf(0.6 + 0.5 * float(f.get("resources", 0.5)), 0.6, 1.1), 0.01),
+	}
 
 
 ## Settlement area (the locally playable grid) – distinct from the territory.
@@ -295,7 +324,38 @@ func save_world() -> void:
 	if f == null:
 		push_warning("WorldState: could not save (%s)" % error_string(FileAccess.get_open_error()))
 		return
-	f.store_string(JSON.stringify({"schema_version": SCHEMA_VERSION, "world_id": world_id, "settlements": _settlements, "territories": _territories}, "  ", true, true))
+	f.store_string(JSON.stringify({"schema_version": SCHEMA_VERSION, "world_id": world_id, "settlements": _settlements, "territories": _territories, "landmarks": _landmark_state}, "  ", true, true))
+
+
+## State of a fixed landmark (stage, components, extensions, decisions,
+## history). Created from the definition on first use; read-only for the
+## client – changes come from the world authority (later phases).
+func landmark_state(landmark_id: String) -> Dictionary:
+	if not _landmark_state.has(landmark_id):
+		if Landmarks.get_def(landmark_id).is_empty():
+			return {}
+		_landmark_state[landmark_id] = Landmarks.initial_state(landmark_id)
+	return _landmark_state[landmark_id]
+
+
+## Server-side boundary update of a landmark property (after a resolution).
+## Returns "" on success or the reason for the rejection. Logged in history.
+func update_landmark_property(landmark_id: String, polygon: PackedVector2Array, issuer: String, resolution_id: String) -> String:
+	var st := landmark_state(landmark_id)
+	if st.is_empty():
+		return "Unbekannte Landmarke."
+	var why := Landmarks.check_property_change(landmark_id, st, polygon, issuer, resolution_id)
+	if why != "":
+		return why
+	var pts := []
+	for p in polygon:
+		pts.append([p.x, p.y])
+	var prop: Dictionary = st.get("property", {})
+	st["property"] = {"version": int(prop.get("version", 1)) + 1, "polygon_m": pts}
+	st["version"] = int(st.get("version", 0)) + 1
+	(st["history"] as Array).append({"t": int(Time.get_unix_time_from_system()), "kind": "property_changed", "resolution_id": resolution_id, "by": issuer})
+	save_world()
+	return ""
 
 
 ## Switches storage (used by tests so the real local world is untouched).

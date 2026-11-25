@@ -54,9 +54,16 @@ func rate_site(lat: float, lon: float, settlements: Array, territories: Array, i
 	#    finer coasts follow with the terrain refinement in Phase 4.)
 	var land_ok: bool = s["land"]
 	for c in ring:
-		land_ok = land_ok and p.is_land(p.cell_of(float(c[0]), float(c[1])))
+		land_ok = land_ok and p.is_land_at(float(c[0]), float(c[1]))
 	if not land_ok:
 		reasons.append("Hier ist Wasser – eine Siedlung braucht Land.")
+	# The neutral property of a world landmark (Concordium) cannot be part of a
+	# settlement territory. Only the exact property – the land around it
+	# follows the normal rules (WORLD_COUNCIL.md §3).
+	var lm := Landmarks.property_overlapping(ring, p.radius_km)
+	if not lm.is_empty():
+		reasons.append("Das Gelände des %s ist neutrales Gebiet – es kann zu keiner Siedlung gehören." % lm.get("site_name", ""))
+		out["landmark"] = lm["landmark_id"]
 	# 2) 20 km between territory borders (geodesic), no overlap.
 	var nb := TerritoryGeometry.nearest_border(ring, territories, p.radius_km, ignore_settlement_id)
 	var gap: float = nb["distance_km"]
@@ -200,6 +207,44 @@ func best_site(settlements: Array, territories: Array) -> Dictionary:
 				best_score = r["score"]
 				best = r
 	return best
+
+
+## Several good, DIFFERENT founding sites (best first), at least
+## `min_sep_km` apart, one per natural region at most. The globe cycles
+## through them with the "Vorschlag" button.
+func good_sites(settlements: Array, territories: Array, count: int = 30, min_sep_km: float = 400.0) -> Array:
+	var p := planet()
+	if p == null:
+		return []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = p.seed + 101
+	var all := []
+	for region in p.regions:
+		var c: Vector2 = region["center"]
+		var candidates: Array[Vector2] = [c]
+		for k in 3:
+			candidates.append(Vector2(c.x + rng.randf_range(-3.0, 3.0), c.y + rng.randf_range(-4.0, 4.0)))
+		var best := {}
+		for cand in candidates:
+			var r := rate_site(cand.x, cand.y, settlements, territories)
+			if r["valid"] and r["sample"]["region_id"] == region["region_id"] and (best.is_empty() or int(r["score"]) > int(best["score"])):
+				best = r
+		if not best.is_empty():
+			all.append(best)
+	all.sort_custom(func(a, b): return int(a["score"]) > int(b["score"]))
+	var out := []
+	for r in all:
+		var s: Dictionary = r["sample"]
+		var ok := true
+		for o in out:
+			if Geo.distance_km(s["lat"], s["lon"], o["sample"]["lat"], o["sample"]["lon"], p.radius_km) < min_sep_km:
+				ok = false
+				break
+		if ok:
+			out.append(r)
+			if out.size() >= count:
+				break
+	return out
 
 
 func _near_flag(p: PlanetData, lat: float, lon: float, flag: String, radius: int) -> bool:

@@ -99,6 +99,9 @@ jobs:
             echo "Penzilla assets: not available (placeholder build)" | tee -a "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Version and build info (data/version.json → project.godot, build_info.json)
+        run: python3 tools/version/sync_version.py --build build/web "${GITHUB_SHA}"
+
       - name: Import project
         run: ~/godot/godot --headless --path . --import
 
@@ -114,6 +117,8 @@ jobs:
           test -s build/web/index.pck
           test -s build/web/index.manifest.json
           test -s build/web/index.service.worker.js
+          python3 tools/version/sync_version.py --build build/web "${GITHUB_SHA}"
+          test -s build/web/version.json
           touch build/web/.nojekyll
           ls -la build/web
 

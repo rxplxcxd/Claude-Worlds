@@ -767,11 +767,11 @@
     "pool_default_type": "farm_shop"
   },
   "demography": {
-    "_comment": "Aging: 1 year of age per 28 real days (daily routines stay real time). Gompertz mortality per year of age; Phase 4 arrivals of new settlers; partnerships/births = Phase 5, migration between settlements = Phase 8.",
+    "_comment": "Aging: 1 year of age per 60 real days (docs/LIVING_WORLD.md L-2) (daily routines stay real time). Gompertz mortality per year of age; Phase 4 arrivals of new settlers; partnerships/births = Phase 5, migration between settlements = Phase 8.",
     "days_per_year": 60,
     "gompertz_a": 5e-05,
     "gompertz_b": 0.09,
-    "arrival_base_per_day": 0.12,
+    "arrival_base_per_day": 0.04,
     "arrival_age": [
       18,
       45
@@ -805,15 +805,15 @@
       "water": 6,
       "energy": 4
     },
-    "building_decay_per_day": 0.0025,
-    "repair_per_builder_hour": 0.012,
+    "building_decay_per_day": 0.004,
+    "repair_per_builder_hour": 0.006,
     "abandoned_decay_per_day": 0.006,
     "fire_per_building_day": 4e-05,
     "farm_capacity_hours_per_day": 40,
     "farm_overcapacity_factor": 0.25
   },
   "founding_population": {
-    "_comment": "Determined by simulation (docs/SETTLEMENT_SYSTEM.md §2a). Master prompt §4.2: about 20-50 NPCs.",
+    "_comment": "Determined by simulation (tools/sim/population_analysis.gd, docs/SETTLEMENT_SYSTEM.md §2a): 30 = smallest founding that keeps every service staffed and the buildings maintained without newcomers, within the water/energy capacity of weak sites. Master prompt §4.2: about 20-50 NPCs.",
     "composition": [
       [
         "admin",
@@ -841,7 +841,7 @@
       ],
       [
         "builder",
-        2
+        3
       ],
       [
         "transport",
@@ -857,11 +857,11 @@
       ],
       [
         "worker",
-        2
+        4
       ],
       [
         "resident",
-        1
+        2
       ]
     ]
   }

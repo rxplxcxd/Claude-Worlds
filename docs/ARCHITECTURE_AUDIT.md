@@ -40,3 +40,6 @@ Client (Godot, iOS Safari/PWA)                       Weltautorität (heute in-pr
 
 ## 3. Grenzen des Entwicklungsadapters (ehrlich)
 Ohne Server läuft die Autorität nur, solange ein Client läuft; beim Start wird sie bis „jetzt“ fortgeschrieben – **dieselbe** Logik, die ein Server kontinuierlich oder bei Zugriff ausführt. Andere Spieler existieren lokal nur als Testbefehle. Echte gemeinsame Welt = Phase 12/13.
+
+## 4. Status (v0.1 / 0.6.0)
+A1 ✔ Weltautorität + Client-Schnittstelle · A2 ✔ jeder Tag wird simuliert · A3 ✔ Bevölkerung geräteunabhängig (Test) · A4 ✔ 30 NPCs per Simulation · A5 ✔ Persönlichkeit messbar · A6 ✔ Betriebsmodelle, Rotation, Vertretung · A7 ✔ Gesundheit, Fehlzeiten, Entlassung (ohne Geld) · A8 ✔ dynamische Navigation · A9 ✔ Animationen + Türen (Türbilder jetzt vorhanden) · A10 ✔ Lebenszyklus · A11 ✔ Altern/Tod/Zuzug (Familien Phase 5) · A12 ✔ Firestore-Rolle dokumentiert.

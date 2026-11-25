@@ -551,7 +551,7 @@ func _render_slot(slot: String) -> void:
 		_content.add_child(colors)
 		var pal := CharacterCatalog.palette(opt_def["palette"])
 		for color_id in pal.keys():
-			var sw := _swatch(CharacterCatalog.tint_color(opt_def["palette"], color_id), color_id == str(sel.get("color", "")), str(pal[color_id].get("label", color_id)))
+			var sw := _swatch(CharacterCatalog.tint_color(opt_def["palette"], color_id), color_id == str(sel.get("color", "")), str(pal[color_id].get("label", color_id)), 34.0 if pal.size() > 40 else 46.0)
 			var cid: String = color_id
 			sw.pressed.connect(func() -> void:
 				var c := app.duplicate(true)
@@ -628,14 +628,14 @@ func _card(label: String, candidate: Dictionary, region: Rect2, selected: bool, 
 	return b
 
 
-func _swatch(color: Color, selected: bool, label: String) -> Button:
+func _swatch(color: Color, selected: bool, label: String, size_px: float = 46.0) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(46, 46)
+	b.custom_minimum_size = Vector2(size_px, size_px)
 	b.focus_mode = Control.FOCUS_NONE
 	b.tooltip_text = label
 	var s := StyleBoxFlat.new()
 	s.bg_color = color
-	s.set_corner_radius_all(23)
+	s.set_corner_radius_all(int(size_px * 0.5))
 	s.set_border_width_all(4 if selected else 2)
 	s.border_color = UiTheme.ACCENT if selected else Color(0, 0, 0, 0.55)
 	s.anti_aliasing = true

@@ -18,8 +18,8 @@ var _phase := 0.0
 var _sprite: AnimatedSprite2D
 
 
-## facing index (Iso.facing_index) -> [sheet row, mirrored]
-const FACING_ROWS := [[2, false], [3, false], [4, false], [3, true], [2, true], [1, true], [0, false], [1, false]]
+## facing index (Iso.facing_index) -> [sheet row, mirrored] – one mapping for everybody
+const FACING_ROWS := CharacterRig.FACING_ROWS
 
 var _interacting := false
 

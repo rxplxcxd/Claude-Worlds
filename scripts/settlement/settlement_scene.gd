@@ -72,6 +72,7 @@ func _ready() -> void:
 		push_warning("Settlement layout: " + p)
 
 	ground.setup(data)
+	_build_surroundings()
 	_build_bounds()
 	_build_buildings()
 	_build_props()
@@ -273,7 +274,15 @@ func _build_npcs() -> void:
 	sim.store()
 	WorldState.save_world()
 	_sync_npc_nodes()
+	_sync_building_visuals()
 	_update_lod(true)
+
+
+## Building visuals follow the persistent Living-Assets states of the record.
+func _sync_building_visuals() -> void:
+	var profile := GraphicsProfile.current()
+	for bid in building_nodes:
+		(building_nodes[bid] as Building).apply_visual_state(VisualEventRouter.visual_state_of(record, bid), profile)
 
 
 ## One node per LIVING inhabitant: newcomers appear, the deceased leave.
@@ -283,7 +292,7 @@ func _sync_npc_nodes() -> void:
 		alive[r["npc_id"]] = true
 		if not _npc_by_id.has(r["npc_id"]):
 			var n := Npc.new()
-			n.setup(r, _names)
+			n.setup(r, _names, _building_type(str(r.get("employment", {}).get("workplace_id", r.get("workplace_id", "")))))
 			objects.add_child(n)
 			npcs.append(n)
 			_npc_by_id[r["npc_id"]] = n
@@ -311,6 +320,23 @@ func _qa_spawn(default_pos: Vector2) -> Vector2:
 	if v.size() == 2 and v[0].is_valid_float() and v[1].is_valid_float():
 		return Vector2(float(v[0]), float(v[1]))
 	return default_pos
+
+
+var surroundings: Surroundings
+
+
+## The land around the settlement from the planet data (coast, mountains,
+## forest, desert, snow …) – no black void at the edge. The climate summary
+## is stored with the settlement for later weather and seasons.
+func _build_surroundings() -> void:
+	var terr := LocalTerrain.generate(record, data.size, 12)
+	record["climate"] = terr.get("climate", {})
+	record["surroundings_features"] = terr.get("features", [])
+	surroundings = Surroundings.new()
+	surroundings.name = "Surroundings"
+	add_child(surroundings)
+	move_child(surroundings, ground.get_index())
+	surroundings.setup(terr, data.size)
 
 
 ## Invisible walls along the settlement edge and around water.
@@ -345,12 +371,20 @@ func _world_bounds() -> Rect2:
 
 
 func _on_minute(_m: int) -> void:
-	day_night.color = GameClock.get_ambient_color()
+	day_night.color = _interior_light() if interior else GameClock.get_ambient_color()
+
+
+## Inside: daylight through the windows by day, warm lamp light at night.
+func _interior_light() -> Color:
+	var out := GameClock.get_ambient_color()
+	var lum := (out.r + out.g + out.b) / 3.0
+	var lamp := Color(0.9, 0.8, 0.68)
+	return lamp.lerp(Color(1.0, 0.98, 0.94), clampf((lum - 0.45) / 0.4, 0.0, 1.0))
 
 
 func _process(delta: float) -> void:
 	# Cheap; keeps the time-of-day preview and dawn/dusk transitions fluid.
-	day_night.color = GameClock.get_ambient_color()
+	day_night.color = _interior_light() if interior else GameClock.get_ambient_color()
 	_update_occlusion(delta)
 	if sim == null:
 		return
@@ -361,6 +395,8 @@ func _process(delta: float) -> void:
 		sim.advance_to(int(GameClock.get_utc_unix()))
 		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived"]):
 			_sync_npc_nodes()
+		if sim.last_events.any(func(e): return e.get("kind", "") in ["building_condition", "fire"]):
+			_sync_building_visuals()
 		_update_lod(false)
 	_render_npcs(false)
 	_save_timer -= delta
@@ -431,8 +467,20 @@ func _update_lod(force: bool) -> void:
 	for i in mini(cap, cand.size()):
 		_detail[cand[i][1]] = true
 	_groups = s.groups_at(t)
+	for id in _detail:
+		if _npc_by_id.has(id):
+			var nd := s.needs_now(id, int(t))
+			(_npc_by_id[id] as Npc).mood = NpcBrain.mood(nd)
+			(_npc_by_id[id] as Npc).energy = float(nd.get("energy", 0.6))
 	_render_npcs(true)
 	_update_effects(s, t)
+
+
+func _building_type(bid: String) -> String:
+	for b in data.buildings:
+		if b.get("id", "") == bid:
+			return str(b.get("type", ""))
+	return ""
 
 
 func _view_rect() -> Rect2:
@@ -458,6 +506,7 @@ func _render_npcs(all: bool) -> void:
 		infos[id] = s.render_info(id, t)
 	_assign_seats(infos)
 	_avoid(infos)
+	_update_doors(s, t)
 	for n in npcs:
 		var id := n.npc_id
 		if not infos.has(id):
@@ -474,6 +523,51 @@ func _render_npcs(all: bool) -> void:
 			partner = Iso.grid_to_world(infos[other].get("grid", Vector2.ZERO) if infos.has(other) else s.render_info(other, t).get("grid", Vector2.ZERO))
 			talking = bubbles and grp[int(t / 4.0) % grp.size()] == id
 		n.apply_render(info, w, wd, partner, talking)
+
+
+## Doors open and close with the people passing through them: the opening
+## follows the same door phase the NPC animation uses (open_door clip at
+## 0.3–0.55 of the passage), the player's door sequence sets its own value.
+var player_door := {}   # building id -> open 0..1 (player entering/leaving)
+
+
+static func door_open_amount(door: String, f: float) -> float:
+	if door == "enter":
+		# opens while the hand reaches the door, stays open while passing,
+		# closes once the person is inside
+		if f < 0.3:
+			return 0.0
+		if f < 0.5:
+			return (f - 0.3) / 0.2
+		if f < 0.85:
+			return 1.0
+		return clampf(1.0 - (f - 0.85) / 0.15, 0.0, 1.0)
+	if door == "exit":
+		if f < 0.6:
+			return clampf(f / 0.15, 0.0, 1.0)
+		return clampf(1.0 - (f - 0.6) / 0.35, 0.0, 1.0)
+	return 0.0
+
+
+func _update_doors(s: SettlementSim, t: float) -> void:
+	var want := {}
+	for id in player_door:
+		want[id] = float(player_door[id])
+	for r in s.roster:
+		var st: Dictionary = s.states.get(r["npc_id"], {})
+		var tr: Dictionary = st.get("travel", {})
+		if tr.is_empty():
+			continue
+		var info := s.render_info(r["npc_id"], t)
+		var door := str(info.get("door", ""))
+		if door == "":
+			continue
+		var place := str(tr["to"] if door == "enter" else tr["from"])
+		var bid := str(s.nav.places.get(place, {}).get("building_id", ""))
+		if bid != "":
+			want[bid] = maxf(float(want.get(bid, 0.0)), door_open_amount(door, float(info.get("door_f", 0.0))))
+	for bid in building_nodes:
+		(building_nodes[bid] as Building).set_door_open("main", float(want.get(bid, 0.0)))
 
 
 ## Benches are used: people relaxing, chatting or on a break near a free
@@ -620,22 +714,232 @@ func _make_effect(e: Dictionary) -> Node2D:
 ## Opens an NPC's card with live information (connected before the
 ## InteractionService so the text is current).
 func _on_interaction_requested(it: Interactable) -> void:
+	_last_interactable = it
 	if it and it.kind == "npc" and _npc_by_id.has(it.interaction_id) and sim:
 		(_npc_by_id[it.interaction_id] as Npc).refresh_card(render_sim(), int(render_time()), _names)
+	elif it and sim and building_nodes.has(it.interaction_id.trim_suffix(":door")):
+		_refresh_building_card(it)
+
+
+var _last_interactable: Interactable
+
+
+var _base_cards: Dictionary = {}   # building id -> [text, actions] from the template
+
+
+## Phase 4: live building cards; the town hall is the administration.
+func _refresh_building_card(it: Interactable) -> void:
+	var bid := it.interaction_id.trim_suffix(":door")
+	if not _base_cards.has(bid):
+		_base_cards[bid] = [it.text, it.actions.duplicate()]
+	var t := int(GameClock.get_utc_unix())
+	var ty := ""
+	for b in data.buildings:
+		if b.get("id", "") == bid:
+			ty = str(b.get("type", ""))
+	if ty == "town_hall":
+		it.text = SettlementReport.town_hall_text(record, data, sim.config, t, sim.offset_min())
+		it.actions = _base_cards[bid][1] + SettlementReport.admin_actions(record, LocalProfile.player_id)
+	else:
+		it.text = SettlementReport.building_text(record, data, sim.config, bid, _base_cards[bid][0], t, sim.offset_min())
 
 
 func _on_interaction_action(interaction_id: String, action_id: String) -> void:
-	if action_id != "talk" or not _npc_by_id.has(interaction_id) or sim == null:
+	if action_id.begins_with("admin_") and sim and WorldState.client:
+		var cmd := SettlementReport.admin_command(record, action_id)
+		if not cmd.is_empty():
+			var res := WorldState.client.submit(cmd)
+			EventBus.toast_requested.emit("Die Verwaltung hat entschieden." if res.get("ok", false) else "Abgelehnt: " + str(res.get("reason", "")))
+			persist()
+		return
+	if action_id == "enter":
+		enter_building(interaction_id.trim_suffix(":door"))
+		return
+	if action_id == "leave":
+		leave_building()
+		return
+	if action_id != "talk":
+		# object interaction: the player plays the action's clip (shared
+		# library with the NPCs); sit/lie take the position first
+		var a := ActionLibrary.get_action(action_id)
+		if a.has("opens") and a["opens"] == "town_hall" and building_nodes.has("bld_town_hall"):
+			var b: Building = building_nodes["bld_town_hall"]
+			_refresh_building_card(b._interactable)
+			EventBus.interaction_opened.emit(b._interactable.to_info())
+		var it := _last_interactable
+		if not a.is_empty() and it and is_instance_valid(it):
+			var point = it.get_meta("pose_point", null)
+			if point is Vector2:
+				point = it.get_parent().to_global(point) if it.get_parent() is Node2D and it.get_meta("pose_local", true) else point
+			if a.has("pose") and not point is Vector2:
+				point = it.global_position
+			player.perform(a, it.global_position, point)
+		return
+	if not _npc_by_id.has(interaction_id) or sim == null:
+		player.perform({"clip": "greet"}, player.global_position + Vector2(0, -10))
 		return
 	var t := int(GameClock.get_utc_unix())
 	sim.player_talk(interaction_id, t)
 	var n: Npc = _npc_by_id[interaction_id]
+	player.perform({"clip": "greet"}, n.global_position)
+	n.rig.play("greet", true)
 	var mood := NpcBrain.mood(sim.needs_now(interaction_id, t))
 	var first := str(n.record.get("name", "")).get_slice(" ", 0)
 	var lines := ["%s nickt dir müde zu." % first, "%s grüßt kurz zurück." % first, "„Hallo! Schön, dich zu sehen“, sagt %s." % first, "%s lächelt: „Was für ein Tag!“" % first]
 	EventBus.toast_requested.emit(lines[clampi(int(mood * 4.0), 0, 3)])
 	n.refresh_card(sim, t, _names)
 	persist()
+
+
+# --- interiors: entering and leaving buildings ----------------------------------
+
+var interior: InteriorScene
+var _inside_bid := ""
+var _outside_bounds := Rect2()
+var _outside_zoom := Vector2.ONE
+var _door_busy := false
+const INTERIOR_OFFSET := Vector2(0, 60000)   # interiors live far below the town
+
+
+## The player opens the door (clip event), the door swings open, the player
+## steps through and fades; the interior is loaded and the player stands
+## inside the entrance; the outside door closes behind.
+func enter_building(bid: String) -> void:
+	if _door_busy or interior != null or not building_nodes.has(bid):
+		return
+	var b: Building = building_nodes[bid]
+	if not InteriorScene.has_layout(b.sprite_key) or not InteriorScene.assets_available():
+		EventBus.toast_requested.emit("Dieser Innenraum folgt später.")
+		return
+	_door_busy = true
+	player.input_enabled = false
+	var door := b.door_world_point("main")
+	player._face_towards(door)
+	var rig: CharacterRig = player._visual.rig
+	if rig:
+		rig.play("open_door", true)
+	await get_tree().create_timer(0.3).timeout          # hand reaches the door (clip event frame)
+	var tw := create_tween()
+	tw.tween_method(func(v: float) -> void: player_door[bid] = v, 0.0, 1.0, 0.25)
+	await tw.finished
+	var tw2 := create_tween().set_parallel(true)
+	tw2.tween_property(player, "global_position", door + Vector2(0, -4), 0.45)
+	tw2.tween_property(player, "modulate:a", 0.0, 0.45)
+	if rig:
+		rig.play("walk")
+	await tw2.finished
+	# the room
+	interior = InteriorScene.create(b.sprite_key, _staff_on_duty(bid), SettlementCore.mix(str(record.get("settlement_id", "")) + "#" + bid), _interior_wealth())
+	interior.position = INTERIOR_OFFSET
+	add_child(interior)
+	_inside_bid = bid
+	_outside_return = b.door_world_point("main") + Vector2(0, 26)
+	player.reparent(interior.objects)
+	player.position = interior.spawn_point
+	player.move_y_scale = InteriorScene.MOVE_Y_SCALE
+	player._visual.scale = Vector2.ONE * InteriorScene.PERSON_SCALE
+	player.facing = Iso.facing_index(Vector2(0, -1))     # looking into the room
+	_outside_bounds = camera.bounds
+	_outside_zoom = camera.zoom
+	camera.bounds = interior.bounds()
+	camera.fit_view = true
+	camera.snap_to_target()
+	objects.visible = false
+	ground.visible = false
+	surroundings.visible = false
+	ground_lights.visible = false
+	var tw3 := create_tween().set_parallel(true)
+	tw3.tween_property(player, "modulate:a", 1.0, 0.35)
+	tw3.tween_method(func(v: float) -> void: player_door[bid] = v, 1.0, 0.0, 0.4)
+	await tw3.finished
+	player_door.erase(bid)
+	player.input_enabled = true
+	_door_busy = false
+
+
+var _outside_return := Vector2.ZERO
+
+
+## Prosperity 0..1 for the furnishing variant (until the economy exists,
+## Phase 6: from the population and the stock of food).
+func _interior_wealth() -> float:
+	var pop := SettlementCore.alive_npcs(record).size() if record.has("npcs") else 10
+	var stocks: Dictionary = record.get("core", {}).get("stocks", {})
+	var food_days := float(stocks.get("food", 0.0)) / maxf(1.0, float(pop))
+	return clampf(0.25 + 0.4 * minf(1.0, pop / 40.0) + 0.3 * clampf(food_days / 20.0, 0.0, 1.0), 0.0, 1.0)
+
+
+func leave_building() -> void:
+	if _door_busy or interior == null:
+		return
+	_door_busy = true
+	player.input_enabled = false
+	var rig: CharacterRig = player._visual.rig
+	player._face_towards(interior.to_global(interior.exit_point))
+	if rig:
+		rig.play("open_door", true)
+	await get_tree().create_timer(0.3).timeout
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(player, "position", interior.exit_point, 0.4)
+	tw.tween_property(player, "modulate:a", 0.0, 0.4)
+	await tw.finished
+	var bid := _inside_bid
+	var b: Building = building_nodes.get(bid)
+	objects.visible = true
+	ground.visible = true
+	surroundings.visible = true
+	ground_lights.visible = true
+	player.reparent(objects)
+	player.move_y_scale = Iso.MOVE_Y_SCALE
+	player._visual.scale = Vector2.ONE
+	var door := b.door_world_point("main") if b else _outside_return
+	player.global_position = door + Vector2(0, -2)
+	camera.bounds = _outside_bounds
+	camera.fit_view = false
+	camera.snap_to_target()
+	interior.queue_free()
+	interior = null
+	_inside_bid = ""
+	player_door[bid] = 1.0
+	player.facing = 6
+	if rig:
+		rig.play("walk")
+	var tw2 := create_tween().set_parallel(true)
+	tw2.tween_property(player, "modulate:a", 1.0, 0.3)
+	tw2.tween_property(player, "global_position", _outside_return, 0.45)
+	await tw2.finished
+	if rig:
+		rig.play("idle")
+	var tw3 := create_tween()
+	tw3.tween_method(func(v: float) -> void: player_door[bid] = v, 1.0, 0.0, 0.35)
+	await tw3.finished
+	player_door.erase(bid)
+	player.input_enabled = true
+	_door_busy = false
+
+
+func is_inside() -> bool:
+	return interior != null
+
+
+## People whose shift at this building is running right now (duty roster).
+func _staff_on_duty(bid: String) -> Array:
+	var out := []
+	if sim == null:
+		return out
+	var t := int(GameClock.get_utc_unix())
+	for r in sim.roster:
+		var sh: Array = NpcBrain.next_shift(r, t, sim._ctx.get(r["npc_id"], {}))
+		if sh.is_empty() or str(sh[2]) != bid or int(sh[0]) > t:
+			continue
+		var info := sim.render_info(r["npc_id"], float(t))
+		if info.get("walking", false):
+			continue
+		out.append({"npc_id": r["npc_id"], "name": r.get("name", ""), "appearance": r.get("appearance", {}),
+			"role_label": str(r.get("profession", {}).get("title", "")), "text": "Im Dienst: " + sim.schedule_text(r, t)})
+		if out.size() >= 2:
+			break
+	return out
 
 
 # --- occlusion: keep the player visible behind buildings and trees ---------
@@ -653,6 +957,9 @@ func _setup_occlusion() -> void:
 	for n in objects.get_children():
 		if n is Building or (n is Prop and (n as Prop).is_occluder()):
 			n.occluder_item().material = _occluder_material
+			if n is Building:
+				for d in (n as Building)._doors.values():
+					(d["sprite"] as Sprite2D).material = _occluder_material   # doors fade with the building
 			_occluders.append([n, 0.0])
 
 

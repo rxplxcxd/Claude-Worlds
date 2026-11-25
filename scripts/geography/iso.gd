@@ -51,5 +51,16 @@ static func facing_index(dir: Vector2) -> int:
 	return posmod(int(round(angle / (PI / 4.0))), 8)
 
 
+## Like facing_index, but keeps `current` until the direction is clearly
+## (by more than `margin` beyond the 22.5° sector edge) in another sector.
+static func facing_with_hysteresis(dir: Vector2, current: int, margin_deg: float = 9.0) -> int:
+	var angle := atan2(-dir.y, dir.x)
+	var centre := current * PI / 4.0
+	var diff := absf(wrapf(angle - centre, -PI, PI))
+	if diff <= deg_to_rad(22.5 + margin_deg):
+		return current
+	return facing_index(dir)
+
+
 static func facing_name(index: int) -> String:
 	return ["e", "ne", "n", "nw", "w", "sw", "s", "se"][clampi(index, 0, 7)]

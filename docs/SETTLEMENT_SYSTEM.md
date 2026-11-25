@@ -103,3 +103,34 @@ Networks        { water[], power[] } (Leitungen/Versorgungsgebiete)
 - **Verschieben** = Abbau + Neubau mit Kosten (realistisch; Penzilla-Sprites erlauben 2 Ausrichtungen: normal/gespiegelt).
 - **Folgen** werden automatisch ausgelöst: Bewohner brauchen Ersatzwohnung, Arbeitsplätze ziehen um, Verträge enden, Straßen ohne Anschluss werden markiert (referenzielle Integrität).
 - **Schutz öffentlicher Infrastruktur** und bewohnter Gebäude über Standardregeln + Gesetze.
+
+
+## 10. Phase 4 – Settlement Foundation [IMPLEMENTIERT in v0.1 / 0.6.0]
+### 10.1 Startbevölkerung (Master §4.2) – per Simulation ermittelt
+`tools/sim/population_analysis.gd` rechnet den echten Tagesschritt für verschiedene Gründungen auf guten und schwachen Standorten (je 3 Seeds, 2 Jahre, **ohne Zuzug**):
+
+| Gründung | Standort | Engpasstage (N/W/E) | kritische Dienste Ø | offene Dienststunden/Tag | Bevölkerung nach 2 J. | Gebäudezustand Ø |
+|---|---|---|---|---|---|---|
+| 16 | gut/schwach | 0/0/0 | 74 % | 48,8 | 14 | 0 % |
+| 20 | gut | 0/0/0 | 92 % | 27,5 | 18 | 78 % |
+| 20 | schwach | 0/0/0 | 92 % | 27,5 | 18 | 24 % |
+| 26 | gut/schwach | 0/0/0 | 93 % | 4,9 | 23 | 99–100 % |
+| **30** | gut/schwach | 0/0/0 | **96 %** | **1,5** | 27 | 100 % |
+| 34 | gut/schwach | 0/0/0 | 96 % | 0,1 | 31 | 100 % |
+| 44 | gut | 0/0/0 | 96 % | 0,0 | 41 | 100 % |
+| 44 | schwach | 122/119/333 | 96 % | 0,0 | 41 | 100 % |
+
+**Entscheidung: 30 NPCs** – die kleinste Gründung, die alle Dienste dauerhaft besetzt und die Gebäude ohne Zuzug instand hält; 44 überlastet Wasser/Energie schwacher Standorte. Zusammensetzung: Verwaltung 1, Versorgungstechnik 4 (Wasser/Energie), Brand-/Notfall 2, Sicherheit 1, Medizin 2, Landwirtschaft 4, Bau 3, Transport 1, Handwerk 1, Handel/Läden 5, allgemeine Arbeitskräfte 4, Bewohner:innen 2.
+
+### 10.2 Grundversorgung, Ressourcen, Gebäude
+- Nahrung, Wasser, Energie: Erzeugung aus besetzten Arbeitsstunden × Standortfaktoren, Verbrauch 1/Person/Tag, Lager mit Obergrenze, Engpässe als Ereignisse. Engpässe wirken im Alltag (Mahlzeiten sättigen weniger, Hygiene ohne Wasser, dunkle Abende ohne Energie) und auf Gesundheit und Zuzug.
+- **Ressourcen des Standorts** (`record.region_factors`, aus der Standortbewertung): Böden/Klima → Nahrung, Wasserzugang → Wasser, Rohstoffe/Gelände/Kälte → Energie, Rohstoffe → Baumaterial (Instandhaltung).
+- Gebäude: Betriebsmodelle (Öffnungszeiten, Schichten), Personal Soll/Ist, Wohnkapazität, Zustand (Verschleiß, Instandhaltung durch den Bau, Brände) → sichtbar über Living Assets.
+### 10.3 Verwaltung und Arbeitsplätze
+- Rathaus (Gebäudekarte und Verwaltungsschalter innen): Bevölkerung, Alter, Beschäftigung, Versorgung, Dienste, offene Stellen, Entwicklung, Chronik; Entscheidungen der Verwaltung (Zuzug offen/geschlossen, Vorrang bei Stellenbesetzung) als **Befehle an die Weltautorität**.
+- Stellen: Soll je Betriebsmodell; Tod, Ruhestand, Entlassung machen Stellen frei; die Verwaltung besetzt sie nach Vorrang aus allgemeinen Arbeitskräften/Arbeitssuchenden.
+- **Spieler-Arbeitsstellen** (annehmen, Lohn, Vertrag) gehören zur Wirtschaft (Phase 6) – vorbereitet, nicht umgesetzt.
+### 10.4 Bevölkerungsentwicklung
+Altern (1 Lebensjahr = 60 reale Tage), Krankheit, Sterblichkeit (Gompertz), Ruhestand mit 67, Zuzug bei freiem Wohnraum, guter Versorgung und offenen Stellen (ohne Stelle seltener), wöchentlicher Verlauf. Geburten, Kinder, Familien → **Phase 5**; Wanderung zwischen Siedlungen → **Phase 8**.
+### 10.5 Verlassene Siedlungen
+Verlassen erst, wenn **niemand** dort lebt (Abwesenheit des Spielers zählt nicht); dann Verfall (Verschleiß, Bewuchs, Schäden) über die Living Assets. Eine leere Siedlung bekommt keine Zuzügler (Wiederbesiedlung über spätere Phasen). Die Löschung des Gründerkontos löscht die Siedlung nie (Pseudonymisierung).

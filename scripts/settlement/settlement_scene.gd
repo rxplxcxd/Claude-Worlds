@@ -393,7 +393,7 @@ func _process(delta: float) -> void:
 		_lod_timer = 0.25
 		var n_before := sim.roster.size()
 		sim.advance_to(int(GameClock.get_utc_unix()))
-		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived"]):
+		if sim.roster.size() != n_before or sim.last_events.any(func(e): return e.get("kind", "") in ["died", "arrived", "born", "moved_in", "grown_up"]):
 			_sync_npc_nodes()
 		if sim.last_events.any(func(e): return e.get("kind", "") in ["building_condition", "fire"]):
 			_sync_building_visuals()
@@ -758,7 +758,7 @@ func _on_interaction_action(interaction_id: String, action_id: String) -> void:
 	if action_id == "leave":
 		leave_building()
 		return
-	if action_id != "talk":
+	if action_id != "talk" and not action_id.begins_with("talk:"):
 		# object interaction: the player plays the action's clip (shared
 		# library with the NPCs); sit/lie take the position first
 		var a := ActionLibrary.get_action(action_id)
@@ -779,15 +779,25 @@ func _on_interaction_action(interaction_id: String, action_id: String) -> void:
 		player.perform({"clip": "greet"}, player.global_position + Vector2(0, -10))
 		return
 	var t := int(GameClock.get_utc_unix())
-	sim.player_talk(interaction_id, t)
 	var n: Npc = _npc_by_id[interaction_id]
 	player.perform({"clip": "greet"}, n.global_position)
-	n.rig.play("greet", true)
-	var mood := NpcBrain.mood(sim.needs_now(interaction_id, t))
-	var first := str(n.record.get("name", "")).get_slice(" ", 0)
-	var lines := ["%s nickt dir müde zu." % first, "%s grüßt kurz zurück." % first, "„Hallo! Schön, dich zu sehen“, sagt %s." % first, "%s lächelt: „Was für ein Tag!“" % first]
-	EventBus.toast_requested.emit(lines[clampi(int(mood * 4.0), 0, 3)])
+	n.rig.play("talk" if action_id != "talk" else "greet", true)
+	var topic := action_id.get_slice(":", 1) if action_id.begins_with("talk:") else "chat"
+	# conversations are commands to the world authority (Phase 5; server-capable)
+	var res := {}
+	if WorldState.client:
+		res = WorldState.client.submit({"kind": "talk", "settlement_id": record.get("settlement_id", ""),
+			"payload": {"npc_id": interaction_id, "topic": topic, "name": LocalProfile.display_name}})
+	if res.get("ok", false) and res.has("result"):
+		EventBus.toast_requested.emit(str(res["result"]["line"]))
+	else:
+		sim.player_talk(interaction_id, t)
+		var mood := NpcBrain.mood(sim.needs_now(interaction_id, t))
+		var first := str(n.record.get("name", "")).get_slice(" ", 0)
+		var lines := ["%s nickt dir müde zu." % first, "%s grüßt kurz zurück." % first, "„Hallo! Schön, dich zu sehen“, sagt %s." % first, "%s lächelt: „Was für ein Tag!“" % first]
+		EventBus.toast_requested.emit(lines[clampi(int(mood * 4.0), 0, 3)])
 	n.refresh_card(sim, t, _names)
+	EventBus.interaction_opened.emit(n._interactable.to_info())     # card with the new state and topics
 	persist()
 
 

@@ -650,6 +650,7 @@ func _run() -> void:
 	_test_settlement_foundation()
 	await _test_gameplay_polish()
 	await _test_world_council()
+	_test_social_life()
 
 	print("")
 	print("Passed: %d  Failed: %d" % [_passed, _failed.size()])
@@ -1925,3 +1926,100 @@ func _test_interior_generator() -> void:
 	var small := InteriorGenerator.generate("house", Vector2i(9, 8), 3, 0.5)
 	check(not small["rooms"].map(func(r): return r["kind"]).has("corridor") and small["rooms"].size() >= 2, "a small house: living room and back rooms, no corridor")
 	check(InteriorScene.layout_available(InteriorGenerator.key_for("house", Vector2i(12, 10), 1)), "generated interiors need only own art (work in every build)")
+
+
+## Phase 5 – social life: relationships, families and children, groups,
+## memories, goals, conversations (docs/SOCIAL_SYSTEM.md).
+func _test_social_life() -> void:
+	print("[social life – phase 5]")
+	var cfg := SettlementSim.load_config()
+	var data := SettlementData.load_from_file("res://data/settlement_templates/founding_basic.json")
+	var comp: Array = cfg.get("founding_population", {}).get("composition", [])
+	var day0 := 20800
+	var mk := func(sid: String) -> Dictionary:
+		var r := {"settlement_id": sid, "npcs": NpcRoster.generate(sid, data.buildings, comp), "resident_player_ids": ["plr_a"], "region_factors": {"food": 1.0, "water": 1.0, "energy": 1.0, "materials": 1.0}}
+		SettlementCore.ensure(r, cfg, day0)
+		return r
+	var a: Dictionary = mk.call("stl_soc_t")
+	var b: Dictionary = mk.call("stl_soc_t")
+	var us := Time.get_ticks_usec()
+	for d in 360:
+		SettlementCore.day_step(a, data, cfg, day0 + d, 60)
+	var ms := (Time.get_ticks_usec() - us) / 1000.0
+	for d in 360:
+		SettlementCore.day_step(b, data, cfg, day0 + d, 60)
+	check(JSON.stringify(a["social"]) == JSON.stringify(b["social"]) and JSON.stringify(a["npcs"]) == JSON.stringify(b["npcs"]), "social life is reproducible (same seeds, same relationships, families and groups)")
+	var day := day0 + 359
+	var edges: Dictionary = a["social"]["edges"]
+	var kinds := {}
+	for k in edges:
+		kinds[edges[k]["kind"]] = int(kinds.get(edges[k]["kind"], 0)) + 1
+	var friends := int(kinds.get("friend", 0)) + int(kinds.get("close_friend", 0))
+	var people: Array = SettlementCore.alive_npcs(a)
+	check(friends >= 5 and friends <= people.size() * 3, "friendships grow from shared work, home and leisure – not with everybody (%d friendships, %d people)" % [friends, people.size()])
+	check(int(kinds.get("partner", 0)) >= 1, "partnerships form between adults who are close (%d couples)" % int(kinds.get("partner", 0)))
+	var groups: Dictionary = a["social"]["groups"]
+	check(groups.size() >= 1 and groups.values().all(func(g): return (g["members"] as Array).size() >= 1) and groups.size() <= maxi(1, people.size() / 8), "social groups (clubs) are founded by people who share an interest (%s)" % ", ".join(PackedStringArray(groups.values().map(func(g): return "%s %d" % [g["name"], g["members"].size()]))))
+	var mem_ok := people.all(func(r): return (SocialCore.person(r)["memories"] as Array).size() <= SocialCore.MAX_MEMORIES)
+	var with_mem := people.filter(func(r): return not (SocialCore.person(r)["memories"] as Array).is_empty()).size()
+	check(mem_ok and with_mem >= people.size() / 2, "important events become memories, trivial ones do not (%d of %d with memories, at most %d each)" % [with_mem, people.size(), SocialCore.MAX_MEMORIES])
+	var with_goal := people.filter(func(r): return not SocialCore.is_child(r, day, cfg) and not (SocialCore.person(r)["goals"] as Array).is_empty()).size()
+	check(with_goal == people.filter(func(r): return not SocialCore.is_child(r, day, cfg)).size(), "every adult pursues personal goals")
+	var met_group := people.filter(func(r): return not (SocialCore.person(r).get("meetings", []) as Array).is_empty())
+	check(met_group.size() >= 3 and met_group.all(func(r): return (r["social"]["meetings"][0] as Array).size() == 3), "club members carry their meeting times into the daily routine")
+	print("       one simulated year of social life: %.0f ms (%.1f ms/day incl. Phase 4)" % [ms, ms / 360.0])
+	# a child: family links, half-capacity housing, never dies, grows up
+	var couple: Array = people.filter(func(r): return str(SocialCore.person(r)["partner_id"]) != "")
+	var pa: Dictionary = couple[0] if not couple.is_empty() else people[0]
+	var pb: Dictionary = SettlementCore._npc(a, str(SocialCore.person(pa)["partner_id"])) if not couple.is_empty() else people[1]
+	var child := SocialCore._new_child(a, cfg, pa, pb, day)
+	check(child["employment"]["status"] == "child" and SocialCore.person(child)["parents"].has(pa["npc_id"]) and SocialCore.person(pa)["children"].has(child["npc_id"]) and SocialCore.edge(a, pa["npc_id"], child["npc_id"])["kind"] == "family",
+		"a newborn belongs to its parents' household with family ties (%s)" % SocialCore.life_stage(child, day, cfg))
+	var deadly := cfg.duplicate(true)
+	deadly["demography"]["gompertz_a"] = 10.0
+	SettlementCore.day_step(a, data, deadly, day + 1, 60)
+	check(child.get("alive", true), "Master §13.7: a child never dies in the simulation – not even when the adults' mortality is extreme")
+	check(SettlementCore._pool(a).all(func(r): return r["employment"]["status"] != "child") and not SettlementCore._pool(a).has(child), "children are not given jobs or shifts")
+	child["arrived_day"] = day + 1 - int(19 * float(cfg["demography"]["days_per_year"]))
+	var evs := SettlementCore.day_step(a, data, cfg, day + 2, 60)
+	check(child["employment"]["status"] == "pool" and evs.any(func(e): return e["kind"] == "grown_up"), "at 18 a young person becomes an adult and looks for work")
+	# conversations: first meeting, topics grow with familiarity, no grinding, promises
+	var c: Dictionary = mk.call("stl_soc_talk")
+	var npc: Dictionary = SettlementCore.alive_npcs(c)[3]
+	var pid := "player:plr_a"
+	check(SocialCore.topics_for(c, npc, pid, day0, cfg) == ["chat", "wellbeing", "interests"], "strangers only chat; deeper topics need familiarity")
+	var r1 := SocialCore.talk(c, npc, pid, "Test", "chat", day0, cfg, 0.8)
+	check(r1["first"] and SocialCore.person(npc)["memories"].any(func(m): return m["kind"] == "met_player"), "the first conversation is remembered (\"%s\")" % r1["line"])
+	var aff1 := float(r1["edge"]["affinity"])
+	for i in 9:
+		SocialCore.talk(c, npc, pid, "Test", "chat", day0, cfg, 0.8)
+	var aff10 := float(SocialCore.edge(c, npc["npc_id"], pid)["affinity"])
+	check(aff10 < aff1 * 6.0, "talking ten times a day does not buy a friendship (diminishing effect: %.2f after 1, %.2f after 10)" % [aff1, aff10])
+	for d in 6:
+		SocialCore.talk(c, npc, pid, "Test", "wellbeing", day0 + 1 + d, cfg, 0.7)
+	check(SocialCore.topics_for(c, npc, pid, day0 + 8, cfg).has("help"), "after some days of conversations you can talk about goals and offer help")
+	var e0: Dictionary = SocialCore.edge(c, npc["npc_id"], pid)
+	e0["trust"] = 0.4
+	SocialCore.talk(c, npc, pid, "Test", "help", day0 + 8, cfg, 0.7)
+	var tr0 := float(e0["trust"])
+	var kept := SocialCore.talk(c, npc, pid, "Test", "chat", day0 + 10, cfg, 0.7)
+	check(float(kept["edge"]["trust"]) > tr0 and SocialCore.person(npc)["memories"].any(func(m): return m["kind"] == "promise_kept"), "a promise kept in time is remembered and builds trust")
+	# absence without obligation is no problem (Master §13.1): player contacts fade very slowly
+	var fam0 := float(e0["familiarity"])
+	for d in 70:
+		SocialCore.day_step(c, data, cfg, day0 + 20 + d, t0_social(day0 + 20 + d), [])
+	check(float(e0["familiarity"]) >= fam0 - 0.05 and e0["kind"] == SocialCore.edge(c, npc["npc_id"], pid)["kind"], "70 days away: the relationship with the player is still there (familiarity %.2f → %.2f)" % [fam0, float(e0["familiarity"])])
+	# the world authority accepts conversations from residents only (server-capable)
+	var recs: Array = [{"settlement_id": "stl_soc_auth", "template_path": "res://data/settlement_templates/founding_basic.json", "founder_player_id": "plr_founder",
+		"resident_player_ids": ["plr_founder"], "admin_player_ids": ["plr_founder"], "founded_at_unix": 1795000000, "time_zone": {"name": "Test/CET", "offset_min": 60}}]
+	var auth := WorldAuthority.create(func(): return recs, func(): return 1795000000 + 3600, cfg)
+	auth.ensure_population(recs[0])
+	var target: String = recs[0]["npcs"][2]["npc_id"]
+	var res := LocalWorldClient.connect_to(auth, "plr_founder").submit({"kind": "talk", "settlement_id": "stl_soc_auth", "payload": {"npc_id": target, "topic": "chat", "name": "Gründer"}})
+	var res2 := LocalWorldClient.connect_to(auth, "plr_stranger").submit({"kind": "talk", "settlement_id": "stl_soc_auth", "payload": {"npc_id": target, "topic": "chat"}})
+	check(res.get("ok", false) and str(res.get("result", {}).get("line", "")) != "" and not res2.get("ok", true), "conversations are commands to the world authority: residents may talk, strangers are refused")
+	check(WorldAuthority.state_hash(recs[0]) != "" and recs[0].has("social"), "social state is part of the shared, hashed settlement state")
+
+
+static func t0_social(day: int) -> int:
+	return day * 86400 - 3600

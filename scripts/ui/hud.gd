@@ -31,7 +31,7 @@ var _panel: PanelContainer
 var _panel_title: Label
 var _panel_subtitle: Label
 var _panel_text: RichTextLabel
-var _panel_actions: HBoxContainer
+var _panel_actions: HFlowContainer      # wraps: several conversation topics fit on a phone
 var _menu: PanelContainer
 var _menu_text: RichTextLabel
 var _debug_label: Label
@@ -251,8 +251,9 @@ func _build_interaction_panel() -> void:
 	_panel_text.scroll_active = true
 	_panel_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_panel_text)
-	_panel_actions = HBoxContainer.new()
-	_panel_actions.add_theme_constant_override("separation", 8)
+	_panel_actions = HFlowContainer.new()
+	_panel_actions.add_theme_constant_override("h_separation", 8)
+	_panel_actions.add_theme_constant_override("v_separation", 6)
 	box.add_child(_panel_actions)
 
 

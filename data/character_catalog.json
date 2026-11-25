@@ -3808,6 +3808,11 @@
       "outfit": {},
       "workplace": []
     },
+    "child": {
+      "label": "Kind",
+      "outfit": {},
+      "workplace": []
+    },
     "utility": {
       "label": "Versorgungstechnik",
       "outfit": {

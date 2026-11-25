@@ -212,7 +212,12 @@ static func decide(rec: Dictionary, state: Dictionary, t: int, ctx: Dictionary) 
 			continue
 		if sick and not bool(a.get("sick_ok", false)):
 			continue
-		var place := work_place if (act == "work" or act == "pause") else _place_for(a.get("place", "home"), ctx)
+		var meeting: Array = []
+		if bool(a.get("group_only", false)):
+			meeting = _meeting_today(rec, t, off)
+			if meeting.is_empty():
+				continue
+		var place := work_place if (act == "work" or act == "pause") else _place_for(str(meeting[2]) if not meeting.is_empty() else a.get("place", "home"), ctx)
 		if (act == "work" or act == "pause") and not in_shift:
 			continue
 		if place == "" or not nav.places.has(place):
@@ -349,6 +354,16 @@ static func decide(rec: Dictionary, state: Dictionary, t: int, ctx: Dictionary) 
 		if r <= 0.0:
 			return top[i]
 	return top[0]
+
+
+## The person's club meeting today, if it is due around now: [weekday, hour, place].
+static func _meeting_today(rec: Dictionary, t: int, off: int) -> Array:
+	var wd := weekday(t, off)
+	var h := local_hour(t, off)
+	for m in rec.get("social", {}).get("meetings", []):
+		if int(m[0]) == wd and h >= float(m[1]) - 0.75 and h < float(m[1]) + 1.0:
+			return m
+	return []
 
 
 static func _place_for(kind: String, ctx: Dictionary) -> String:

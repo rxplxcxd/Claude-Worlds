@@ -22,7 +22,7 @@ extends RefCounted
 
 const LOG_MAX := 500
 const APPLIED_MAX := 2000
-const KINDS := ["set_policy", "set_priorities", "close_path", "open_path", "join_settlement", "leave_settlement", "delete_account"]
+const KINDS := ["set_policy", "set_priorities", "close_path", "open_path", "join_settlement", "leave_settlement", "delete_account", "talk"]
 
 var config: Dictionary = {}
 var rules: Dictionary = {"player_migration_enabled": false}   # Phase 8
@@ -147,7 +147,7 @@ func snapshot(settlement_id: String) -> Dictionary:
 ## client must see identically; excludes local-only presentation data).
 static func state_hash(record: Dictionary) -> String:
 	var shared := {}
-	for k in ["settlement_id", "npcs", "core", "lifecycle", "visual_states", "resident_player_ids", "founder_status", "admin_player_ids", "nav_changes", "authority"]:
+	for k in ["settlement_id", "npcs", "core", "social", "lifecycle", "visual_states", "resident_player_ids", "founder_status", "admin_player_ids", "nav_changes", "authority"]:
 		if record.has(k):
 			shared[k] = record[k]
 	return JSON.stringify(JSON.parse_string(JSON.stringify(shared)), "", true).sha256_text()
@@ -192,7 +192,10 @@ func submit(cmd: Dictionary) -> Dictionary:
 			auth["applied"].erase(k)
 	record["authority"] = auth
 	stats["commands"] = int(stats["commands"]) + 1
-	return {"ok": true, "seq": auth["seq"]}
+	var out := {"ok": true, "seq": auth["seq"]}
+	if res.has("result"):
+		out["result"] = res["result"]
+	return out
 
 
 func _reject(reason: String) -> Dictionary:
@@ -217,6 +220,9 @@ func _check_permission(record: Dictionary, issuer: String, kind: String) -> Stri
 			return ""
 		"leave_settlement", "delete_account":
 			return "" if issuer in residents or issuer == record.get("founder_player_id", "") else "not a resident"
+		"talk":
+			# conversations: everybody who lives here (visitors with travel, Phase 8)
+			return "" if issuer in residents or issuer == record.get("founder_player_id", "") else "only residents can talk to the people here"
 		_:
 			return "" if issuer in admins_of(record) else "only the settlement administration may do this"
 
@@ -274,6 +280,26 @@ func _apply(record: Dictionary, issuer: String, kind: String, payload: Dictionar
 			record["nav_changes"] = changes
 			if _hot.has(record.get("settlement_id", "")):
 				(_hot[record["settlement_id"]] as SettlementSim).apply_nav_changes(t)
+		"talk":
+			var npc := SettlementCore._npc(record, str(payload.get("npc_id", "")))
+			var topic := str(payload.get("topic", "chat"))
+			if npc.is_empty() or not npc.get("alive", true):
+				return {"ok": false, "reason": "nobody to talk to"}
+			if not SocialCore.TOPICS.has(topic):
+				return {"ok": false, "reason": "unknown topic"}
+			var cfg: Dictionary = _hot[record["settlement_id"]].config if _hot.has(record.get("settlement_id", "")) else SettlementSim.load_config()
+			var day := SettlementCore.day_index(t, settlement_offset(record))
+			var pid := "player:" + issuer
+			if not topic in SocialCore.topics_for(record, npc, pid, day, cfg):
+				return {"ok": false, "reason": "not now"}
+			var mood := 0.6
+			if _hot.has(record.get("settlement_id", "")):
+				var sim: SettlementSim = _hot[record["settlement_id"]]
+				mood = NpcBrain.mood(sim.needs_now(str(npc["npc_id"]), t))
+				sim.player_talk(str(npc["npc_id"]), t)
+			var name := str(payload.get("name", "Nachbar:in")).substr(0, 32)
+			var res := SocialCore.talk(record, npc, pid, name, topic, day, cfg, mood)
+			return {"ok": true, "result": {"line": res["line"], "kind": res["edge"]["kind"], "affinity": res["edge"]["affinity"], "trust": res["edge"]["trust"]}}
 		"join_settlement":
 			record["resident_player_ids"].append(issuer)
 			core["events"].append({"t": t, "kind": "player_joined", "player": issuer})

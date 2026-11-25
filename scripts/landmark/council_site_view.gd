@@ -147,6 +147,16 @@ func can_stand(p: Vector2, from_h: float) -> bool:
 func _build_world() -> void:
 	_modulate = CanvasModulate.new()
 	add_child(_modulate)
+	# an opaque background behind the site and its interiors: nothing of other
+	# scenes (globe, settlement) can show through
+	var bg_layer := CanvasLayer.new()
+	bg_layer.layer = -50
+	var bg := ColorRect.new()
+	bg.color = Color("16120e")
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg_layer.add_child(bg)
+	add_child(bg_layer)
 	if site.is_empty():
 		return
 	var dir := SITE_DIR % int(site.get("stage", 1))
@@ -399,6 +409,8 @@ var interior: InteriorScene
 var walker: CharacterBody2D
 var walker_rig: CharacterRig
 var _act_button: Button
+var _act2_button: Button             # second choice (reserve / release a seat)
+var _seated := ""                    # seat id the walker sits on
 var _toast: Label
 var _toast_left := 0.0
 var _context := {}
@@ -456,6 +468,9 @@ func _set_context(c: Dictionary) -> void:
 	if _act_button:
 		_act_button.visible = not c.is_empty()
 		_act_button.text = str(c.get("label", ""))
+	if _act2_button:
+		_act2_button.visible = c.has("label2")
+		_act2_button.text = str(c.get("label2", ""))
 
 
 func _show_toast(t: String) -> void:
@@ -471,10 +486,9 @@ func _on_act() -> void:
 		"exit":
 			leave_interior()
 		"seat":
-			var sd: Dictionary = interior.seats.get(_context["seat"], {})
-			if walker_rig:
-				walker_rig.play("sit", true)
-			_show_toast("Delegiertenplatz %s – Reihe %d, Sektor %d\nSitzordnung und Abstimmungen folgen mit dem Ratssystem (Phase 10)." % [_context["seat"], int(sd.get("row", 0)), int(sd.get("sector", 0))])
+			sit_down(str(_context["seat"]))
+		"stand":
+			stand_up()
 		"item":
 			var act: String = _context["action"]
 			var adef: Dictionary = ActionLibrary.actions().get(act, {})
@@ -584,7 +598,10 @@ func enter_interior(key: String) -> void:
 	interior.objects.add_child(walker)
 	walker.collision_mask = InteriorScene.LAYER_SOLID | InteriorScene.LAYER_LEVEL_BASE
 	walker.position = interior.spawn_point
+	_seated = ""
+	tint_seats()
 	camera.reparent(walker)
+	camera.make_current()            # re-parenting drops "current": take it back explicitly
 	camera.position = Vector2(0, -40)
 	var b := interior.bounds()
 	camera.limit_left = int(b.position.x)
@@ -601,6 +618,7 @@ func leave_interior() -> void:
 	if interior == null:
 		return
 	camera.reparent(figure)
+	camera.make_current()
 	camera.position = rig.position
 	camera.limit_left = -10000000
 	camera.limit_top = -10000000
@@ -629,10 +647,88 @@ func leave_interior() -> void:
 		tw.tween_callback(_door_animation.bind(_last_door, 0.9 if str(_last_door.get("kind", "")) == "gate" else 0.5, true))
 
 
+## Context of a delegate place: sit down (if allowed) and reserve / release.
+func seat_context(seat: String) -> Dictionary:
+	var st := WorldState.landmark_state(landmark_id)
+	var me := LocalProfile.player_id
+	var holder := CouncilSeats.holder_of(st, seat)
+	var c := {"kind": "seat", "seat": seat, "label": "Hinsetzen (%s)" % seat}
+	if holder == me:
+		c["label"] = "Auf deinen Platz setzen (%s)" % seat
+		c["label2"] = "Reservierung aufheben"
+	elif holder != "":
+		c["label"] = "Reserviert (%s)" % seat
+	else:
+		c["label2"] = "Platz reservieren"
+	return c
+
+
+## Sits down on a delegate place – if it is free, yours, or you are its
+## authorised substitute while the holder is away.
+func sit_down(seat: String) -> void:
+	var st := WorldState.landmark_state(landmark_id)
+	var why := CouncilSeats.may_sit(st, seat, LocalProfile.player_id, false)
+	if why != "":
+		_show_toast(why)
+		return
+	var sd: Dictionary = interior.seats.get(seat, {})
+	if sd.is_empty():
+		return
+	var r: Rect2 = sd["rect"]
+	walker.position = (r.get_center() + Vector2(0, r.size.y * 0.18)) * InteriorScene.T
+	_facing = Iso.facing_index(Vector2(0, -1))          # towards the rostrum
+	walker_rig.set_motion(0.0, _facing)
+	walker_rig.play("sit_down", true)
+	_seated = seat
+	_set_context({"kind": "stand", "label": "Aufstehen", "seat": seat})
+	_show_toast("Delegiertenplatz %s – Reihe %d, Sektor %d" % [seat, int(sd.get("row", 0)), int(sd.get("sector", 0))])
+
+
+func stand_up() -> void:
+	if _seated == "" or interior == null:
+		_seated = ""
+		return
+	var sd: Dictionary = interior.seats.get(_seated, {})
+	walker.position = sd.get("stand", walker.position)
+	walker_rig.play("idle", true)
+	_seated = ""
+
+
+func _on_act2() -> void:
+	if str(_context.get("kind", "")) != "seat" or interior == null:
+		return
+	var seat := str(_context["seat"])
+	var mine := CouncilSeats.holder_of(WorldState.landmark_state(landmark_id), seat) == LocalProfile.player_id
+	var why := WorldState.council_seat_command("release" if mine else "reserve", seat, LocalProfile.player_id)
+	_show_toast(why if why != "" else ("Reservierung aufgehoben." if mine else "Platz %s ist jetzt für dich reserviert." % seat))
+	tint_seats()
+	_set_context(seat_context(seat))
+
+
+## Reserved places are marked: yours warm gold, others' muted.
+func tint_seats() -> void:
+	if interior == null or interior.seats.is_empty():
+		return
+	var st := WorldState.landmark_state(landmark_id)
+	for id in interior.seats:
+		var node: Node2D = interior.seats[id].get("node")
+		if node == null:
+			continue
+		var holder := CouncilSeats.holder_of(st, id)
+		node.modulate = Color(1, 1, 1) if holder == "" else (Color(1.0, 0.86, 0.45) if holder == LocalProfile.player_id else Color(0.62, 0.6, 0.66))
+
+
 func _process_inside(_delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down") if InputMap.has_action("move_left") else Vector2.ZERO
 	if _joystick.length_squared() > input.length_squared():
 		input = _joystick
+	if _seated != "":
+		# seated: moving the stick stands up again
+		if input.length() > 0.35:
+			stand_up()
+		else:
+			_set_context({"kind": "stand", "label": "Aufstehen", "seat": _seated})
+			return
 	walker.velocity = input.limit_length(1.0) * INSIDE_SPEED
 	walker.move_and_slide()
 	interior.carry(walker, walker_rig)
@@ -656,7 +752,7 @@ func _process_inside(_delta: float) -> void:
 			return
 	var seat := interior.nearest_seat(lp)
 	if seat != "":
-		_set_context({"kind": "seat", "seat": seat, "label": "Platz nehmen (%s)" % seat})
+		_set_context(seat_context(seat))
 		return
 	_set_context({})
 
@@ -745,6 +841,13 @@ func _build_ui() -> void:
 	_act_button.visible = false
 	_act_button.pressed.connect(_on_act)
 	root.add_child(_act_button)
+	_act2_button = Button.new()
+	_act2_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_act2_button.custom_minimum_size = Vector2(220, 52)
+	_act2_button.position = Vector2(-250, -172)
+	_act2_button.visible = false
+	_act2_button.pressed.connect(_on_act2)
+	root.add_child(_act2_button)
 	_toast = Label.new()
 	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	_toast.position = Vector2(-260, 96)

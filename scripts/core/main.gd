@@ -131,24 +131,31 @@ var landmark_view: CouncilSiteView
 func open_landmark(landmark_id: String) -> void:
 	if landmark_view or globe == null:
 		return
-	globe.visible = false
-	globe.process_mode = Node.PROCESS_MODE_DISABLED
-	for c in globe.get_children():
-		if c is CanvasLayer:
-			c.visible = false
+	_set_globe_shown(false)
 	landmark_view = CouncilSiteView.new()
 	landmark_view.landmark_id = landmark_id
 	add_child(landmark_view)
+	landmark_view.camera.make_current()
 	landmark_view.closed.connect(func() -> void:
 		landmark_view.queue_free()
 		landmark_view = null
 		if globe:
-			globe.visible = true
-			globe.process_mode = Node.PROCESS_MODE_INHERIT
-			for c in globe.get_children():
-				if c is CanvasLayer:
-					c.visible = true
+			_set_globe_shown(true)
 			globe.view.make_current())
+
+
+## The globe is a plain Node holding a 3D view and UI layers: hiding it means
+## hiding the 3D view (else its camera keeps rendering behind 2D scenes, e.g.
+## around the Concordium interiors) and the layers, and pausing it.
+func _set_globe_shown(on: bool) -> void:
+	globe.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
+	if globe.view:
+		globe.view.visible = on
+		if not on and globe.view.camera:
+			globe.view.camera.clear_current(false)
+	for c in globe.get_children():
+		if c is CanvasLayer:
+			c.visible = on
 
 
 func close_globe() -> void:

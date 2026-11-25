@@ -1,0 +1,740 @@
+{
+ "_comment": "WORLDS dialogue data (docs/DIALOG_SYSTEM.md). Rule-based, no AI. A node is a player option (label) with conditions ('when'), NPC answers (variants with their own conditions, weights) built from text blocks and variables {first}, {player}, {greet}, {daytime}, {place}, {job}, {workplace}, {interest}, {interest2}, {goal}, {progress}, {partner}, {child}, {friend}, {group}, {group_day}, {group_hour}, {memory}, {news}, {need_phrase}, {stage}, {you}, {your}. Effects change the relationship (affinity, trust, familiarity), add memories, promises, flags. 'next' offers follow-up options. Conditions: rel:<stranger|acquaintance|friend|close|partner|rival|family>, rel_min:<level>, mood>/<x, need:<food|energy|social|leisure|hygiene>, time:<morning|day|evening|night>, place:<work|home|plaza|park|other>, has:<partner|child|group|goal|friend|news|memory|interest2>, not:<…>, promise:<open|due|late>, conflict, child, adult, trait:<name>>x / <x, role:<role>, talked_today>n, familiarity>x, trust>x, used:<node> (said recently), first_meeting.",
+ "levels": [
+  "rival",
+  "stranger",
+  "acquaintance",
+  "friend",
+  "close",
+  "partner"
+ ],
+ "openers": [
+  {
+   "when": [
+    "first_meeting"
+   ],
+   "text": [
+    "{greet}! Wir kennen uns noch nicht – ich bin {first}.",
+    "{greet}. Neu hier? Ich heiße {first}.",
+    "Ah, {greet}! Ich glaube, wir sind uns noch nicht begegnet. {first}."
+   ]
+  },
+  {
+   "when": [
+    "conflict"
+   ],
+   "text": [
+    "{first} sieht dich kühl an: „Ach, {you}.“",
+    "„Was willst du?“, fragt {first} knapp."
+   ]
+  },
+  {
+   "when": [
+    "promise:due"
+   ],
+   "text": [
+    "„Da bist du ja! Ich hatte auf deine Hilfe gezählt.“",
+    "{first} lächelt: „Gut, dass du kommst – ich hab an dein Versprechen gedacht.“"
+   ]
+  },
+  {
+   "when": [
+    "promise:late"
+   ],
+   "text": [
+    "„Na, doch noch da?“, sagt {first} ein wenig enttäuscht.",
+    "{first} hebt eine Augenbraue: „Du wolltest mir doch helfen…“"
+   ]
+  },
+  {
+   "when": [
+    "rel:close"
+   ],
+   "text": [
+    "„{player}! Schön, dich zu sehen!“",
+    "{first} strahlt: „Da bist du ja!“",
+    "„Hey, {player} – genau dich wollte ich treffen.“"
+   ]
+  },
+  {
+   "when": [
+    "rel:friend"
+   ],
+   "text": [
+    "„Hallo {player}!“",
+    "{first} winkt dir zu: „Na, wie läuft's?“",
+    "„{greet}, {player}. Alles gut bei dir?“"
+   ]
+  },
+  {
+   "when": [
+    "rel:acquaintance",
+    "mood>0.6"
+   ],
+   "text": [
+    "„{greet}! Schöner Tag, oder?“",
+    "{first} nickt freundlich: „{greet}.“"
+   ]
+  },
+  {
+   "when": [
+    "rel:acquaintance"
+   ],
+   "text": [
+    "„{greet}.“",
+    "{first} nickt dir zu."
+   ]
+  },
+  {
+   "when": [
+    "rel:rival"
+   ],
+   "text": [
+    "„Du schon wieder.“",
+    "{first} verschränkt die Arme."
+   ]
+  },
+  {
+   "when": [
+    "child"
+   ],
+   "text": [
+    "„Hallo!“, ruft {first}.",
+    "{first} schaut neugierig zu dir hoch."
+   ]
+  },
+  {
+   "when": [
+    "mood<0.3"
+   ],
+   "text": [
+    "{first} wirkt erschöpft: „Hm? Ja?“",
+    "„Ich bin heute ziemlich durch“, murmelt {first}."
+   ]
+  },
+  {
+   "when": [],
+   "text": [
+    "„{greet}.“",
+    "{first} sieht dich an: „Ja?“"
+   ]
+  }
+ ],
+ "nodes": {
+  "chat": {
+   "label": "Plaudern",
+   "when": [],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "place:work"
+     ],
+     "text": [
+      "„Viel zu tun in {workplace} heute – aber es macht Spaß.“",
+      "„Bei der Arbeit ist es ruhig. Gut für einen kleinen Plausch.“",
+      "„Ich muss gleich weitermachen, aber kurz geht's.“"
+     ]
+    },
+    {
+     "when": [
+      "place:park"
+     ],
+     "text": [
+      "„Hier im Park komme ich runter.“",
+      "„Ich mag es hier. Man hört sogar die Vögel.“"
+     ]
+    },
+    {
+     "when": [
+      "place:plaza"
+     ],
+     "text": [
+      "„Auf dem Platz trifft man immer jemanden.“",
+      "„Am Platz ist heute was los, oder?“"
+     ]
+    },
+    {
+     "when": [
+      "time:evening"
+     ],
+     "text": [
+      "„Ein langer Tag. Ich freu mich auf meinen Feierabend.“",
+      "„Abends wird es hier richtig gemütlich.“"
+     ]
+    },
+    {
+     "when": [
+      "time:morning"
+     ],
+     "text": [
+      "„Morgens bin ich noch nicht ganz wach…“",
+      "„Guten Start in den Tag gehabt?“"
+     ]
+    },
+    {
+     "when": [
+      "has:memory",
+      "trust>0.3"
+     ],
+     "text": [
+      "„{memory} – das geht mir gerade nicht aus dem Kopf.“",
+      "„Weißt du, was mich beschäftigt? {memory}.“"
+     ]
+    },
+    {
+     "when": [
+      "need:food"
+     ],
+     "text": [
+      "„Ich hab ehrlich gesagt Hunger. Gleich gibt's was.“"
+     ]
+    },
+    {
+     "when": [
+      "need:energy"
+     ],
+     "text": [
+      "„Ich bin so müde – heute früh ins Bett.“"
+     ]
+    },
+    {
+     "when": [
+      "mood>0.7"
+     ],
+     "text": [
+      "„Was für ein schöner Tag hier!“",
+      "„Mir geht's richtig gut heute.“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "{first} plaudert ein wenig über den Alltag in der Siedlung.",
+      "„Ach, es läuft so. Und bei dir?“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.035,
+    "familiarity": 0.05,
+    "trust": 0.012
+   },
+   "next": [
+    "wellbeing",
+    "interests",
+    "work",
+    "news"
+   ],
+   "mix": true
+  },
+  "wellbeing": {
+   "label": "Nach dem Befinden fragen",
+   "when": [],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "need:energy"
+     ],
+     "text": [
+      "„Ehrlich? Müde. Aber es wird.“"
+     ]
+    },
+    {
+     "when": [
+      "has:partner",
+      "mood>0.5"
+     ],
+     "text": [
+      "„Danke, gut! {partner} und ich kommen gut zurecht.“",
+      "„Bestens – mit {partner} ist es einfach schön.“"
+     ]
+    },
+    {
+     "when": [
+      "has:child"
+     ],
+     "text": [
+      "„Gut! {child} hält uns ganz schön auf Trab.“",
+      "„{child} wächst so schnell – {stage} schon!“"
+     ]
+    },
+    {
+     "when": [
+      "mood<0.35"
+     ],
+     "text": [
+      "„Nicht so gut, wenn ich ehrlich bin. Aber danke, dass du fragst.“",
+      "„Schwierige Tage gerade.“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "„Danke der Nachfrage, mir geht es gut.“",
+      "„Alles in Ordnung, danke!“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.02,
+    "trust": 0.018,
+    "familiarity": 0.04
+   },
+   "next": [
+    "family",
+    "chat",
+    "goals"
+   ]
+  },
+  "interests": {
+   "label": "Über Interessen sprechen",
+   "when": [
+    "adult"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "has:interest2"
+     ],
+     "text": [
+      "„Ich mag {interest} – und {interest2}, wenn Zeit bleibt.“",
+      "„{interest} vor allem. Und {interest2}.“"
+     ]
+    },
+    {
+     "when": [
+      "has:group"
+     ],
+     "text": [
+      "„{interest}! Deshalb bin ich auch bei {group}.“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "„Ich mag {interest}.“",
+      "„{interest} – da kann ich stundenlang drüber reden.“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.04,
+    "familiarity": 0.05,
+    "trust": 0.012
+   },
+   "next": [
+    "group",
+    "chat",
+    "goals"
+   ],
+   "mix": true
+  },
+  "work": {
+   "label": "Nach der Arbeit fragen",
+   "when": [
+    "adult",
+    "has:job"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "mood<0.35"
+     ],
+     "text": [
+      "„Als {job} hat man's gerade nicht leicht. Viel zu tun.“"
+     ]
+    },
+    {
+     "when": [
+      "trait:ambition>0.65"
+     ],
+     "text": [
+      "„Ich will als {job} noch besser werden. Ich übe jeden Tag.“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "„Ich arbeite als {job} in {workplace}. Gefällt mir.“",
+      "„{workplace}, als {job}. Es gibt Schlimmeres!“"
+     ]
+    }
+   ],
+   "effects": {
+    "familiarity": 0.04,
+    "trust": 0.01
+   },
+   "next": [
+    "goals",
+    "chat"
+   ],
+   "mix": true
+  },
+  "family": {
+   "label": "Nach der Familie fragen",
+   "when": [
+    "adult",
+    "familiarity>0.1"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "has:partner",
+      "has:child"
+     ],
+     "text": [
+      "„{partner} und {child} geht's gut, danke!“",
+      "„Wir sind eine kleine Familie: {partner}, {child} und ich.“"
+     ]
+    },
+    {
+     "when": [
+      "has:partner"
+     ],
+     "text": [
+      "„Mit {partner} lebe ich zusammen. Ich bin glücklich.“"
+     ]
+    },
+    {
+     "when": [
+      "has:child"
+     ],
+     "text": [
+      "„{child} ist mein Ein und Alles.“"
+     ]
+    },
+    {
+     "when": [
+      "has:friend"
+     ],
+     "text": [
+      "„Familie hier nicht – aber {friend} ist für mich wie eine Schwester oder ein Bruder.“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "„Ich bin allein hier. Noch.“",
+      "„Familie? Die ist weit weg.“"
+     ]
+    }
+   ],
+   "effects": {
+    "trust": 0.02,
+    "familiarity": 0.03
+   },
+   "next": [
+    "wellbeing",
+    "goals"
+   ]
+  },
+  "goals": {
+   "label": "Nach Zielen fragen",
+   "when": [
+    "adult",
+    "familiarity>0.12",
+    "has:goal"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "trust>0.4"
+     ],
+     "text": [
+      "„Unter uns: {goal}. Ich bin bei etwa {progress}.“",
+      "„Mein Ziel ist es, {goal}. Ich glaube, ich schaffe das – {progress} hab ich.“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "„Mein Ziel: {goal}.“",
+      "„Ich möchte {goal}.“"
+     ]
+    }
+   ],
+   "effects": {
+    "trust": 0.04,
+    "familiarity": 0.03
+   },
+   "next": [
+    "help",
+    "chat"
+   ]
+  },
+  "help": {
+   "label": "Hilfe anbieten",
+   "when": [
+    "adult",
+    "familiarity>0.12",
+    "not:promise:open"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "trust<0.25"
+     ],
+     "text": [
+      "„Danke, das ist nett – aber ich komme zurecht.“"
+     ],
+     "effects": {
+      "affinity": 0.02
+     }
+    },
+    {
+     "when": [],
+     "text": [
+      "„Das wäre wirklich eine Hilfe!“ – du hast {first} deine Hilfe versprochen.",
+      "„Wirklich? Dann komm doch die nächsten Tage noch mal vorbei!“ – ein Versprechen."
+     ],
+     "effects": {
+      "affinity": 0.05,
+      "trust": 0.02,
+      "promise": 3
+     }
+    }
+   ],
+   "next": [
+    "chat"
+   ]
+  },
+  "keep_promise": {
+   "label": "Versprochene Hilfe leisten",
+   "when": [
+    "promise:due"
+   ],
+   "weight": 3,
+   "answers": [
+    {
+     "when": [],
+     "text": [
+      "„Danke, dass du Wort hältst! Das vergesse ich dir nicht.“",
+      "„Du bist ein Schatz – genau so hatte ich's mir gewünscht.“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.1,
+    "trust": 0.1,
+    "keep_promise": true
+   },
+   "next": [
+    "chat",
+    "goals"
+   ]
+  },
+  "late_promise": {
+   "label": "Entschuldigen und doch helfen",
+   "when": [
+    "promise:late"
+   ],
+   "weight": 3,
+   "answers": [
+    {
+     "when": [],
+     "text": [
+      "„Später als gedacht – aber danke trotzdem.“",
+      "„Na gut. Schön, dass du doch noch kommst.“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.04,
+    "trust": 0.02,
+    "keep_promise": true
+   },
+   "next": [
+    "chat"
+   ]
+  },
+  "apologize": {
+   "label": "Sich entschuldigen",
+   "when": [
+    "conflict"
+   ],
+   "weight": 3,
+   "answers": [
+    {
+     "when": [
+      "trait:impulsivity>0.6"
+     ],
+     "text": [
+      "„Schon gut. Ich war auch nicht nett.“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "{first} atmet durch: „Danke. Lass uns das vergessen.“",
+      "„Entschuldigung angenommen.“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.12,
+    "trust": 0.05,
+    "resolve_conflict": true
+   },
+   "next": [
+    "chat"
+   ]
+  },
+  "news": {
+   "label": "Was gibt's Neues?",
+   "when": [
+    "has:news"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "trust>0.3"
+     ],
+     "text": [
+      "„Hast du's gehört? {news}“",
+      "„Unter uns: {news}“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "„Man sagt: {news}“"
+     ]
+    }
+   ],
+   "effects": {
+    "familiarity": 0.03,
+    "affinity": 0.01
+   },
+   "next": [
+    "chat",
+    "wellbeing"
+   ],
+   "mix": true
+  },
+  "group": {
+   "label": "Nach dem Verein fragen",
+   "when": [
+    "has:group"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [],
+     "text": [
+      "„Komm doch mal zu {group} – wir treffen uns {group_day} um {group_hour} Uhr.“",
+      "„{group}: {group_day}, {group_hour} Uhr. Neue Gesichter sind immer willkommen!“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.03,
+    "familiarity": 0.02
+   },
+   "next": [
+    "join_group",
+    "interests"
+   ]
+  },
+  "join_group": {
+   "label": "Beim Verein mitmachen",
+   "when": [
+    "has:group",
+    "adult",
+    "familiarity>0.2",
+    "not:player_in_group"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [],
+     "text": [
+      "„Wunderbar! Ich sag den anderen Bescheid – willkommen bei {group}!“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.06,
+    "join_group": true
+   },
+   "next": [
+    "chat"
+   ]
+  },
+  "compliment": {
+   "label": "Ein Kompliment machen",
+   "when": [
+    "familiarity>0.25",
+    "not:conflict"
+   ],
+   "weight": 1,
+   "answers": [
+    {
+     "when": [
+      "trait:confidence<0.35"
+     ],
+     "text": [
+      "{first} wird ein wenig rot: „Oh – danke!“"
+     ]
+    },
+    {
+     "when": [
+      "rel_min:friend"
+     ],
+     "text": [
+      "„Du bist lieb. Danke!“"
+     ]
+    },
+    {
+     "when": [],
+     "text": [
+      "„Danke, das ist nett von dir.“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.05
+   },
+   "next": [
+    "chat"
+   ]
+  },
+  "child_play": {
+   "label": "Fragen, was gespielt wird",
+   "when": [
+    "child"
+   ],
+   "weight": 2,
+   "answers": [
+    {
+     "when": [],
+     "text": [
+      "„Fangen! Willst du mitspielen?“",
+      "„Wir bauen eine Burg aus Steinen!“",
+      "„Ich bin {stage} – und schon ganz groß!“"
+     ]
+    }
+   ],
+   "effects": {
+    "affinity": 0.05,
+    "familiarity": 0.04
+   },
+   "next": []
+  }
+ },
+ "farewell": {
+  "label": "Verabschieden",
+  "text": [
+   "„Bis bald, {player}!“",
+   "„Mach's gut!“",
+   "„Schönen Tag noch.“"
+  ]
+ }
+}

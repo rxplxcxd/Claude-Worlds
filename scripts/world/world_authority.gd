@@ -285,21 +285,26 @@ func _apply(record: Dictionary, issuer: String, kind: String, payload: Dictionar
 			var topic := str(payload.get("topic", "chat"))
 			if npc.is_empty() or not npc.get("alive", true):
 				return {"ok": false, "reason": "nobody to talk to"}
-			if not SocialCore.TOPICS.has(topic):
+			if not SocialCore.is_topic(topic):
 				return {"ok": false, "reason": "unknown topic"}
 			var cfg: Dictionary = _hot[record["settlement_id"]].config if _hot.has(record.get("settlement_id", "")) else SettlementSim.load_config()
 			var day := SettlementCore.day_index(t, settlement_offset(record))
 			var pid := "player:" + issuer
-			if not topic in SocialCore.topics_for(record, npc, pid, day, cfg):
-				return {"ok": false, "reason": "not now"}
+			var extra := {"hour": NpcBrain.local_hour(t, settlement_offset(record))}
 			var mood := 0.6
 			if _hot.has(record.get("settlement_id", "")):
 				var sim: SettlementSim = _hot[record["settlement_id"]]
-				mood = NpcBrain.mood(sim.needs_now(str(npc["npc_id"]), t))
-				sim.player_talk(str(npc["npc_id"]), t)
+				var needs := sim.needs_now(str(npc["npc_id"]), t)
+				mood = NpcBrain.mood(needs)
+				extra["needs"] = needs
+				extra["place"] = str(sim.states.get(str(npc["npc_id"]), {}).get("place", ""))
+			if topic != "farewell" and not topic in SocialCore.topics_for(record, npc, pid, day, cfg, extra, str(payload.get("after", ""))):
+				return {"ok": false, "reason": "not now"}
+			if _hot.has(record.get("settlement_id", "")):
+				(_hot[record["settlement_id"]] as SettlementSim).player_talk(str(npc["npc_id"]), t)
 			var name := str(payload.get("name", "Nachbar:in")).substr(0, 32)
-			var res := SocialCore.talk(record, npc, pid, name, topic, day, cfg, mood)
-			return {"ok": true, "result": {"line": res["line"], "kind": res["edge"]["kind"], "affinity": res["edge"]["affinity"], "trust": res["edge"]["trust"]}}
+			var res := SocialCore.talk(record, npc, pid, name, topic, day, cfg, mood, extra)
+			return {"ok": true, "result": {"line": res["line"], "kind": res["edge"]["kind"], "affinity": res["edge"]["affinity"], "trust": res["edge"]["trust"], "next": res["next"], "opener": res["opener"]}}
 		"join_settlement":
 			record["resident_player_ids"].append(issuer)
 			core["events"].append({"t": t, "kind": "player_joined", "player": issuer})

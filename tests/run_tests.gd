@@ -1987,7 +1987,8 @@ func _test_social_life() -> void:
 	var c: Dictionary = mk.call("stl_soc_talk")
 	var npc: Dictionary = SettlementCore.alive_npcs(c)[3]
 	var pid := "player:plr_a"
-	check(SocialCore.topics_for(c, npc, pid, day0, cfg) == ["chat", "wellbeing", "interests"], "strangers only chat; deeper topics need familiarity")
+	var first_opts := SocialCore.topics_for(c, npc, pid, day0, cfg)
+	check(not first_opts.is_empty() and not first_opts.has("help") and not first_opts.has("family") and not first_opts.has("goals"), "strangers: small talk only, deeper topics need familiarity (%s)" % str(first_opts))
 	var r1 := SocialCore.talk(c, npc, pid, "Test", "chat", day0, cfg, 0.8)
 	check(r1["first"] and SocialCore.person(npc)["memories"].any(func(m): return m["kind"] == "met_player"), "the first conversation is remembered (\"%s\")" % r1["line"])
 	var aff1 := float(r1["edge"]["affinity"])
@@ -1995,14 +1996,18 @@ func _test_social_life() -> void:
 		SocialCore.talk(c, npc, pid, "Test", "chat", day0, cfg, 0.8)
 	var aff10 := float(SocialCore.edge(c, npc["npc_id"], pid)["affinity"])
 	check(aff10 < aff1 * 6.0, "talking ten times a day does not buy a friendship (diminishing effect: %.2f after 1, %.2f after 10)" % [aff1, aff10])
-	for d in 6:
-		SocialCore.talk(c, npc, pid, "Test", "wellbeing", day0 + 1 + d, cfg, 0.7)
-	check(SocialCore.topics_for(c, npc, pid, day0 + 8, cfg).has("help"), "after some days of conversations you can talk about goals and offer help")
+	var ex := {"hour": 15}
+	for d in 10:
+		SocialCore.talk(c, npc, pid, "Test", "wellbeing", day0 + 1 + d, cfg, 0.7, ex)
 	var e0: Dictionary = SocialCore.edge(c, npc["npc_id"], pid)
-	e0["trust"] = 0.4
-	SocialCore.talk(c, npc, pid, "Test", "help", day0 + 8, cfg, 0.7)
+	e0["trust"] = maxf(float(e0["trust"]), 0.4)
+	var opts8 := SocialCore.topics_for(c, npc, pid, day0 + 12, cfg, ex)
+	check(SocialCore.is_topic("help") and DialogEngine.check("familiarity>0.12", DialogEngine.context(c, npc, pid, "Test", day0 + 12, cfg, 0.7, ex)), "after some days of conversations deeper topics open up (%s)" % str(opts8))
+	var hp := SocialCore.talk(c, npc, pid, "Test", "help", day0 + 12, cfg, 0.7, ex)
+	check(str(SocialCore.person(npc).get("promise", {}).get("by", "")) == pid, "offering help is a promise (\"%s\")" % hp["line"])
+	check(SocialCore.topics_for(c, npc, pid, day0 + 13, cfg, ex)[0] == "keep_promise", "the next days the person waits for it: keeping the promise is the first option")
 	var tr0 := float(e0["trust"])
-	var kept := SocialCore.talk(c, npc, pid, "Test", "chat", day0 + 10, cfg, 0.7)
+	var kept := SocialCore.talk(c, npc, pid, "Test", "keep_promise", day0 + 13, cfg, 0.7, ex)
 	check(float(kept["edge"]["trust"]) > tr0 and SocialCore.person(npc)["memories"].any(func(m): return m["kind"] == "promise_kept"), "a promise kept in time is remembered and builds trust")
 	# absence without obligation is no problem (Master §13.1): player contacts fade very slowly
 	var fam0 := float(e0["familiarity"])

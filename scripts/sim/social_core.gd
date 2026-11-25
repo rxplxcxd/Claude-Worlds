@@ -821,39 +821,48 @@ static func tie(record: Dictionary, id: String, others: Array) -> float:
 
 # --- conversations (player ↔ NPC) ------------------------------------------------------------
 
-const TOPICS := {
-	"chat": "Plaudern",
-	"wellbeing": "Nach dem Befinden fragen",
-	"interests": "Über Interessen sprechen",
-	"goals": "Nach Zielen fragen",
-	"help": "Hilfe anbieten",
-	"group": "Nach dem Verein fragen",
-}
-
-
-## Topics offered in a conversation with an NPC (context dependent).
-static func topics_for(record: Dictionary, r: Dictionary, player_id: String, day: int, cfg: Dictionary) -> Array:
-	var out := ["chat", "wellbeing"]
-	if is_child(r, day, cfg):
-		return out
-	out.append("interests")
+## Does this person start a conversation with the player who comes close?
+## Friends greet you (once a day), someone waiting for promised help calls
+## you, very outgoing people introduce themselves; rivals do not. "" = no.
+static func wants_to_talk(record: Dictionary, r: Dictionary, player_id: String, day: int) -> String:
+	var s := person(r)
+	if int(s.get("greeted_player_day", -1)) == day:
+		return ""
 	var e := edge(record, str(r["npc_id"]), player_id)
-	if not e.is_empty() and float(e["familiarity"]) >= 0.12:
-		out.append("goals")
-		out.append("help")
-	if not (person(r)["groups"] as Array).is_empty():
-		out.append("group")
-	return out
+	var pr: Dictionary = s.get("promise", {})
+	var why := ""
+	if str(pr.get("by", "")) == player_id and day > int(pr.get("day", day)) and day <= int(pr.get("due_day", day)):
+		why = "promise"
+	elif not e.is_empty() and e["kind"] in ["friend", "close_friend", "partner"] and not bool(e.get("conflict", false)):
+		why = "friend"
+	elif e.is_empty() and SettlementCore.trait_of(r, "extraversion") > 0.72:
+		why = "introduce"
+	if why != "":
+		s["greeted_player_day"] = day
+	return why
 
 
-## A conversation: returns {"line": text, "edge": edge}. Effects grow with the
-## relationship; repeated talks on the same day count less (no grinding).
-static func talk(record: Dictionary, r: Dictionary, player_id: String, player_name: String, topic: String, day: int, cfg: Dictionary, mood: float) -> Dictionary:
+## Conversation topics are dialogue nodes (data/dialog/dialog.json, DialogEngine).
+static func topics_for(record: Dictionary, r: Dictionary, player_id: String, day: int, cfg: Dictionary, extra: Dictionary = {}, after := "") -> Array:
+	return DialogEngine.options(DialogEngine.context(record, r, player_id, "", day, cfg, 0.6, extra), after)
+
+
+static func is_topic(topic: String) -> bool:
+	return topic == "farewell" or DialogEngine.data()["nodes"].has(topic)
+
+
+## A conversation step: the dialogue engine answers from the context, the
+## effects change the relationship. Returns {line, edge, first, next, opener}.
+## Repeated talks on the same day count less (no grinding); a promise not
+## kept in time leaves a small, fair dent and a conflict to talk about.
+static func talk(record: Dictionary, r: Dictionary, player_id: String, player_name: String, topic: String, day: int, cfg: Dictionary, mood: float, extra: Dictionary = {}) -> Dictionary:
 	var st := state(record)
 	var id := str(r["npc_id"])
 	var key := edge_key(id, player_id)
 	var e: Dictionary = st["edges"].get(key, {})
 	var first_meeting := e.is_empty()
+	var ctx := DialogEngine.context(record, r, player_id, player_name, day, cfg, mood, extra)
+	var opener := DialogEngine.opener(ctx)
 	if first_meeting:
 		e = {"a": key.get_slice("|", 0), "b": key.get_slice("|", 1), "kind": "acquaintance", "affinity": 0.0, "trust": 0.2,
 			"familiarity": 0.0, "colleague": false, "family": false, "since_day": day, "last_day": day, "meetings": 0}
@@ -866,80 +875,36 @@ static func talk(record: Dictionary, r: Dictionary, player_id: String, player_na
 	talks["count"] = int(talks["count"]) + 1
 	s["talks"] = talks
 	var damp := 1.0 / (1.0 + maxf(0.0, float(talks["count"]) - 2.0))     # 3rd+ talk a day counts less
-	var first := _first(r)
-	var line := ""
-	var d_aff := 0.0
-	var d_trust := 0.0
-	var extra := SettlementCore.trait_of(r, "extraversion")
-	match topic:
-		"chat":
-			d_aff = 0.03 + extra * 0.03 + (mood - 0.5) * 0.04
-			var mem := _recent_memory(r, day)
-			if not mem.is_empty() and mood > 0.4:
-				line = "„%s – das beschäftigt mich gerade“, erzählt %s." % [mem["text"], first]
-			elif mood > 0.7:
-				line = "„Was für ein schöner Tag hier!“, sagt %s gut gelaunt." % first
-			elif mood > 0.4:
-				line = "%s plaudert ein wenig über den Alltag in der Siedlung." % first
-			else:
-				line = "%s ist müde und antwortet nur knapp." % first
-		"wellbeing":
-			d_trust = 0.03
-			d_aff = 0.02
-			var fam: Array = relations_of(record, id).filter(func(x): return x["edge"]["kind"] in ["partner", "family"])
-			if r["health"]["status"] != "healthy":
-				line = "„Mir geht es nicht so gut, ich kuriere mich aus“, sagt %s." % first
-			elif not fam.is_empty():
-				var other := SettlementCore._npc(record, str(fam[0]["other"]))
-				line = "„Danke, gut! %s und ich kommen gut zurecht.“" % _first(other)
-			else:
-				line = "„Danke der Nachfrage, mir geht es %s.“" % ("gut" if mood > 0.5 else "so lala")
-		"interests":
-			var names: Array = (s["interests"] as Array).map(func(i): return str(INTERESTS.get(i, {}).get("label", i)))
-			line = "„Ich mag %s“, erzählt %s." % [" und ".join(PackedStringArray(names)), first]
-			d_aff = 0.04 * (0.5 + extra)
-		"goals":
-			var open: Array = (s["goals"] as Array).filter(func(g): return not g.has("done_day"))
-			if open.is_empty():
-				line = "„Ich bin gerade ganz zufrieden, wie es ist.“"
-			else:
-				var g: Dictionary = open[0]
-				line = "„Mein Ziel: %s. Ich bin auf einem guten Weg (%d %%).“" % [str(GOALS.get(g["kind"], g["kind"])).to_lower(), int(float(g["progress"]) * 100.0)]
-			d_trust = 0.04
-		"help":
-			if float(e["trust"]) < 0.25:
-				line = "„Danke, das ist nett – aber ich komme zurecht.“"
-				d_aff = 0.02
-			else:
-				line = "„Das wäre wirklich eine Hilfe!“ – du hast %s deine Hilfe versprochen." % first
-				remember(r, day, "promise", player_id, "%s hat Hilfe versprochen" % player_name, 0.8)
-				s["promise"] = {"by": player_id, "day": day, "due_day": day + 3}
-				d_aff = 0.05
-				d_trust = 0.02
-		"group":
-			var gid := str(s["groups"][0])
-			var g2: Dictionary = st["groups"].get(gid, {})
-			var wdays := ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
-			line = "„Komm doch mal zum %s – wir treffen uns %s um %d Uhr.“" % [g2.get("name", "Verein"), wdays[int(g2.get("weekday", 0)) % 7], int(g2.get("hour", 18))]
-			d_aff = 0.03
-		_:
-			line = "%s nickt dir zu." % first
-	# a kept promise: the player comes back to help within the time
+	# a promise that ran out long ago without a word: a small conflict (once)
 	var pr: Dictionary = s.get("promise", {})
-	if topic != "help" and pr.get("by", "") == player_id:
-		if day <= int(pr["due_day"]):
-			d_aff += 0.08
-			d_trust += 0.08
-			remember(r, day, "promise_kept", player_id, "%s hat Wort gehalten" % player_name, 0.9)
-			line += " „Danke, dass du geholfen hast!“"
-		else:
-			d_trust -= 0.03                         # small, fair: a late return still counts
-			line += " „Schön, dass du doch noch kommst.“"
+	if str(pr.get("by", "")) == player_id and day > int(pr.get("due_day", day)) + 7 and not bool(pr.get("noted", false)):
+		pr["noted"] = true
+		e["conflict"] = true
+		e["trust"] = snappedf(maxf(0.0, float(e["trust"]) - 0.05), 0.001)
+		remember(r, day, "promise_broken", player_id, "%s hat ein Versprechen nicht gehalten" % player_name, 0.7)
+		ctx = DialogEngine.context(record, r, player_id, player_name, day, cfg, mood, extra)
+	var ans := DialogEngine.answer(ctx, topic)
+	var fx: Dictionary = ans["effects"]
+	var line := str(ans["line"])
+	e["affinity"] = snappedf(clampf(float(e["affinity"]) + float(fx.get("affinity", 0.0)) * damp, -1.0, 1.0), 0.001)
+	e["trust"] = snappedf(clampf(float(e["trust"]) + float(fx.get("trust", 0.0)) * damp, 0.0, 1.0), 0.001)
+	e["familiarity"] = snappedf(minf(1.0, float(e["familiarity"]) + float(fx.get("familiarity", 0.04)) * damp), 0.001)
+	if fx.has("promise"):
+		s["promise"] = {"by": player_id, "day": day, "due_day": day + int(fx["promise"])}
+		remember(r, day, "promise", player_id, "%s hat Hilfe versprochen" % player_name, 0.8)
+	if bool(fx.get("keep_promise", false)) and not s.get("promise", {}).is_empty():
+		var late := day > int(s["promise"].get("due_day", day))
 		s.erase("promise")
 		s["helped_by_player"] = int(s.get("helped_by_player", 0)) + 1
-	e["affinity"] = snappedf(clampf(float(e["affinity"]) + d_aff * damp, -1.0, 1.0), 0.001)
-	e["trust"] = snappedf(clampf(float(e["trust"]) + d_trust * damp, 0.0, 1.0), 0.001)
-	e["familiarity"] = snappedf(minf(1.0, float(e["familiarity"]) + 0.05 * damp), 0.001)
+		remember(r, day, "promise_kept", player_id, ("%s hat Wort gehalten" if not late else "%s hat doch noch geholfen") % player_name, 0.9)
+	if bool(fx.get("resolve_conflict", false)) and bool(e.get("conflict", false)):
+		e["conflict"] = false
+		remember(r, day, "reconciled", player_id, "Versöhnt mit %s" % player_name, 0.7)
+	if bool(fx.get("join_group", false)) and not (s["groups"] as Array).is_empty():
+		var g: Dictionary = st["groups"].get(s["groups"][0], {})
+		if not g.is_empty() and not (g["members"] as Array).has(player_id):
+			g["members"].append(player_id)
+			remember(r, day, "player_joined_group", player_id, "%s ist bei %s dabei" % [player_name, g["name"]], 0.6)
 	e["last_day"] = day
 	e["meetings"] = int(e.get("meetings", 0)) + 1
 	var before := str(e["kind"])
@@ -948,9 +913,28 @@ static func talk(record: Dictionary, r: Dictionary, player_id: String, player_na
 		e["kind"] = "friend"
 		remember(r, day, "friendship", player_id, "Freundschaft mit %s" % player_name, 0.8)
 		line += " (Ihr seid jetzt befreundet.)"
-	elif aff >= 0.72 and float(e["familiarity"]) >= 0.7 and before == "friend":
+	elif aff >= 0.62 and float(e["familiarity"]) >= 0.65 and before == "friend":
 		e["kind"] = "close_friend"
-	return {"line": line, "edge": e, "first": first_meeting}
+	elif aff <= -0.35 and before in ["acquaintance", "friend"]:
+		e["kind"] = "rival"
+	# what was said (no repetition: recent topics, last variant per topic)
+	var dl: Dictionary = s.get("dialog", {"recent": [], "last": {}})
+	var recent: Array = dl.get("recent", [])
+	recent.append(topic)
+	dl["recent"] = recent.slice(maxi(0, recent.size() - 6))
+	var last: Dictionary = dl.get("last", {})
+	last[topic] = int(ans.get("variant", 0))
+	dl["last"] = last
+	if ans.has("said"):
+		var said: Dictionary = dl.get("said", {})
+		var lst: Array = said.get(topic, [])
+		lst.append(int(ans["said"]))
+		said[topic] = lst.slice(maxi(0, lst.size() - 4))
+		dl["said"] = said
+	s["dialog"] = dl
+	var ctx2 := DialogEngine.context(record, r, player_id, player_name, day, cfg, mood, extra)
+	return {"line": line, "edge": e, "first": first_meeting, "opener": opener,
+		"next": DialogEngine.options(ctx2, topic) if topic != "farewell" else []}
 
 
 static func _recent_memory(r: Dictionary, day: int) -> Dictionary:

@@ -29,7 +29,11 @@ const DOOR_META := "res://assets/penzilla/doors/doors.json"
 
 
 ## Builds the node from a settlement data entry.
+var _entry: Dictionary = {}
+
+
 func setup(entry: Dictionary) -> void:
+	_entry = entry
 	building_id = entry.get("id", "")
 	building_type = entry.get("type", "house")
 	display_name = entry.get("name", building_type)
@@ -151,7 +155,8 @@ func _add_door_interactable() -> void:
 	var p := door_local_point("main")
 	var poly := PackedVector2Array([Vector2(-30, -14), Vector2(30, -14), Vector2(30, 20), Vector2(-30, 20)])
 	var it := Interactable.create(building_id + ":door", display_name, poly)
-	var enterable := InteriorScene.has_layout(sprite_key) and InteriorScene.assets_available()
+	# every regular settlement building has a generated interior (InteriorGenerator)
+	var enterable := InteriorGenerator.type_for_building(building_type, _entry) != ""
 	it.kind = "door_enter" if enterable else "door_info"
 	it.verb = "Betreten" if enterable else "Ansehen"
 	it.subtitle = _interactable.subtitle

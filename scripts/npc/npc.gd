@@ -325,13 +325,23 @@ func describe(sim: SettlementSim, t: int, building_names: Dictionary) -> String:
 	return "\n".join(lines)
 
 
-func refresh_card(sim: SettlementSim, t: int, building_names: Dictionary) -> void:
-	_interactable.text = describe(sim, t, building_names)
-	# conversation topics (Phase 5): depend on how well you know each other
+func refresh_card(sim: SettlementSim, t: int, building_names: Dictionary, line := "", options: Array = []) -> void:
+	# the conversation (Phase 5, DialogEngine): what the person says now and the
+	# player's options – opener when you approach, the answer after an option
 	var day := SettlementCore.day_index(t, sim.offset_min())
+	var pid := "player:" + LocalProfile.player_id
+	var info := sim.render_info(npc_id, t)
+	var extra := {"hour": NpcBrain.local_hour(t, sim.offset_min()), "needs": sim.needs_now(npc_id, t), "place": str(sim.states.get(npc_id, {}).get("place", "")), "names": building_names}
+	var ctx := DialogEngine.context(sim.record, record, pid, LocalProfile.display_name, day, sim.config, NpcBrain.mood(extra["needs"]), extra)
+	if line == "":
+		line = DialogEngine.opener(ctx)
+	if options.is_empty():
+		options = DialogEngine.options(ctx)
+	_interactable.text = ("[i]%s[/i]\n\n" % line if line != "" else "") + describe(sim, t, building_names)
 	var acts: Array = []
-	for topic in SocialCore.topics_for(sim.record, record, "player:" + LocalProfile.player_id, day, sim.config):
-		acts.append({"id": "talk:" + topic, "label": SocialCore.TOPICS[topic]})
+	for topic in options:
+		acts.append({"id": "talk:" + str(topic), "label": DialogEngine.label(str(topic))})
+	acts.append({"id": "talk:farewell", "label": DialogEngine.label("farewell")})
 	_interactable.actions = acts
 
 

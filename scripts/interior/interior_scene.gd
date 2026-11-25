@@ -359,11 +359,13 @@ func _is_arc_step(room: int, y: int) -> bool:
 
 
 func _entrance() -> Dictionary:
-	return layout.get("entrance", {"x": 1.0})
+	return layout.get("entrance", {} if layout.has("arrive") else {"x": 1.0})
 
 
 ## The entrance: a 2-tile gap in the front wall at x (bottom row of that column).
 func _is_entrance_cell(c: Vector2i) -> bool:
+	if not _entrance().has("x"):
+		return false                       # an upper floor: reached over the stairs, no door outside
 	var ex := float(_entrance().get("x", 1.0))
 	if absf(float(c.x) + 0.5 - ex) > 1.0:
 		return false
@@ -1004,7 +1006,7 @@ func _build_items() -> void:
 				_register_occluder(holder)
 		item_nodes.append(holder)
 		if e.has("seat"):
-			seats[str(e["seat"])] = {"pos": Vector2((g.x + fp.x * 0.5) * T, (g.y + fp.y * 0.6) * T), "rect": Rect2(g, fp), "row": int(e.get("row", 0)), "sector": int(e.get("sector", 0))}
+			seats[str(e["seat"])] = {"pos": Vector2((g.x + fp.x * 0.5) * T, (g.y + fp.y * 0.6) * T), "rect": Rect2(g, fp), "row": int(e.get("row", 0)), "sector": int(e.get("sector", 0)), "node": holder}
 		var act := str(e.get("action", def.get("action", "")))
 		if act != "" and actions.has(act):
 			_add_item_interaction(e, def, id, i, act, actions[act], g, fp, e.has("wall") or bool(def.get("wall", false)))
@@ -1039,6 +1041,11 @@ func _add_item_interaction(e: Dictionary, def: Dictionary, id: String, i: int, a
 
 
 func _build_entrance() -> void:
+	if layout.has("arrive") and not layout.has("entrance"):
+		# an upper floor: people arrive at the top of the stairs
+		spawn_point = Vector2(float(layout["arrive"][0]), float(layout["arrive"][1])) * T
+		exit_point = spawn_point
+		return
 	var ex := float(_entrance().get("x", 1.0))
 	var by := 0
 	for y in range(size_t.y):
@@ -1110,9 +1117,12 @@ func layout_problems() -> PackedStringArray:
 			var rb: Rect2 = solid[b]["rect"]
 			if ra.grow(-0.08).intersects(rb.grow(-0.08)):
 				out.append("%s overlaps %s" % [solid[a]["id"], solid[b]["id"]])
-	var ex := float(_entrance().get("x", 1.0))
+	# the way in: the doorway, or (upper floors) where the stairs arrive
+	var ex := float(_entrance().get("x", spawn_point.x / T))
 	var door := Rect2(Vector2(ex - 1.0, spawn_point.y / T - 1.2), Vector2(2.0, 1.7))
 	for p in solid:
+		if not _entrance().has("x") and str(p["id"]) == "staircase":
+			continue
 		if (p["rect"] as Rect2).intersects(door):
 			out.append("%s blocks the entrance" % p["id"])
 	return out
